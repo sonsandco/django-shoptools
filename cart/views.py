@@ -3,9 +3,7 @@ from json import dumps
 from django.http import HttpResponseRedirect, HttpResponse, \
 HttpResponseBadRequest, HttpResponseNotAllowed
 from django.core.urlresolvers import reverse
-from django.template import RequestContext
-
-from coffin.template.loader import get_template, TemplateNotFound
+from django.template.loader import get_template, TemplateDoesNotExist
 
 from .models import Cart
 from . import actions
@@ -36,7 +34,7 @@ def cart_view(action=None):
             except TemplateNotFound:
                 pass
             else:
-                cart_data['html'] = template.render(RequestContext(request))
+                cart_data['html'] = template.render({'request': request})
             
             return HttpResponse(dumps(cart_data), 
                                 content_type="application/json")
@@ -56,4 +54,3 @@ update_cart = cart_view(actions.update_cart)
 add = cart_view(actions.add)
 remove = cart_view(actions.remove)
 clear = cart_view(actions.clear)
-

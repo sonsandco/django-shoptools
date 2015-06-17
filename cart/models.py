@@ -7,10 +7,12 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 
+
 CART_SESSION_KEY = getattr(settings, 'CART_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
 SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
+
 
 class OrderLine(models.Model):
     """OrderLine is the db-persisted version of a Cart item. It uses

@@ -1,9 +1,10 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
+from .views import cart, checkout, success
 
-urlpatterns = patterns('checkout.views',
-    url(r'^cart$', 'cart'),
-    url(r'^$', 'checkout'),
-    url(r'^(\w+)$', 'checkout'),
-    url(r'^(\w+)/success$', 'success'),
+urlpatterns = (
+    url(r'^cart$', cart, {}, 'checkout_cart'),
+    url(r'^$', checkout, {}, 'checkout_checkout'),
+    url(r'^(\w+)$', checkout, {}, 'checkout_checkout'),
+    url(r'^(\w+)/success$', success, {}, 'checkout_success'),
 )

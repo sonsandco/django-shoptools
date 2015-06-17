@@ -8,9 +8,10 @@ from django.core.urlresolvers import reverse
 from django.conf import settings
 
 from cart.models import OrderLine
-from paypal.models import FullTransactionProtocol, Transaction
+from dps.models import FullTransactionProtocol, Transaction
+# from paypal.models import FullTransactionProtocol, Transaction
 
-from .email import send_email_receipt
+from .emails import send_email_receipt
 from .shipping import calculate_shipping
 
 
@@ -28,14 +29,12 @@ class Order(models.Model, FullTransactionProtocol):
     STATUS_NEW = "new"
     STATUS_PAID = "paid"
     STATUS_PAYMENT_FAILED = "payment_failed"
-    STATUS_PROCESSING = "processing"
     STATUS_SHIPPED = "shipped"
 
     STATUS_CHOICES = [
         (STATUS_NEW, "New"),
         (STATUS_PAID, "Paid"),
         (STATUS_PAYMENT_FAILED, "Payment Failed"),
-        (STATUS_PROCESSING, "Processing (external)"),
         (STATUS_SHIPPED, "Shipped"),
     ]
     
@@ -62,11 +61,11 @@ class Order(models.Model, FullTransactionProtocol):
     
     @models.permalink
     def get_success_url(self):
-        return ('checkout.views.success', (self.secret,))
+        return ('checkout_success', (self.secret,))
     
     @models.permalink
     def get_absolute_url(self):
-        return ('checkout.views.checkout', (self.secret,))
+        return ('checkout_checkout', (self.secret,))
     
     @property
     def invoice_number(self):

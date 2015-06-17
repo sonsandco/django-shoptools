@@ -1,0 +1,21 @@
+{% extends "checkout/base.html" %}
+
+{% block title %}Order Confirmation{% endblock %}
+
+{% block content %}
+  <article class="checkout">
+    <h3>Your Order</h3>
+    
+    {% include 'checkout/snippets/order_lines.html' %}
+    
+    <p>
+      {{ order.name }}<br>
+      {{ order.street }}<br>
+      {{ order.suburb }}<br>
+      {{ order.city }} {{ order.postcode }}<br>
+      {{ order.country }}<br>
+      {{ order.created|date('d F Y') }}<br>
+      Email: {{ order.email }}<br>
+    </p>
+  </article>
+{% endblock %}

@@ -1,18 +1,16 @@
 from json import dumps
 from functools import partial
 
-from django.template import RequestContext
 from django.core.urlresolvers import reverse
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect, get_object_or_404, render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import never_cache
 
 from cart.models import Cart
 from cart.actions import update_cart
-# from dps.transactions import make_payment
-from paypal.transactions import make_payment
+from dps.transactions import make_payment
+# from paypal.transactions import make_payment
 
-from .renderer import renderer_factory
 from .forms import OrderForm
 from .models import Order
 
@@ -27,7 +25,7 @@ def checkout_view(wrapped_view):
     @never_cache
     def view_func(request, *args):
         cart = Cart(request)
-        ctx = {'cart': cart}
+        ctx = {'request': request, 'cart': cart}
         result = wrapped_view(request, cart, *args)
         
         if isinstance(result, HttpResponseRedirect):
@@ -46,7 +44,7 @@ def checkout_view(wrapped_view):
         else:
             template = 'checkout/%s.html' % wrapped_view.__name__
             
-        return renderer_factory()(template, RequestContext(request, ctx))
+        return render_to_response(template, ctx)
     
     view_func.__name__ = wrapped_view.__name__
     view_func.__doc__ = wrapped_view.__doc__
@@ -136,6 +134,3 @@ def success(request, cart, secret):
         "order": order,
     }
     
-
-
-

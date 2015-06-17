@@ -2,16 +2,24 @@ from django.contrib import admin
 from django.contrib.contenttypes import generic
 
 from cart.admin import OrderLineInlineAdmin
-from paypal.admin import TransactionInlineAdmin
+from dps.admin import TransactionInlineAdmin
+# from paypal.admin import TransactionInlineAdmin
 
-from models import Order
+from .models import Order
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'city', 'country', 'amount_paid', 'created', 'links')
+    list_display = ('name', 'email', 'city', 'country', 'amount_paid', 
+                    'created', 'links')
     list_filter = ('status', 'created')
-    inlines = [OrderLineInlineAdmin, TransactionInlineAdmin]
+    inlines = [
+        OrderLineInlineAdmin, 
+        # TransactionInlineAdmin,
+    ]
     save_on_top = True
+    
+    def has_add_permission(self, request):
+        return False
     
     def get_queryset(self, request):
         return Order.objects.all().order_by('-created')

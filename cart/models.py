@@ -5,7 +5,7 @@ import importlib
 from django.conf import settings
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericForeignKey
 
 
 CART_SESSION_KEY = getattr(settings, 'CART_SESSION_KEY', 'cart')
@@ -32,15 +32,14 @@ class OrderLine(models.Model):
     parent_content_type = models.ForeignKey(ContentType,
                                     related_name="orderlines_via_parent")
     parent_object_id = models.PositiveIntegerField()
-    parent_object = generic.GenericForeignKey('parent_content_type',
-                                              'parent_object_id')
+    parent_object = GenericForeignKey('parent_content_type',
+                                      'parent_object_id')
 
     # item object *must* support ICartItem
     item_content_type = models.ForeignKey(ContentType,
                                           related_name="orderlines_via_item")
     item_object_id = models.PositiveIntegerField()
-    item_object = generic.GenericForeignKey('item_content_type',
-                                            'item_object_id')
+    item_object = GenericForeignKey('item_content_type', 'item_object_id')
 
     created = models.DateTimeField(default=datetime.now)
     quantity = models.IntegerField()

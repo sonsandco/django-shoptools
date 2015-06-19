@@ -1,9 +1,8 @@
 from datetime import datetime
 import uuid
 
-import requests
 from django.db import models
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.urlresolvers import reverse
 from django.conf import settings
 
@@ -53,11 +52,11 @@ class Order(models.Model, FullTransactionProtocol):
                               default=STATUS_NEW)
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2, default=0)
 
-    lines = generic.GenericRelation(OrderLine,
+    lines = GenericRelation(OrderLine,
                                     content_type_field='parent_content_type',
                                     object_id_field='parent_object_id')
     
-    payments = generic.GenericRelation(Transaction)
+    payments = GenericRelation(Transaction)
     
     @models.permalink
     def get_success_url(self):

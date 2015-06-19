@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib.contenttypes import generic
 
 from cart.admin import OrderLineInlineAdmin
 from dps.admin import TransactionInlineAdmin

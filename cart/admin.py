@@ -1,4 +1,4 @@
-from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django import forms
 
 from cart.models import OrderLine
@@ -10,7 +10,7 @@ class OrderLineForm(forms.ModelForm):
         model = OrderLine
         exclude = []
 
-class OrderLineInlineAdmin(generic.GenericTabularInline):
+class OrderLineInlineAdmin(GenericTabularInline):
     '''Base admin class for editing OrderLine instances inline.'''
     
     model = OrderLine

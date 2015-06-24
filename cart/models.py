@@ -101,6 +101,7 @@ class Cart(object):
     def as_dict(self):
         data = {
             'count': self.count(),
+            'shipping_cost': self.shipping_cost(),
             'total': str(self.total()),
             'lines': [],
         }
@@ -116,9 +117,15 @@ class Cart(object):
     def empty(self):
         return self._data is None or len(self._data["rows"]) is 0
     
+    def update_shipping(self, options):
+        self._data["shipping"] = options
+        self.request.session.modified = True
+        return True
+    
     def add(self, ctype, pk, qty=1, opts={}):
         app_label, model = ctype.split('.')
         ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
+        
         if not issubclass(ctype_obj.model_class(), ICartItem):
             return False
         
@@ -187,7 +194,7 @@ class Cart(object):
     
     @staticmethod
     def create_key(ctype, pk):
-        return '|'.join((ctype, pk))
+        return u'|'.join((ctype, unicode(pk)))
     
     @staticmethod
     def unpack_key(key):
@@ -214,7 +221,9 @@ class Cart(object):
         if SHIPPING_CALCULATOR:
             bits = SHIPPING_CALCULATOR.split('.')
             calc_module = importlib.import_module('.'.join(bits[:-1]))
-            return getattr(calc_module, bits[-1])(self.rows())
+            calc_func = getattr(calc_module, bits[-1])
+            shipping_options = self._data.get("shipping", {})
+            return calc_func(self.rows(), options=shipping_options)
         return 0
     
     def total(self, force=True):

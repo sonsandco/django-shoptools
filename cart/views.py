@@ -16,14 +16,16 @@ def cart_view(action=None):
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
     
-    def view_func(request, next=None):
-        if action and request.method != 'POST':
+    def view_func(request, next=None, data=None):
+        if not data:
+            data = request.POST
+        
+        if action and not data:
             return HttpResponseNotAllowed(['POST'])
         
         cart = Cart(request)
         if action:
-            success = action(request, cart)
-            
+            success = action(data, cart)
             if not success:
                 return HttpResponseBadRequest(u"Invalid request")
         
@@ -31,7 +33,7 @@ def cart_view(action=None):
             cart_data = cart.as_dict()
             try:
                 template = get_template('cart/cart_ajax.html')
-            except TemplateNotFound:
+            except TemplateDoesNotExist:
                 pass
             else:
                 cart_data['html'] = template.render({'request': request})
@@ -40,7 +42,7 @@ def cart_view(action=None):
                                 content_type="application/json")
         
         if not next:
-            next = request.POST.get("next", request.META.get('HTTP_REFERER', '/'))
+            next = data.get("next", request.META.get('HTTP_REFERER', '/'))
         return HttpResponseRedirect(next)
     
     if action:
@@ -54,3 +56,5 @@ update_cart = cart_view(actions.update_cart)
 add = cart_view(actions.add)
 remove = cart_view(actions.remove)
 clear = cart_view(actions.clear)
+update_shipping = cart_view(actions.update_shipping)
+

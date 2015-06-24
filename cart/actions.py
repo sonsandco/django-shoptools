@@ -5,12 +5,11 @@ def cart_action(required=[]):
        action and return True.'''
 
     def inner(wrapped_func):
-        def view_func(request, cart):
-            if not all(request.POST.get(p) for p in required):
+        def view_func(data, cart):
+            if not all(data.get(p) for p in required):
                 return False
 
-            wrapped_func(request, cart)
-            return True
+            return wrapped_func(data, cart)
 
         view_func.__name__ = wrapped_func.__name__
         view_func.__doc__ = wrapped_func.__doc__
@@ -20,15 +19,15 @@ def cart_action(required=[]):
 
 
 @cart_action()
-def update_cart(request, cart):
+def update_cart(data, cart):
     # remove things if a remove button was clicked
-    key_to_remove = request.POST.get('remove', None)
+    key_to_remove = data.get('remove', None)
     if key_to_remove:
         cart.remove(*cart.unpack_key(key_to_remove))
     else: 
         # otherwise, update quantities
         prefix = "qty:"
-        for (name, val) in request.POST.items():
+        for (name, val) in data.items():
             if name.startswith(prefix):
                 key = name[len(prefix):]
                 try:
@@ -40,30 +39,37 @@ def update_cart(request, cart):
         
         # and options
         prefix = "option:"
-        for (name, val) in request.POST.items():
+        for (name, val) in data.items():
             if name.startswith(prefix):
                 key, option = name[len(prefix):].split(':')
                 cart.update_options(*cart.unpack_key(key), **{option: val})
-
-
-@cart_action(required=['ctype', 'pk'])
-def add(request, cart):
-    ctype = request.POST["ctype"]
-    pk = request.POST["pk"]
-    qty = request.POST.get("qty", 1)
-    cart.add(ctype, pk, qty)
-
+    
+    return True
 
 @cart_action(required=['ctype', 'pk'])
-def remove(request, cart):
-    ctype = request.POST["ctype"]
-    pk = request.POST["pk"]
-    cart.remove(ctype, pk)
+def add(data, cart):
+    ctype = data["ctype"]
+    pk = data["pk"]
+    qty = data.get("qty", 1)
+    return cart.add(ctype, pk, qty)
+    
+
+@cart_action(required=['ctype', 'pk'])
+def remove(data, cart):
+    ctype = data["ctype"]
+    pk = data["pk"]
+    return cart.remove(ctype, pk)
 
 
 @cart_action(required=['confirm'])
-def clear(request, cart):
-    confirm = request.POST.get('confirm', None)
+def clear(data, cart):
+    confirm = data.get('confirm', None)
     if confirm:
-        cart.clear()
+        return cart.clear()
+
+
+@cart_action()
+def update_shipping(data, cart):
+    return cart.update_shipping(data.dict())
+
 

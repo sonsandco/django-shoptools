@@ -30,15 +30,17 @@ def cart_view(action=None):
                 return HttpResponseBadRequest(u"Invalid request")
         
         if request.is_ajax():
-            cart_data = cart.as_dict()
+            data = {
+                'cart': cart.as_dict(),
+            }
             try:
                 template = get_template('cart/cart_ajax.html')
             except TemplateDoesNotExist:
                 pass
             else:
-                cart_data['html'] = template.render({'request': request})
+                data['cart_html'] = template.render({'request': request})
             
-            return HttpResponse(json.dumps(cart_data), 
+            return HttpResponse(json.dumps(data), 
                                 content_type="application/json")
         
         if not next_url:

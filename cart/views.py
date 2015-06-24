@@ -16,7 +16,7 @@ def cart_view(action=None):
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
     
-    def view_func(request, next=None, data=None):
+    def view_func(request, next_url=None, data=None):
         if not data:
             data = request.POST
         
@@ -41,9 +41,10 @@ def cart_view(action=None):
             return HttpResponse(dumps(cart_data), 
                                 content_type="application/json")
         
-        if not next:
-            next = data.get("next", request.META.get('HTTP_REFERER', '/'))
-        return HttpResponseRedirect(next)
+        if not next_url:
+            next_url = request.POST.get("next", 
+                request.META.get('HTTP_REFERER', '/'))
+        return HttpResponseRedirect(next_url)
     
     if action:
         view_func.__name__ = action.__name__
@@ -57,4 +58,3 @@ add = cart_view(actions.add)
 remove = cart_view(actions.remove)
 clear = cart_view(actions.clear)
 update_shipping = cart_view(actions.update_shipping)
-

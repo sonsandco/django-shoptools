@@ -1,4 +1,4 @@
-from json import dumps
+import json
 
 from django.http import HttpResponseRedirect, HttpResponse, \
 HttpResponseBadRequest, HttpResponseNotAllowed
@@ -38,7 +38,7 @@ def cart_view(action=None):
             else:
                 cart_data['html'] = template.render({'request': request})
             
-            return HttpResponse(dumps(cart_data), 
+            return HttpResponse(json.dumps(cart_data), 
                                 content_type="application/json")
         
         if not next_url:

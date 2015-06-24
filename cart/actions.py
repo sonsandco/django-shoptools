@@ -1,3 +1,4 @@
+from .models import Cart
 
 
 def cart_action(required=[]):
@@ -5,15 +6,20 @@ def cart_action(required=[]):
        action and return True.'''
 
     def inner(wrapped_func):
-        def view_func(data, cart):
+        def action_func(data, cart=None, request=None):
+            assert cart or request
+            
+            if not cart:
+                cart = Cart(request)
+            
             if not all(data.get(p) for p in required):
                 return False
 
             return wrapped_func(data, cart)
 
-        view_func.__name__ = wrapped_func.__name__
-        view_func.__doc__ = wrapped_func.__doc__
-        return view_func
+        action_func.__name__ = wrapped_func.__name__
+        action_func.__doc__ = wrapped_func.__doc__
+        return action_func
 
     return inner
 
@@ -71,5 +77,3 @@ def clear(data, cart):
 @cart_action()
 def update_shipping(data, cart):
     return cart.update_shipping(data.dict())
-
-

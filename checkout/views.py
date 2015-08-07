@@ -72,7 +72,9 @@ def checkout(request, cart, secret=None):
         new_order = False
     else:
         order = None
-        initial = request.session.get(CHECKOUT_SESSION_KEY, {})
+        # if any shipping options match form fields, prefill them
+        initial = request.session.get(CHECKOUT_SESSION_KEY,
+                                      cart.get_shipping_options())
         get_form = partial(OrderForm, initial=initial)
         sanity_check = cart.total
         new_order = True

@@ -19,26 +19,26 @@ CHECKOUT_SESSION_KEY = 'checkout-data'
 
 def checkout_view(wrapped_view):
     '''Supplies request and current cart to wrapped view function, and returns
-       partial html response for ajax requests. Assumes template filename 
+       partial html response for ajax requests. Assumes template filename
        corresponds to the view function name.'''
-    
+
     @never_cache
     def view_func(request, *args):
         cart = Cart(request)
         ctx = {'request': request, 'cart': cart}
         result = wrapped_view(request, cart, *args)
-        
+
         if isinstance(result, HttpResponseRedirect):
             if request.is_ajax() and (result.url.startswith('http://') or
                                       result.url.startswith('https://')):
-                return HttpResponse(dumps({'url': result.url}), 
+                return HttpResponse(dumps({'url': result.url}),
                                     content_type="application/json")
             else:
                 return result
-        
+
         elif isinstance(result, dict):
             ctx.update(result)
-        
+
         if request.is_ajax():
             template = 'checkout/%s_ajax.html' % wrapped_view.__name__
         else:
@@ -81,9 +81,9 @@ def checkout(request, cart, secret=None):
         get_form = partial(OrderForm, initial=initial)
         sanity_check = cart.total
         new_order = True
-    
+
     submitted = request.method == 'POST' and request.POST.get('form')
-    
+
     if submitted == 'cart':
         update_cart(request, cart)
     
@@ -101,12 +101,12 @@ def checkout(request, cart, secret=None):
             order = form.save(commit=False)
             order.currency = cart.currency
             order.save()
-            
+
             if new_order:
                 # save the cart to a series of orderlines for it
                 cart.save_to(order)
                 cart.clear()
-            
+
             # and off we go to pay
             return make_payment(order, request)
         else:
@@ -115,7 +115,7 @@ def checkout(request, cart, secret=None):
             request.session.modified = True
     else:
         form = get_form(sanity_check=sanity_check())
-    
+
     return {
         "form": form,
         "cart": cart,
@@ -129,8 +129,7 @@ def success(request, cart, secret):
     qs = Order.objects.filter(status__in=[Order.STATUS_PAID,
                                           Order.STATUS_SHIPPED])
     order = get_object_or_404(Order, secret=secret)
-    
+
     return {
         "order": order,
     }
-    

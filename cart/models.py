@@ -39,7 +39,7 @@ class OrderLine(models.Model):
     item_content_type = models.ForeignKey(ContentType,
                                           related_name="orderlines_via_item")
     item_object_id = models.PositiveIntegerField()
-    item_object = GenericForeignKey('item_content_type', 'item_object_id')
+    item = GenericForeignKey('item_content_type', 'item_object_id')
 
     created = models.DateTimeField(default=datetime.now)
     quantity = models.IntegerField()
@@ -51,15 +51,15 @@ class OrderLine(models.Model):
     options = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):
-        assert isinstance(self.item_object, ICartItem)
-        
+        assert isinstance(self.item, ICartItem)
+
         if not self.total:
             # if the parent has a currency field, use it
             currency = getattr(self.parent_object, 'currency', DEFAULT_CURRENCY)
-            self.total = self.item_object.cart_line_total(self.quantity, currency)
+            self.total = self.item.cart_line_total(self.quantity, currency)
 
         if not self.description:
-            self.description = self.item_object.cart_description()
+            self.description = self.item.cart_description()
 
         return super(OrderLine, self).save(*args, **kwargs)
 
@@ -69,22 +69,26 @@ class OrderLine(models.Model):
 
 
 class CartRow(dict):
-    '''Thin wrapper around dict providing some convenience methods for 
+    '''Thin wrapper around dict providing some convenience methods for
        accessing computed information about the row.'''
-       
+
     def __init__(self, **kwargs):
         assert sorted(kwargs.keys()) == ['key', 'line_total', 'options', 'qty']
         return super(CartRow, self).__init__(**kwargs)
-    
+
     def __setitem__(self, *args):
         raise Exception(u"Sorry, CartRow instances are immutable.")
-    
+
+    @property
     def item(self):
         return Cart.get_item(self['key'])
-    
+
     def line_total(self):
         return self['line_total']
-        # return self.item().cart_line_total(self['qty'], currency)
+        # return self.item.cart_line_total(self['qty'], currency)
+
+    def description(self):
+        return self.item.cart_description()
 
 
 class Cart(object):
@@ -97,7 +101,7 @@ class Cart(object):
         if self._data is None:
             data = {"rows": []}
             self._data = self.request.session[CART_SESSION_KEY] = data
-    
+
     def as_dict(self):
         data = {
             'count': self.count(),
@@ -108,55 +112,59 @@ class Cart(object):
         for row in self.rows():
             line = dict(row)
             line.update({
-                'item': unicode(row.item()),
+                'item': unicode(row.item),
                 'line_total': row.line_total(),
             })
             data['lines'].append(line)
         return data
-    
+
     def empty(self):
         return self._data is None or len(self._data["rows"]) is 0
-    
+
     def update_shipping(self, options):
+        self._init_session_cart()
         self._data["shipping"] = options
         self.request.session.modified = True
         return True
-    
+
+    def get_shipping_options(self):
+        return (self._data or {}).get("shipping", {})
+
     def add(self, ctype, pk, qty=1, opts={}):
         app_label, model = ctype.split('.')
         ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
-        
+
         if not issubclass(ctype_obj.model_class(), ICartItem):
             return False
-        
+
         try:
             qty = int(qty)
         except TypeError:
             qty = 1
-        
+
         idx = self.row_index(ctype, pk)
         if idx != None:
             # Already in the cart, so update the existing row
             row = self._data["rows"][idx]
             return self.update_quantity(ctype, pk, qty + row["qty"])
-        
+
         self._init_session_cart()
         row = {'key': Cart.create_key(ctype, pk), 'qty': qty, 'options': opts}
         self._data["rows"].append(row)
         # self.update_total()
         self.request.session.modified = True
         return True
-    
+
     def row_index(self, ctype, pk):
-        """Returns the row index for a given ctype/pk, if it's already in the 
+        """Returns the row index for a given ctype/pk, if it's already in the
            cart, or None otherwise."""
-        
+
         if self._data is not None:
             for i in range(len(self._data["rows"])):
                 if self._data["rows"][i]["key"] == self.create_key(ctype, pk):
                     return i
         return None
-    
+
     def remove(self, ctype, pk):
         idx = self.row_index(ctype, pk)
         if idx is not None: # might be 0
@@ -164,16 +172,16 @@ class Cart(object):
             # self.update_total()
             self.request.session.modified = True
             return True
-        
+
         return False
-    
+
     def update_options(self, ctype, pk, **options):
         idx = self.row_index(ctype, pk)
         if idx is not None: # might be 0
             self._data["rows"][idx]['options'].update(options)
             self.request.session.modified = True
             return True
-                
+
         return False
 
     def update_quantity(self, ctype, pk, qty):
@@ -183,30 +191,30 @@ class Cart(object):
             # self.update_total()
             self.request.session.modified = True
             return True
-                
+
         return False
-    
+
     @staticmethod
     def get_item(key):
         ctype, pk = Cart.unpack_key(key)
         content_type = ContentType.objects.get_by_natural_key(*ctype.split("."))
         return content_type.get_object_for_this_type(pk=pk)
-    
+
     @staticmethod
     def create_key(ctype, pk):
         return u'|'.join((ctype, unicode(pk)))
-    
+
     @staticmethod
     def unpack_key(key):
         (ctype, pk) = key.split('|')
         return (ctype, pk)
-    
+
     def row(self, **data):
         assert sorted(data.keys()) == ['key', 'options', 'qty']
         item = self.get_item(data['key'])
         data['line_total'] = item.cart_line_total(data['qty'], self.currency)
         return CartRow(**data)
-    
+
     def rows(self):
         if self._data is None:
             return []
@@ -216,20 +224,20 @@ class Cart(object):
         if self._data is None:
             return 0
         return sum(r['qty'] for r in self._data["rows"])
-    
+
     def shipping_cost(self):
         if SHIPPING_CALCULATOR:
             bits = SHIPPING_CALCULATOR.split('.')
             calc_module = importlib.import_module('.'.join(bits[:-1]))
             calc_func = getattr(calc_module, bits[-1])
-            shipping_options = self._data.get("shipping", {})
+            shipping_options = self.get_shipping_options()
             return calc_func(self.rows(), options=shipping_options)
         return 0
-    
+
     def total(self, force=True):
         if self._data is None:
             return 0
-        
+
         subtotal = decimal.Decimal(sum(row.line_total() for row in self.rows()))
         return subtotal + self.shipping_cost()
 
@@ -238,12 +246,12 @@ class Cart(object):
         for row in self.rows():
             line = OrderLine()
             line.parent_object = obj
-            line.item_object = row.item()
+            line.item = row.item
             line.quantity = row["qty"]
             line.currency = self.currency
             line.options = unicode(row["options"])
             line.save()
-    
+
     def clear(self):
         if self._data is not None:
             del self.request.session[CART_SESSION_KEY]
@@ -258,7 +266,7 @@ class ICartItem(object):
         raise NotImplementedError()
 
     def cart_line_total(self, qty, currency):
-        # currently must return a float/int, not decimal, due to django's 
-        # serialization limitations - see 
-        # https://docs.djangoproject.com/en/1.6/topics/http/sessions/#session-serialization
+        # currently must return a float/int, not decimal, due to django's
+        # serialization limitations - see
+        # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
         raise NotImplementedError()

@@ -1,7 +1,7 @@
 import json
 
 from django.http import HttpResponseRedirect, HttpResponse, \
-HttpResponseBadRequest, HttpResponseNotAllowed
+    HttpResponseBadRequest, HttpResponseNotAllowed
 from django.core.urlresolvers import reverse
 from django.template.loader import get_template, TemplateDoesNotExist
 
@@ -10,25 +10,25 @@ from . import actions
 
 
 def cart_view(action=None):
-    '''Decorator supplies request and current cart as arguments to the action 
+    '''Decorator supplies request and current cart as arguments to the action
        function. Returns appropriate errors if the request method is not POST,
        or if any required params are missing.
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
-    
+
     def view_func(request, next_url=None, data=None):
         if not data:
             data = request.POST
-        
+
         if action and not data:
             return HttpResponseNotAllowed(['POST'])
-        
+
         cart = Cart(request)
         if action:
             success = action(data, cart)
             if not success:
                 return HttpResponseBadRequest(u"Invalid request")
-        
+
         if request.is_ajax():
             data = {
                 'cart': cart.as_dict(),
@@ -38,16 +38,16 @@ def cart_view(action=None):
             except TemplateDoesNotExist:
                 pass
             else:
-                data['cart_html'] = template.render({'request': request})
-            
-            return HttpResponse(json.dumps(data), 
+                data['cart_html'] = template.render({}, request=request)
+
+            return HttpResponse(json.dumps(data),
                                 content_type="application/json")
-        
+
         if not next_url:
-            next_url = request.POST.get("next", 
-                request.META.get('HTTP_REFERER', '/'))
+            next_url = request.POST.get("next",
+                                        request.META.get('HTTP_REFERER', '/'))
         return HttpResponseRedirect(next_url)
-    
+
     if action:
         view_func.__name__ = action.__name__
         view_func.__doc__ = action.__doc__

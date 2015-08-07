@@ -75,14 +75,16 @@ class Order(models.Model, FullTransactionProtocol):
         return u"%s on %s" % (self.name, self.created)
     
     def shipping_cost(self):
-        return calculate_shipping(self.lines.all())
+        return calculate_shipping(self.lines.all(), order=self)
     
-    def get_amount(self):
-        total = 0
+    def total(self):
+        val = 0
         for line in self.lines.all():
-            total += line.total
+            val += line.total
 
-        return total + self.shipping_cost()
+        return val + self.shipping_cost()
+    
+    get_amount = total
     
     def is_recurring(self):
         return False

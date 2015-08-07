@@ -65,7 +65,10 @@ def checkout(request, cart, secret=None):
         if order.status in [Order.STATUS_PAID, Order.STATUS_SHIPPED]:
             return redirect(success, secret)
         get_form = partial(OrderForm, instance=order)
-        sanity_check = lambda: 0
+
+        def sanity_check():
+            return 0
+
         new_order = False
     else:
         order = None

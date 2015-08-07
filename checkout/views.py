@@ -2,7 +2,8 @@ from json import dumps
 from functools import partial
 
 from django.core.urlresolvers import reverse
-from django.shortcuts import redirect, get_object_or_404, render_to_response
+from django.shortcuts import redirect, get_object_or_404
+from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import never_cache
 
@@ -43,9 +44,10 @@ def checkout_view(wrapped_view):
             template = 'checkout/%s_ajax.html' % wrapped_view.__name__
         else:
             template = 'checkout/%s.html' % wrapped_view.__name__
-            
-        return render_to_response(template, ctx)
-    
+
+        content = get_template(template).render(ctx, request=request)
+        return HttpResponse(content)
+
     view_func.__name__ = wrapped_view.__name__
     view_func.__doc__ = wrapped_view.__doc__
     return view_func

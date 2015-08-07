@@ -89,16 +89,16 @@ class Order(models.Model, FullTransactionProtocol):
     def is_recurring(self):
         return False
 
-    def transaction_succeeded(self, transaction, interactive):
-        if self.status not in [self.STATUS_PAID, self.STATUS_SHIPPED]:
+    def transaction_succeeded(self, transaction, interactive, status_updated):
+        if status_updated:
             self.amount_paid = transaction.amount
             self.status = self.STATUS_PAID
             self.save()
             send_email_receipt(self)
         return self.get_success_url()
     
-    def transaction_failed(self, transaction, interactive):
-        if self.status not in [self.STATUS_PAID, self.STATUS_SHIPPED]:
+    def transaction_failed(self, transaction, interactive, status_updated):
+        if status_updated:
             self.status = self.STATUS_PAYMENT_FAILED
             self.save()
         

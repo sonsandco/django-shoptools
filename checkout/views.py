@@ -54,16 +54,6 @@ def checkout_view(wrapped_view):
 @checkout_view
 def cart(request, cart):
     pass
-    # if request.method == 'POST':
-    #     # Delegate to cart's update view on post
-    #     
-    #     if request.POST.get('confirm'):
-    #         next = reverse(checkout)
-    #     else:
-    #         next = reverse(cart)
-    #     
-    #     return update_cart(request, next)
-    
 
 
 @checkout_view
@@ -91,10 +81,7 @@ def checkout(request, cart, secret=None):
 
     if submitted == 'checkout':
         form = get_form(request.POST, sanity_check=sanity_check())
-        
-        if cart.count() < 12:
-            cart_errors.append(u'Minimum order 12 bottles')
-        
+
         if form.is_valid() and (order or not cart.empty()) and \
            not len(cart_errors):
             # save the order obj to the db...

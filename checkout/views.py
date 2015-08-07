@@ -75,8 +75,8 @@ def checkout(request, cart, secret=None):
     submitted = request.method == 'POST' and request.POST.get('form')
 
     if submitted == 'cart':
-        update_cart(request, cart)
-    
+        update_cart(request.POST, cart)
+
     cart_errors = []
 
     if submitted == 'checkout':

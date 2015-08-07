@@ -39,14 +39,15 @@ class Order(models.Model, FullTransactionProtocol):
     
     secret = models.CharField(max_length=32, editable=False, default=make_uuid,
                               unique=True, db_index=True)
-    name = models.CharField(u"Your name", max_length=1023, default="")
-    email = models.EmailField()
-    street = models.CharField(u"Street Name & Number", max_length=1023)
+    name = models.CharField(u"Name", max_length=1023, default="")
+    street = models.CharField(u"Address", max_length=1023)
     suburb = models.CharField(max_length=255, blank=True)
     postcode = models.CharField(max_length=100)
     city = models.CharField(u"Town / City", max_length=255)
-    country = models.CharField(max_length=255, default=u'Australia')
-    currency = models.CharField(max_length=3, editable=False, default=DEFAULT_CURRENCY)
+    country = models.CharField(max_length=255, default=u'New Zealand')
+    email = models.EmailField()
+    currency = models.CharField(max_length=3, editable=False, 
+                                default=DEFAULT_CURRENCY)
     created = models.DateTimeField(default=datetime.now)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES,
                               default=STATUS_NEW)

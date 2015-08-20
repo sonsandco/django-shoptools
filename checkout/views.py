@@ -76,7 +76,7 @@ def checkout(request, cart, secret=None):
         initial = request.session.get(CHECKOUT_SESSION_KEY,
                                       cart.get_shipping_options())
         get_form = partial(OrderForm, initial=initial)
-        sanity_check = cart.total
+        sanity_check = cart.subtotal
         new_order = True
 
     submitted = request.method == 'POST' and request.POST.get('form')

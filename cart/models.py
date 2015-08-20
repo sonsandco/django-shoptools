@@ -29,8 +29,8 @@ class OrderLine(models.Model):
     This only handles recording items + quantities + calculated prices
     against some object.
     """
-    parent_content_type = models.ForeignKey(ContentType,
-                                    related_name="orderlines_via_parent")
+    parent_content_type = models.ForeignKey(
+        ContentType, related_name="orderlines_via_parent")
     parent_object_id = models.PositiveIntegerField()
     parent_object = GenericForeignKey('parent_content_type',
                                       'parent_object_id')
@@ -43,7 +43,8 @@ class OrderLine(models.Model):
 
     created = models.DateTimeField(default=datetime.now)
     quantity = models.IntegerField()
-    # currency = models.CharField(max_length=3, editable=False, default=DEFAULT_CURRENCY)
+    # currency = models.CharField(max_length=3, editable=False,
+    #    default=DEFAULT_CURRENCY)
     # this supports line totals up to 999,999.99, which is
     # obviously completely excessive.
     total = models.DecimalField(max_digits=8, decimal_places=2)
@@ -55,7 +56,8 @@ class OrderLine(models.Model):
 
         if not self.total:
             # if the parent has a currency field, use it
-            currency = getattr(self.parent_object, 'currency', DEFAULT_CURRENCY)
+            currency = getattr(self.parent_object, 'currency',
+                               DEFAULT_CURRENCY)
             self.total = self.item.cart_line_total(self.quantity, currency)
 
         if not self.description:
@@ -92,9 +94,11 @@ class CartRow(dict):
 
 
 class Cart(object):
+
     def __init__(self, request):
         self.request = request
-        self.currency = request.COOKIES.get(CURRENCY_COOKIE_NAME, DEFAULT_CURRENCY)
+        self.currency = request.COOKIES.get(CURRENCY_COOKIE_NAME,
+                                            DEFAULT_CURRENCY)
         self._data = self.request.session.get(CART_SESSION_KEY, None)
 
     def _init_session_cart(self):
@@ -143,7 +147,7 @@ class Cart(object):
             qty = 1
 
         idx = self.row_index(ctype, pk)
-        if idx != None:
+        if idx is not None:
             # Already in the cart, so update the existing row
             row = self._data["rows"][idx]
             return self.update_quantity(ctype, pk, qty + row["qty"])
@@ -167,7 +171,7 @@ class Cart(object):
 
     def remove(self, ctype, pk):
         idx = self.row_index(ctype, pk)
-        if idx is not None: # might be 0
+        if idx is not None:  # might be 0
             del self._data["rows"][idx]
             # self.update_total()
             self.request.session.modified = True
@@ -177,7 +181,7 @@ class Cart(object):
 
     def update_options(self, ctype, pk, **options):
         idx = self.row_index(ctype, pk)
-        if idx is not None: # might be 0
+        if idx is not None:  # might be 0
             self._data["rows"][idx]['options'].update(options)
             self.request.session.modified = True
             return True
@@ -186,7 +190,7 @@ class Cart(object):
 
     def update_quantity(self, ctype, pk, qty):
         idx = self.row_index(ctype, pk)
-        if idx is not None: # might be 0
+        if idx is not None:  # might be 0
             self._data["rows"][idx]['qty'] = qty
             # self.update_total()
             self.request.session.modified = True
@@ -197,7 +201,8 @@ class Cart(object):
     @staticmethod
     def get_item(key):
         ctype, pk = Cart.unpack_key(key)
-        content_type = ContentType.objects.get_by_natural_key(*ctype.split("."))
+        content_type = ContentType.objects \
+            .get_by_natural_key(*ctype.split("."))
         return content_type.get_object_for_this_type(pk=pk)
 
     @staticmethod
@@ -234,12 +239,13 @@ class Cart(object):
             return calc_func(self.rows(), options=shipping_options)
         return 0
 
-    def total(self, force=True):
+    def subtotal(self):
         if self._data is None:
             return 0
+        return decimal.Decimal(sum(row.line_total() for row in self.rows()))
 
-        subtotal = decimal.Decimal(sum(row.line_total() for row in self.rows()))
-        return subtotal + self.shipping_cost()
+    def total(self):
+        return self.subtotal() + self.shipping_cost()
 
     def save_to(self, obj):
         assert self._data and (self._data.get("rows", None) is not None)
@@ -259,6 +265,7 @@ class Cart(object):
 
 
 class ICartItem(object):
+
     def cart_description(self):
         raise NotImplementedError()
 

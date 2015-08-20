@@ -8,10 +8,10 @@ def cart_action(required=[]):
     def inner(wrapped_func):
         def action_func(data, cart=None, request=None):
             assert cart or request
-            
+
             if not cart:
                 cart = Cart(request)
-            
+
             if not all(data.get(p) for p in required):
                 return False
 
@@ -30,7 +30,7 @@ def update_cart(data, cart):
     key_to_remove = data.get('remove', None)
     if key_to_remove:
         cart.remove(*cart.unpack_key(key_to_remove))
-    else: 
+    else:
         # otherwise, update quantities
         prefix = "qty:"
         for (name, val) in data.items():
@@ -42,15 +42,16 @@ def update_cart(data, cart):
                     pass
                 else:
                     cart.update_quantity(*cart.unpack_key(key), qty=qty)
-        
+
         # and options
         prefix = "option:"
         for (name, val) in data.items():
             if name.startswith(prefix):
                 key, option = name[len(prefix):].split(':')
                 cart.update_options(*cart.unpack_key(key), **{option: val})
-    
+
     return True
+
 
 @cart_action(required=['ctype', 'pk'])
 def add(data, cart):
@@ -58,7 +59,7 @@ def add(data, cart):
     pk = data["pk"]
     qty = data.get("qty", 1)
     return cart.add(ctype, pk, qty)
-    
+
 
 @cart_action(required=['ctype', 'pk'])
 def remove(data, cart):

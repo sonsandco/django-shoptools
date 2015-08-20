@@ -5,6 +5,6 @@ def calculate_shipping(items, options=None, order=None):
        Order instance will be passed, but not both.'''
 
     assert (options is None) != (order is None), \
-           'Pass options or order, not both'
+        'Pass options or order, not both'
 
     return 0

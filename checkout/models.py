@@ -36,7 +36,7 @@ class Order(models.Model, FullTransactionProtocol):
         (STATUS_PAYMENT_FAILED, "Payment Failed"),
         (STATUS_SHIPPED, "Shipped"),
     ]
-    
+
     secret = models.CharField(max_length=32, editable=False, default=make_uuid,
                               unique=True, db_index=True)
     name = models.CharField(u"Name", max_length=1023, default="")
@@ -46,64 +46,67 @@ class Order(models.Model, FullTransactionProtocol):
     city = models.CharField(u"Town / City", max_length=255)
     country = models.CharField(max_length=255, default=u'New Zealand')
     email = models.EmailField()
-    currency = models.CharField(max_length=3, editable=False, 
+    currency = models.CharField(max_length=3, editable=False,
                                 default=DEFAULT_CURRENCY)
     created = models.DateTimeField(default=datetime.now)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES,
                               default=STATUS_NEW)
-    amount_paid = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
+                                      default=0)
 
     lines = GenericRelation(OrderLine,
-                                    content_type_field='parent_content_type',
-                                    object_id_field='parent_object_id')
-    
+                            content_type_field='parent_content_type',
+                            object_id_field='parent_object_id')
+
     payments = GenericRelation(Transaction)
-    
+
     @models.permalink
     def get_success_url(self):
         return ('checkout_success', (self.secret,))
-    
+
     @models.permalink
     def get_absolute_url(self):
         return ('checkout_checkout', (self.secret,))
-    
+
     @property
     def invoice_number(self):
         return str(self.pk).zfill(5)
-    
+
     def __unicode__(self):
         return u"%s on %s" % (self.name, self.created)
-    
+
     def shipping_cost(self):
         return calculate_shipping(self.lines.all(), order=self)
-    
+
     def total(self):
         val = 0
         for line in self.lines.all():
             val += line.total
 
         return val + self.shipping_cost()
-    
+
     get_amount = total
-    
+
     def is_recurring(self):
         return False
 
-    def transaction_succeeded(self, transaction, interactive, status_updated):
+    def transaction_succeeded(self, transaction=None, interactive=False,
+                              status_updated=True):
         if status_updated:
-            self.amount_paid = transaction.amount
+            self.amount_paid = transaction.amount if transaction else 0
             self.status = self.STATUS_PAID
             self.save()
             send_email_receipt(self)
         return self.get_success_url()
-    
-    def transaction_failed(self, transaction, interactive, status_updated):
+
+    def transaction_failed(self, transaction=None, interactive=False,
+                           status_updated=True):
         if status_updated:
             self.status = self.STATUS_PAYMENT_FAILED
             self.save()
-        
+
         return self.get_absolute_url()
-    
+
     def get_lines(self):
         for line in self.lines.all():
             yield (line.description, line.quantity, line.total)

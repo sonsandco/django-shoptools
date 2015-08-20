@@ -101,8 +101,13 @@ def checkout(request, cart, secret=None):
                 cart.save_to(order)
                 cart.clear()
 
-            # and off we go to pay
-            return make_payment(order, request)
+            # and off we go to pay, if necessary
+            if order.total():
+                return make_payment(order, request)
+            else:
+                order.transaction_succeeded()
+                return redirect(success, order.secret)
+
         else:
             # Save posted data so the user doesn't have to re-enter it
             request.session[CHECKOUT_SESSION_KEY] = request.POST.dict()

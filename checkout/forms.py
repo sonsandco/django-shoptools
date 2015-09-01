@@ -5,7 +5,7 @@ from .models import Order
 
 class OrderForm(forms.ModelForm):
     sanity_check = forms.CharField(widget=forms.HiddenInput, required=False)
-    
+
     def clean(self):
         data = self.cleaned_data
         sanity_check = str(self.sanity_check) if self.sanity_check else None

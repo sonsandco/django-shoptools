@@ -14,12 +14,18 @@ CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
 SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
 
 
-class OrderLine(models.Model):
-    """OrderLine is the db-persisted version of a Cart item. It uses
-    the same ICartItem interface (see below) to get details, and is
-    intended to be attached to an object you provide. Your object can
-    be thought of as an Order, although it doesn't have to be; it
-    could equally support a "save this cart for later" feature.
+@property
+def NotImplementedField(self):
+    raise NotImplementedError
+
+
+class BaseOrderLine(models.Model):
+    """An OrderLine is the db-persisted version of a Cart item, created by
+    subclassing this model. It uses the same ICartItem interface (see below)
+    to get details, and is intended to be attached to an object you provide via
+    a parent_object ForeignKey. Your object can be thought of as an Order,
+    although it doesn't have to be; it could equally support a "save this cart
+    for later" feature.
 
     The advantage of this is that is lets your shop app support
     whatever payment/total cost logic it wants -- it might be a
@@ -29,11 +35,8 @@ class OrderLine(models.Model):
     This only handles recording items + quantities + calculated prices
     against some object.
     """
-    parent_content_type = models.ForeignKey(
-        ContentType, related_name="orderlines_via_parent")
-    parent_object_id = models.PositiveIntegerField()
-    parent_object = GenericForeignKey('parent_content_type',
-                                      'parent_object_id')
+
+    parent_object = NotImplementedField
 
     # item object *must* support ICartItem
     item_content_type = models.ForeignKey(ContentType,
@@ -51,6 +54,9 @@ class OrderLine(models.Model):
     description = models.CharField(max_length=255, blank=True)
     options = models.TextField(blank=True)
 
+    class Meta:
+        abstract = True
+
     def save(self, *args, **kwargs):
         assert isinstance(self.item, ICartItem)
 
@@ -63,7 +69,7 @@ class OrderLine(models.Model):
         if not self.description:
             self.description = self.item.cart_description()
 
-        return super(OrderLine, self).save(*args, **kwargs)
+        return super(BaseOrderLine, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return u"%s x %s: $%.2f" % (self.description, self.quantity,
@@ -247,10 +253,10 @@ class Cart(object):
     def total(self):
         return self.subtotal() + self.shipping_cost()
 
-    def save_to(self, obj):
+    def save_to(self, obj, orderline_model_cls):
         assert self._data and (self._data.get("rows", None) is not None)
         for row in self.rows():
-            line = OrderLine()
+            line = orderline_model_cls()
             line.parent_object = obj
             line.item = row.item
             line.quantity = row["qty"]

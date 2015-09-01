@@ -2,7 +2,6 @@ import json
 
 from django.http import HttpResponseRedirect, HttpResponse, \
     HttpResponseBadRequest, HttpResponseNotAllowed
-from django.core.urlresolvers import reverse
 from django.template.loader import get_template, TemplateDoesNotExist
 
 from .models import Cart

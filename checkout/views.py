@@ -1,7 +1,6 @@
 from json import dumps
 from functools import partial
 
-from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect
@@ -9,7 +8,7 @@ from django.views.decorators.cache import never_cache
 
 from cart.models import Cart
 from cart.actions import update_cart
-from dps.transactions import make_payment
+# from dps.transactions import make_payment
 # from paypal.transactions import make_payment
 
 from .forms import OrderForm
@@ -103,7 +102,8 @@ def checkout(request, cart, secret=None):
 
             # and off we go to pay, if necessary
             if order.total():
-                return make_payment(order, request)
+                raise Exception
+                # return make_payment(order, request)
             else:
                 order.transaction_succeeded()
                 return redirect(success, order.secret)
@@ -127,7 +127,7 @@ def checkout(request, cart, secret=None):
 def success(request, cart, secret):
     qs = Order.objects.filter(status__in=[Order.STATUS_PAID,
                                           Order.STATUS_SHIPPED])
-    order = get_object_or_404(Order, secret=secret)
+    order = get_object_or_404(qs, secret=secret)
 
     return {
         "order": order,

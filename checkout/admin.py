@@ -1,18 +1,18 @@
 from django.contrib import admin
 
-from cart.admin import OrderLineInlineAdmin
-from dps.admin import TransactionInlineAdmin
+from cart.admin import orderline_inline_factory
+# from dps.admin import TransactionInlineAdmin
 # from paypal.admin import TransactionInlineAdmin
 
-from .models import Order
+from .models import Order, OrderLine
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('name', 'email', 'city', 'country', 'amount_paid',
-                    'created', 'links')
+    list_display = ('name', 'account', 'email', 'city', 'country',
+                    'amount_paid', 'created', 'links')
     list_filter = ('status', 'created')
     inlines = [
-        OrderLineInlineAdmin,
+        orderline_inline_factory(OrderLine),
         # TransactionInlineAdmin,
     ]
     save_on_top = True

@@ -2,12 +2,10 @@ from datetime import datetime
 import uuid
 
 from django.db import models
-from django.contrib.contenttypes.fields import GenericRelation
-from django.core.urlresolvers import reverse
 from django.conf import settings
 
-from cart.models import OrderLine
-from dps.models import FullTransactionProtocol, Transaction
+from cart.models import BaseOrderLine
+# from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
 from .emails import send_email_receipt
@@ -24,7 +22,8 @@ def make_uuid():
     return str(u).replace('-', '')
 
 
-class Order(models.Model, FullTransactionProtocol):
+# class Order(models.Model, FullTransactionProtocol):
+class Order(models.Model):
     STATUS_NEW = "new"
     STATUS_PAID = "paid"
     STATUS_PAYMENT_FAILED = "payment_failed"
@@ -54,11 +53,8 @@ class Order(models.Model, FullTransactionProtocol):
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 
-    lines = GenericRelation(OrderLine,
-                            content_type_field='parent_content_type',
-                            object_id_field='parent_object_id')
-
-    payments = GenericRelation(Transaction)
+    account = models.ForeignKey('accounts.Account', null=True, blank=True)
+    # payments = GenericRelation(Transaction)
 
     @models.permalink
     def get_success_url(self):
@@ -110,3 +106,7 @@ class Order(models.Model, FullTransactionProtocol):
     def get_lines(self):
         for line in self.lines.all():
             yield (line.description, line.quantity, line.total)
+
+
+class OrderLine(BaseOrderLine):
+    parent_object = models.ForeignKey(Order)

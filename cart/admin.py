@@ -1,25 +1,23 @@
-from django.contrib.contenttypes.admin import GenericTabularInline
+from django.contrib import admin
 from django import forms
 
-from cart.models import OrderLine
 
+def orderline_inline_factory(model_cls):
+    class OrderLineForm(forms.ModelForm):
+        # TODO options readonly field
 
-class OrderLineForm(forms.ModelForm):
-    # TODO options readonly field
+        class Meta:
+            model = model_cls
+            exclude = []
 
-    class Meta:
-        model = OrderLine
-        exclude = []
+    class OrderLineInline(admin.TabularInline):
+        '''Base admin class for editing BaseOrderLine subclasses inline.'''
 
+        model = model_cls
+        exclude = ('item_content_type', 'item_object_id', 'created')
+        form = OrderLineForm
 
-class OrderLineInlineAdmin(GenericTabularInline):
-    '''Base admin class for editing OrderLine instances inline.'''
+        def has_add_permission(self, request):
+            return False
 
-    model = OrderLine
-    ct_field = 'parent_content_type'
-    ct_fk_field = 'parent_object_id'
-    exclude = ('item_content_type', 'item_object_id', 'created')
-    form = OrderLineForm
-
-    def has_add_permission(self, request):
-        return False
+    return OrderLineInline

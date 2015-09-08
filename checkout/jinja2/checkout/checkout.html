@@ -5,45 +5,43 @@
 {% block content %}
   <article class="checkout">
     <h3>Your Order</h3>
-    
+
     {% if cart_errors or form.errors %}
       <p class="error">Please correct the errors below</p>
     {% endif %}
-    
-    
+
+
     {% if cart.rows()|length or order %}
       {% if order %}
         {% include 'checkout/snippets/order_lines.html' %}
       {% else %}
         <form action="{{ request.path_info }}" method="post" class="cart">
-          {{ csrf_middleware_token }}
+          <input type="hidden" name="csrfmiddlewaretoken"
+                 value="{{ csrf_token }}">
           <input type="hidden" name="form" value="cart">
-          
+
           <ul class="errorlist">
             {% for error in cart_errors %}
               <li>{{ error }}</li>
             {% endfor %}
           </ul>
-          
+
           <ul class="cart">
             {% for row in cart.rows() %}
               <li>
-                <a href="{{ row.item().item.get_absolute_url() }}" 
+                <a href="{{ row.item.get_absolute_url() }}"
                      class="product">
-                  <span class="item">{{ row.item().item }}</span>
-                  <span class="colour">{{ row.item().colour }}</span>
-                  <span class="size">Size: {{ row.item().get_size_display() }}
-                  </span>
+                  <span class="item">{{ row.item }}</span>
                 </a>
-                
+
                 <span class="quantity">
-                  {# <input type="number" name="qty:{{ row['key'] }}" 
+                  {# <input type="number" name="qty:{{ row['key'] }}"
                          value="{{ row['qty'] }}"> #}
                   {{ 'x%s' % row['qty'] if (row['qty'] > 1) else '' }}
                 </span>
-                
+
                 {# <input type="submit" value="Update" class="update"> #}
-                
+
                 <span class="price">
                   ${{ '%2f' % row.line_total() }} {{ currency }}
                 </span>
@@ -68,26 +66,27 @@
           </ul>
         </form>
       {% endif %}
-        
-      <form action="{{ request.path_info }}" method="post" 
+
+      <form action="{{ request.path_info }}" method="post"
             class="delivery">
-        {{ csrf_middleware_token }}
+        <input type="hidden" name="csrfmiddlewaretoken"
+               value="{{ csrf_token }}">
         <input type="hidden" name="form" value="checkout">
         {% for field in form.hidden_fields() %}{{ field|safe }}{% endfor %}
-        
+
         {{ form.non_field_errors()|safe }}
-        
+
         {% for field in form.visible_fields() %}
           {% include 'snippets/form_field.html' %}
         {% endfor %}
-        
+
         <div class="submit">
           <input type="submit" name="confirm" value="Continue to payment">
         </div>
       </form>
     {% else %}
       <p class="empty">
-        No products in your cart. 
+        No products in your cart.
       </p>
     {% endif %}
   </article>

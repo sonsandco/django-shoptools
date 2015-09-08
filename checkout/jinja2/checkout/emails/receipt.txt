@@ -1,12 +1,12 @@
-Thanks - your order has been received. 
+Thanks - your order has been received.
 
 Order details:
 
 {% for line in order.get_lines() %}
 {{ line[1] }}x {{ line[0] }} - ${{ line[2] }}{% endfor %}
 
-Shipping: ${{ order.shipping_cost() }}
-Total: ${{ order.get_amount() }}
+Shipping: ${{ order.shipping_cost }}
+Total: ${{ order.total }}
 
 {{ order.name }}
 {{ order.email }}

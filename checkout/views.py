@@ -20,7 +20,8 @@ CHECKOUT_SESSION_KEY = 'checkout-data'
 def checkout_view(wrapped_view):
     '''Supplies request and current cart to wrapped view function, and returns
        partial html response for ajax requests. Assumes template filename
-       corresponds to the view function name.'''
+       corresponds to the view function name, unless template is provided
+       by the view.'''
 
     @never_cache
     def view_func(request, *args):
@@ -39,12 +40,13 @@ def checkout_view(wrapped_view):
         elif isinstance(result, dict):
             ctx.update(result)
 
+        template = result.get('template', wrapped_view.__name__)
         if request.is_ajax():
-            template = 'checkout/%s_ajax.html' % wrapped_view.__name__
+            template_name = 'checkout/%s_ajax.html' % template
         else:
-            template = 'checkout/%s.html' % wrapped_view.__name__
+            template_name = 'checkout/%s.html' % template
 
-        content = get_template(template).render(ctx, request=request)
+        content = get_template(template_name).render(ctx, request=request)
         return HttpResponse(content)
 
     view_func.__name__ = wrapped_view.__name__
@@ -54,15 +56,27 @@ def checkout_view(wrapped_view):
 
 @checkout_view
 def cart(request, cart):
-    pass
+    return {}
 
 
 @checkout_view
 def checkout(request, cart, secret=None):
+    """Handle checkout process - if a secret is passed, get the corresponding
+       order, and if the order is completed, show the success page, otherwise
+       show the checkout form. If no secret, use the session cart.
+    """
+
     if secret:
         order = get_object_or_404(Order, secret=secret)
         if order.status in [Order.STATUS_PAID, Order.STATUS_SHIPPED]:
-            return redirect(success, secret)
+            return {
+                "template": "success",
+                "order": order,
+            }
+    else:
+        order = None
+
+    if order:
         get_form = partial(OrderForm, instance=order)
 
         def sanity_check():
@@ -70,7 +84,6 @@ def checkout(request, cart, secret=None):
 
         new_order = False
     else:
-        order = None
         # if any shipping options match form fields, prefill them
         initial = request.session.get(CHECKOUT_SESSION_KEY,
                                       cart.get_shipping_options())
@@ -102,11 +115,12 @@ def checkout(request, cart, secret=None):
 
             # and off we go to pay, if necessary
             if order.total():
+                # TODO make this configurable
                 raise Exception
                 # return make_payment(order, request)
             else:
                 order.transaction_succeeded()
-                return redirect(success, order.secret)
+                return redirect(order)
 
         else:
             # Save posted data so the user doesn't have to re-enter it
@@ -120,15 +134,4 @@ def checkout(request, cart, secret=None):
         "cart": cart,
         "order": order,
         'cart_errors': cart_errors,
-    }
-
-
-@checkout_view
-def success(request, cart, secret):
-    qs = Order.objects.filter(status__in=[Order.STATUS_PAID,
-                                          Order.STATUS_SHIPPED])
-    order = get_object_or_404(qs, secret=secret)
-
-    return {
-        "order": order,
     }

@@ -16,8 +16,7 @@
         {% include 'checkout/snippets/order_lines.html' %}
       {% else %}
         <form action="{{ request.path_info }}" method="post" class="cart">
-          <input type="hidden" name="csrfmiddlewaretoken"
-                 value="{{ csrf_token }}">
+          {{ csrf_input }}
           <input type="hidden" name="form" value="cart">
 
           <ul class="errorlist">
@@ -51,8 +50,8 @@
             <li class="shipping">
               <h6>Shipping:</h6>
               <span class="cost">
-                {% if cart.shipping_cost() %}
-                  ${{ '%2f' % cart.shipping_cost() }}
+                {% if cart.shipping_cost %}
+                  ${{ '%2f' % cart.shipping_cost }}
                 {% else %}
                   Free within NZ
                 {% endif %}
@@ -69,8 +68,7 @@
 
       <form action="{{ request.path_info }}" method="post"
             class="delivery">
-        <input type="hidden" name="csrfmiddlewaretoken"
-               value="{{ csrf_token }}">
+        {{ csrf_input }}
         <input type="hidden" name="form" value="checkout">
         {% for field in form.hidden_fields() %}{{ field|safe }}{% endfor %}
 

@@ -46,16 +46,29 @@ class ICart(object):
     """Define interface for "cart" objects, which may be a session-based
        "cart" or a db-saved "order". """
 
-    # TODO - fill out
+    shipping_cost = NotImplementedProperty
+    subtotal = NotImplementedProperty
+    total = NotImplementedProperty
 
     def get_lines(self):
         raise NotImplementedError()
 
+    def count(self):
+        raise NotImplementedError()
+
+    # Other cart methods:
+    # as_dict(self)
+    # update_shipping(self, options)
+    # get_shipping_options(self)
+    # add(self, ctype, pk, qty=1, opts={})
+    # remove(self, ctype, pk)
+    # update_options(self, ctype, pk, **options)
+    # update_quantity(self, ctype, pk, qty)
+    # clear(self)
+
 
 class ICartLine(object):
     """Define interface for cart lines, which are attached to an ICart. """
-
-    # TODO - fill out
 
     item = NotImplementedProperty
     quantity = NotImplementedProperty
@@ -161,22 +174,14 @@ class Cart(ICart):
                                             DEFAULT_CURRENCY)
         self._data = self.request.session.get(self.session_key, None)
 
-    def _init_session_cart(self):
-        if self._data is None:
-            data = {"lines": []}
-            self._data = self.request.session[self.session_key] = data
-
     def as_dict(self):
         data = {
             'count': self.count(),
-            'shipping_cost': self.shipping_cost(),
-            'total': str(self.total()),
+            'shipping_cost': float(self.shipping_cost),
+            'total': float(self.total),
             'lines': [dict(line) for line in self.get_lines()],
         }
         return data
-
-    def empty(self):
-        return self._data is None or len(self._data["lines"]) is 0
 
     def update_shipping(self, options):
         self._init_session_cart()
@@ -197,7 +202,7 @@ class Cart(ICart):
         except TypeError:
             qty = 1
 
-        idx = self.line_index(ctype, pk)
+        idx = self._line_index(ctype, pk)
         if idx is not None:
             # Already in the cart, so update the existing line
             line = self._data["lines"][idx]
@@ -210,18 +215,8 @@ class Cart(ICart):
         self.request.session.modified = True
         return True
 
-    def line_index(self, ctype, pk):
-        """Returns the line index for a given ctype/pk, if it's already in the
-           cart, or None otherwise."""
-
-        if self._data is not None:
-            for i in range(len(self._data["lines"])):
-                if self._data["lines"][i]["key"] == create_key(ctype, pk):
-                    return i
-        return None
-
     def remove(self, ctype, pk):
-        idx = self.line_index(ctype, pk)
+        idx = self._line_index(ctype, pk)
         if idx is not None:  # might be 0
             del self._data["lines"][idx]
             # self.update_total()
@@ -231,7 +226,7 @@ class Cart(ICart):
         return False
 
     def update_options(self, ctype, pk, **options):
-        idx = self.line_index(ctype, pk)
+        idx = self._line_index(ctype, pk)
         if idx is not None:  # might be 0
             self._data["lines"][idx]['options'].update(options)
             self.request.session.modified = True
@@ -240,7 +235,7 @@ class Cart(ICart):
         return False
 
     def update_quantity(self, ctype, pk, qty):
-        idx = self.line_index(ctype, pk)
+        idx = self._line_index(ctype, pk)
         if idx is not None:  # might be 0
             self._data["lines"][idx]['qty'] = qty
             # self.update_total()
@@ -260,6 +255,7 @@ class Cart(ICart):
             return 0
         return sum(r['qty'] for r in self._data["lines"])
 
+    @property
     def shipping_cost(self):
         if SHIPPING_CALCULATOR:
             bits = SHIPPING_CALCULATOR.split('.')
@@ -269,14 +265,16 @@ class Cart(ICart):
             return calc_func(self.get_lines(), options=shipping_options)
         return 0
 
+    @property
     def subtotal(self):
         if self._data is None:
             return 0
         return decimal.Decimal(
             sum(line.total for line in self.get_lines()))
 
+    @property
     def total(self):
-        return self.subtotal() + self.shipping_cost()
+        return self.subtotal + self.shipping_cost
 
     def save_to(self, obj, orderline_model_cls):
         assert isinstance(obj, ICart)
@@ -295,3 +293,19 @@ class Cart(ICart):
         if self._data is not None:
             del self.request.session[self.session_key]
             self._data = None
+
+    # Private methods
+    def _init_session_cart(self):
+        if self._data is None:
+            data = {"lines": []}
+            self._data = self.request.session[self.session_key] = data
+
+    def _line_index(self, ctype, pk):
+        """Returns the line index for a given ctype/pk, if it's already in the
+           cart, or None otherwise."""
+
+        if self._data is not None:
+            for i in range(len(self._data["lines"])):
+                if self._data["lines"][i]["key"] == create_key(ctype, pk):
+                    return i
+        return None

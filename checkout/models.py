@@ -4,7 +4,7 @@ import uuid
 from django.db import models
 from django.conf import settings
 
-from cart.models import BaseOrderLine
+from cart.models import BaseOrderLine, ICart
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
@@ -23,7 +23,7 @@ def make_uuid():
 
 
 # class Order(models.Model, FullTransactionProtocol):
-class Order(models.Model):
+class Order(models.Model, ICart):
     STATUS_NEW = "new"
     STATUS_PAID = "paid"
     STATUS_PAYMENT_FAILED = "payment_failed"
@@ -57,12 +57,8 @@ class Order(models.Model):
     # payments = GenericRelation(Transaction)
 
     @models.permalink
-    def get_success_url(self):
-        return ('checkout_success', (self.secret,))
-
-    @models.permalink
     def get_absolute_url(self):
-        return ('checkout_checkout', (self.secret,))
+        return ('checkout_checkout', (self.secret, ))
 
     @property
     def invoice_number(self):
@@ -71,15 +67,19 @@ class Order(models.Model):
     def __unicode__(self):
         return u"%s on %s" % (self.name, self.created)
 
+    @property
     def shipping_cost(self):
         return calculate_shipping(self.lines.all(), order=self)
 
-    def total(self):
-        val = 0
-        for line in self.lines.all():
-            val += line.total
+    @property
+    def subtotal(self):
+        return sum(line.total for line in self.lines.all())
 
-        return val + self.shipping_cost()
+    @property
+    def total(self):
+        return self.subtotal + self.shipping_cost
+
+    # django-dps integration:
 
     get_amount = total
 

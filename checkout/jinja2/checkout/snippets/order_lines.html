@@ -21,7 +21,7 @@
   {% endfor %}
   <li class="shipping">
     <h6>Shipping:</h6>
-    <span class="cost">${{ order.shipping_cost()|floatformat(-2) }}</span>
+    <span class="cost">${{ order.shipping_cost|floatformat(-2) }}</span>
   </li>
   <li class="total">
     <h6>Total:</h6>

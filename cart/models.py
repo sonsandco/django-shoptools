@@ -14,12 +14,49 @@ CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
 SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
 
 
+# TODO
+# the Cart and the Order object should share an interface
+# so should CartRow and OrderLine
+# in a template we should be able to treat a db-saved or session "cart"
+# exactly the same
+
+
 @property
-def NotImplementedField(self):
+def NotImplementedProperty(self):
     raise NotImplementedError
 
 
-class BaseOrderLine(models.Model):
+class ICartItem(object):
+    """Defines interface for objects which may be added to a cart. """
+
+    def cart_description(self):
+        raise NotImplementedError()
+
+    def cart_reference(self):
+        raise NotImplementedError()
+
+    def cart_line_total(self, qty, currency):
+        # currently must return a float/int, not decimal, due to django's
+        # serialization limitations - see
+        # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
+        raise NotImplementedError()
+
+
+class ICart(object):
+    """Define interface for "cart" objects, which may be db or session. """
+
+    # TODO - fill out
+
+
+class ICartLine(object):
+    """Define interface for cart lines, which are attacehd to an ICart. """
+
+    # TODO - fill out
+
+    item = NotImplementedProperty
+
+
+class BaseOrderLine(models.Model, ICartLine):
     """An OrderLine is the db-persisted version of a Cart item, created by
     subclassing this model. It uses the same ICartItem interface (see below)
     to get details, and is intended to be attached to an object you provide via
@@ -36,11 +73,10 @@ class BaseOrderLine(models.Model):
     against some object.
     """
 
-    parent_object = NotImplementedField
+    parent_object = NotImplementedProperty
 
     # item object *must* support ICartItem
-    item_content_type = models.ForeignKey(ContentType,
-                                          related_name="orderlines_via_item")
+    item_content_type = models.ForeignKey(ContentType)
     item_object_id = models.PositiveIntegerField()
     item = GenericForeignKey('item_content_type', 'item_object_id')
 
@@ -48,8 +84,6 @@ class BaseOrderLine(models.Model):
     quantity = models.IntegerField()
     # currency = models.CharField(max_length=3, editable=False,
     #    default=DEFAULT_CURRENCY)
-    # this supports line totals up to 999,999.99, which is
-    # obviously completely excessive.
     total = models.DecimalField(max_digits=8, decimal_places=2)
     description = models.CharField(max_length=255, blank=True)
     options = models.TextField(blank=True)
@@ -76,7 +110,7 @@ class BaseOrderLine(models.Model):
                                     self.total)
 
 
-class CartRow(dict):
+class CartRow(dict, ICartLine):
     '''Thin wrapper around dict providing some convenience methods for
        accessing computed information about the row.'''
 
@@ -99,8 +133,7 @@ class CartRow(dict):
         return self.item.cart_description()
 
 
-class Cart(object):
-
+class Cart(ICart):
     def __init__(self, request, session_key=None):
         self.request = request
         self.session_key = session_key or DEFAULT_SESSION_KEY
@@ -144,9 +177,7 @@ class Cart(object):
     def add(self, ctype, pk, qty=1, opts={}):
         app_label, model = ctype.split('.')
         ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
-
-        if not issubclass(ctype_obj.model_class(), ICartItem):
-            return False
+        assert issubclass(ctype_obj.model_class(), ICartItem)
 
         try:
             qty = int(qty)
@@ -255,6 +286,8 @@ class Cart(object):
         return self.subtotal() + self.shipping_cost()
 
     def save_to(self, obj, orderline_model_cls):
+        assert isinstance(obj, ICart)
+        assert issubclass(orderline_model_cls, ICartItem)
         assert self._data and (self._data.get("rows", None) is not None)
         for row in self.rows():
             line = orderline_model_cls()
@@ -269,18 +302,3 @@ class Cart(object):
         if self._data is not None:
             del self.request.session[self.session_key]
             self._data = None
-
-
-class ICartItem(object):
-
-    def cart_description(self):
-        raise NotImplementedError()
-
-    def cart_reference(self):
-        raise NotImplementedError()
-
-    def cart_line_total(self, qty, currency):
-        # currently must return a float/int, not decimal, due to django's
-        # serialization limitations - see
-        # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
-        raise NotImplementedError()

@@ -1,4 +1,4 @@
-from .models import Cart
+from .models import Cart, unpack_key
 
 
 def cart_action(required=[]):
@@ -29,7 +29,7 @@ def update_cart(data, cart):
     # remove things if a remove button was clicked
     key_to_remove = data.get('remove', None)
     if key_to_remove:
-        cart.remove(*cart.unpack_key(key_to_remove))
+        cart.remove(*unpack_key(key_to_remove))
     else:
         # otherwise, update quantities
         prefix = "qty:"
@@ -41,14 +41,14 @@ def update_cart(data, cart):
                 except ValueError:
                     pass
                 else:
-                    cart.update_quantity(*cart.unpack_key(key), qty=qty)
+                    cart.update_quantity(*unpack_key(key), qty=qty)
 
         # and options
         prefix = "option:"
         for (name, val) in data.items():
             if name.startswith(prefix):
                 key, option = name[len(prefix):].split(':')
-                cart.update_options(*cart.unpack_key(key), **{option: val})
+                cart.update_options(*unpack_key(key), **{option: val})
 
     return True
 

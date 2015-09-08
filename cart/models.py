@@ -16,7 +16,7 @@ SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
 
 # TODO
 # the Cart and the Order object should share an interface
-# so should CartRow and OrderLine
+# so should CartLine and OrderLine
 # in a template we should be able to treat a db-saved or session "cart"
 # exactly the same
 
@@ -43,17 +43,25 @@ class ICartItem(object):
 
 
 class ICart(object):
-    """Define interface for "cart" objects, which may be db or session. """
+    """Define interface for "cart" objects, which may be a session-based
+       "cart" or a db-saved "order". """
 
     # TODO - fill out
 
+    def get_lines(self):
+        raise NotImplementedError()
+
 
 class ICartLine(object):
-    """Define interface for cart lines, which are attacehd to an ICart. """
+    """Define interface for cart lines, which are attached to an ICart. """
 
     # TODO - fill out
 
     item = NotImplementedProperty
+    quantity = NotImplementedProperty
+    total = NotImplementedProperty
+    description = NotImplementedProperty
+    options = NotImplementedProperty
 
 
 class BaseOrderLine(models.Model, ICartLine):
@@ -94,13 +102,13 @@ class BaseOrderLine(models.Model, ICartLine):
     def save(self, *args, **kwargs):
         assert isinstance(self.item, ICartItem)
 
-        if not self.total:
+        if self.total is None:
             # if the parent has a currency field, use it
             currency = getattr(self.parent_object, 'currency',
                                DEFAULT_CURRENCY)
             self.total = self.item.cart_line_total(self.quantity, currency)
 
-        if not self.description:
+        if self.description is None:
             self.description = self.item.cart_description()
 
         return super(BaseOrderLine, self).save(*args, **kwargs)
@@ -110,27 +118,39 @@ class BaseOrderLine(models.Model, ICartLine):
                                     self.total)
 
 
-class CartRow(dict, ICartLine):
+def create_key(ctype, pk):
+    return u'|'.join((ctype, unicode(pk)))
+
+
+def unpack_key(key):
+    (ctype, pk) = key.split('|')
+    return (ctype, pk)
+
+
+def get_item_from_key(key):
+    ctype, pk = unpack_key(key)
+    content_type = ContentType.objects \
+        .get_by_natural_key(*ctype.split("."))
+    return content_type.get_object_for_this_type(pk=pk)
+
+
+class CartLine(dict, ICartLine):
     '''Thin wrapper around dict providing some convenience methods for
-       accessing computed information about the row.'''
+       accessing computed information about the line, according to ICartLine.
+    '''
 
     def __init__(self, **kwargs):
-        assert sorted(kwargs.keys()) == ['key', 'line_total', 'options', 'qty']
-        return super(CartRow, self).__init__(**kwargs)
+        assert sorted(kwargs.keys()) == ['currency', 'key', 'options', 'qty']
+        return super(CartLine, self).__init__(**kwargs)
 
     def __setitem__(self, *args):
-        raise Exception(u"Sorry, CartRow instances are immutable.")
+        raise Exception(u"Sorry, CartLine instances are immutable.")
 
-    @property
-    def item(self):
-        return Cart.get_item(self['key'])
-
-    def line_total(self):
-        return self['line_total']
-        # return self.item.cart_line_total(self['qty'], currency)
-
-    def description(self):
-        return self.item.cart_description()
+    item = property(lambda s: get_item_from_key(s['key']))
+    quantity = property(lambda s: s['qty'])
+    total = property(lambda s: s.item.cart_line_total(s['qty'], s['currency']))
+    description = property(lambda s: s.item.cart_description())
+    options = property(lambda s: s['options'])
 
 
 class Cart(ICart):
@@ -143,7 +163,7 @@ class Cart(ICart):
 
     def _init_session_cart(self):
         if self._data is None:
-            data = {"rows": []}
+            data = {"lines": []}
             self._data = self.request.session[self.session_key] = data
 
     def as_dict(self):
@@ -151,19 +171,12 @@ class Cart(ICart):
             'count': self.count(),
             'shipping_cost': self.shipping_cost(),
             'total': str(self.total()),
-            'lines': [],
+            'lines': [dict(line) for line in self.get_lines()],
         }
-        for row in self.rows():
-            line = dict(row)
-            line.update({
-                'item': unicode(row.item),
-                'line_total': row.line_total(),
-            })
-            data['lines'].append(line)
         return data
 
     def empty(self):
-        return self._data is None or len(self._data["rows"]) is 0
+        return self._data is None or len(self._data["lines"]) is 0
 
     def update_shipping(self, options):
         self._init_session_cart()
@@ -184,33 +197,33 @@ class Cart(ICart):
         except TypeError:
             qty = 1
 
-        idx = self.row_index(ctype, pk)
+        idx = self.line_index(ctype, pk)
         if idx is not None:
-            # Already in the cart, so update the existing row
-            row = self._data["rows"][idx]
-            return self.update_quantity(ctype, pk, qty + row["qty"])
+            # Already in the cart, so update the existing line
+            line = self._data["lines"][idx]
+            return self.update_quantity(ctype, pk, qty + line["qty"])
 
         self._init_session_cart()
-        row = {'key': Cart.create_key(ctype, pk), 'qty': qty, 'options': opts}
-        self._data["rows"].append(row)
+        line = {'key': create_key(ctype, pk), 'qty': qty, 'options': opts}
+        self._data["lines"].append(line)
         # self.update_total()
         self.request.session.modified = True
         return True
 
-    def row_index(self, ctype, pk):
-        """Returns the row index for a given ctype/pk, if it's already in the
+    def line_index(self, ctype, pk):
+        """Returns the line index for a given ctype/pk, if it's already in the
            cart, or None otherwise."""
 
         if self._data is not None:
-            for i in range(len(self._data["rows"])):
-                if self._data["rows"][i]["key"] == self.create_key(ctype, pk):
+            for i in range(len(self._data["lines"])):
+                if self._data["lines"][i]["key"] == create_key(ctype, pk):
                     return i
         return None
 
     def remove(self, ctype, pk):
-        idx = self.row_index(ctype, pk)
+        idx = self.line_index(ctype, pk)
         if idx is not None:  # might be 0
-            del self._data["rows"][idx]
+            del self._data["lines"][idx]
             # self.update_total()
             self.request.session.modified = True
             return True
@@ -218,55 +231,34 @@ class Cart(ICart):
         return False
 
     def update_options(self, ctype, pk, **options):
-        idx = self.row_index(ctype, pk)
+        idx = self.line_index(ctype, pk)
         if idx is not None:  # might be 0
-            self._data["rows"][idx]['options'].update(options)
+            self._data["lines"][idx]['options'].update(options)
             self.request.session.modified = True
             return True
 
         return False
 
     def update_quantity(self, ctype, pk, qty):
-        idx = self.row_index(ctype, pk)
+        idx = self.line_index(ctype, pk)
         if idx is not None:  # might be 0
-            self._data["rows"][idx]['qty'] = qty
+            self._data["lines"][idx]['qty'] = qty
             # self.update_total()
             self.request.session.modified = True
             return True
 
         return False
 
-    @staticmethod
-    def get_item(key):
-        ctype, pk = Cart.unpack_key(key)
-        content_type = ContentType.objects \
-            .get_by_natural_key(*ctype.split("."))
-        return content_type.get_object_for_this_type(pk=pk)
-
-    @staticmethod
-    def create_key(ctype, pk):
-        return u'|'.join((ctype, unicode(pk)))
-
-    @staticmethod
-    def unpack_key(key):
-        (ctype, pk) = key.split('|')
-        return (ctype, pk)
-
-    def row(self, **data):
-        assert sorted(data.keys()) == ['key', 'options', 'qty']
-        item = self.get_item(data['key'])
-        data['line_total'] = item.cart_line_total(data['qty'], self.currency)
-        return CartRow(**data)
-
-    def rows(self):
+    def get_lines(self):
         if self._data is None:
             return []
-        return [self.row(**row) for row in self._data["rows"]]
+        return [CartLine(currency=self.currency, **line)
+                for line in self._data["lines"]]
 
     def count(self):
         if self._data is None:
             return 0
-        return sum(r['qty'] for r in self._data["rows"])
+        return sum(r['qty'] for r in self._data["lines"])
 
     def shipping_cost(self):
         if SHIPPING_CALCULATOR:
@@ -274,13 +266,14 @@ class Cart(ICart):
             calc_module = importlib.import_module('.'.join(bits[:-1]))
             calc_func = getattr(calc_module, bits[-1])
             shipping_options = self.get_shipping_options()
-            return calc_func(self.rows(), options=shipping_options)
+            return calc_func(self.get_lines(), options=shipping_options)
         return 0
 
     def subtotal(self):
         if self._data is None:
             return 0
-        return decimal.Decimal(sum(row.line_total() for row in self.rows()))
+        return decimal.Decimal(
+            sum(line.total for line in self.get_lines()))
 
     def total(self):
         return self.subtotal() + self.shipping_cost()
@@ -288,14 +281,14 @@ class Cart(ICart):
     def save_to(self, obj, orderline_model_cls):
         assert isinstance(obj, ICart)
         assert issubclass(orderline_model_cls, ICartItem)
-        assert self._data and (self._data.get("rows", None) is not None)
-        for row in self.rows():
+        assert self._data and (self._data.get("lines", None) is not None)
+        for cart_line in self.get_lines():
             line = orderline_model_cls()
             line.parent_object = obj
-            line.item = row.item
-            line.quantity = row["qty"]
+            line.item = cart_line.item
+            line.quantity = cart_line["qty"]
             line.currency = self.currency
-            line.options = unicode(row["options"])
+            line.options = unicode(cart_line["options"])
             line.save()
 
     def clear(self):

@@ -11,7 +11,7 @@
     {% endif %}
 
 
-    {% if cart.rows()|length or order %}
+    {% if cart.get_lines()|length or order %}
       {% if order %}
         {% include 'checkout/snippets/order_lines.html' %}
       {% else %}
@@ -27,25 +27,25 @@
           </ul>
 
           <ul class="cart">
-            {% for row in cart.rows() %}
+            {% for line in cart.get_lines() %}
               <li>
-                <a href="{{ row.item.get_absolute_url() }}"
+                <a href="{{ line.item.get_absolute_url() }}"
                      class="product">
-                  <span class="item">{{ row.item }}</span>
+                  <span class="item">{{ line.item }}</span>
                 </a>
 
                 <span class="quantity">
-                  {# <input type="number" name="qty:{{ row['key'] }}"
-                         value="{{ row['qty'] }}"> #}
-                  {{ 'x%s' % row['qty'] if (row['qty'] > 1) else '' }}
+                  {# <input type="number" name="qty:{{ line['key'] }}"
+                         value="{{ line['qty'] }}"> #}
+                  {{ 'x%s' % line['qty'] if (line['qty'] > 1) else '' }}
                 </span>
 
                 {# <input type="submit" value="Update" class="update"> #}
 
                 <span class="price">
-                  ${{ '%2f' % row.line_total() }} {{ currency }}
+                  ${{ '%2f' % line.line_total() }} {{ currency }}
                 </span>
-                <button name="remove" value="{{ row['key'] }}">Remove</button>
+                <button name="remove" value="{{ line['key'] }}">Remove</button>
               </li>
             {% endfor %}
             <li class="shipping">

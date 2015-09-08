@@ -2,8 +2,8 @@
 <ul class="cart">
   {% for line in order.lines.all() %}
     <li>
-      <div class="row">
-        <a href="{{ line.item_object.item.get_absolute_url() }}" 
+      <div class="line">
+        <a href="{{ line.item_object.item.get_absolute_url() }}"
              class="product">
           <span class="item">{{ line.item_object.item }}</span>
           <span class="colour">{{ line.item_object.colour }}</span>
@@ -12,7 +12,7 @@
         <span class="quantity">
           {{ 'x%s' % line.quantity if (line.quantity > 1) else '' }}
         </span>
-                
+
         <span class="price">
           ${{ line.total|floatformat(-2) }} {{ currency }}
         </span>
@@ -28,5 +28,5 @@
     <span class="cost">${{ order.get_amount()|floatformat(-2) }}</span>
     <span class="gst">inc. GST</span>
   </li>
-  
+
 </ul>

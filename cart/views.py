@@ -56,6 +56,6 @@ def cart_view(action=None, session_key=None):
 get_cart = cart_view()
 update_cart = cart_view(actions.update_cart)
 add = cart_view(actions.add)
-remove = cart_view(actions.remove)
+quantity = cart_view(actions.quantity)
 clear = cart_view(actions.clear)
 update_shipping = cart_view(actions.update_shipping)

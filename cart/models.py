@@ -196,11 +196,7 @@ class Cart(ICart):
         app_label, model = ctype.split('.')
         ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
         assert issubclass(ctype_obj.model_class(), ICartItem)
-
-        try:
-            qty = int(qty)
-        except TypeError:
-            qty = 1
+        assert isinstance(qty, int)
 
         idx = self._line_index(ctype, pk)
         if idx is not None:
@@ -235,10 +231,14 @@ class Cart(ICart):
         return False
 
     def update_quantity(self, ctype, pk, qty):
+        assert isinstance(qty, int)
+
+        if qty == 0:
+            return self.remove(ctype, pk)
+
         idx = self._line_index(ctype, pk)
         if idx is not None:  # might be 0
             self._data["lines"][idx]['qty'] = qty
-            # self.update_total()
             self.request.session.modified = True
             return True
 

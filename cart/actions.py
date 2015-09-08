@@ -53,19 +53,22 @@ def update_cart(data, cart):
     return True
 
 
+@cart_action(required=['ctype', 'pk', 'qty'])
+def quantity(data, cart):
+    try:
+        qty = int(data["qty"])
+    except ValueError:
+        return False
+    return cart.update_quantity(data["ctype"], data["pk"], qty)
+
+
 @cart_action(required=['ctype', 'pk'])
 def add(data, cart):
-    ctype = data["ctype"]
-    pk = data["pk"]
-    qty = data.get("qty", 1)
-    return cart.add(ctype, pk, qty)
-
-
-@cart_action(required=['ctype', 'pk'])
-def remove(data, cart):
-    ctype = data["ctype"]
-    pk = data["pk"]
-    return cart.remove(ctype, pk)
+    try:
+        qty = int(data.get("qty", 1))
+    except ValueError:
+        return False
+    return cart.add(data["ctype"], data["pk"], qty)
 
 
 @cart_action(required=['confirm'])

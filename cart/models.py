@@ -8,7 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
 
-CART_SESSION_KEY = getattr(settings, 'CART_SESSION_KEY', 'cart')
+DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
 SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
@@ -101,16 +101,17 @@ class CartRow(dict):
 
 class Cart(object):
 
-    def __init__(self, request):
+    def __init__(self, request, session_key=None):
         self.request = request
+        self.session_key = session_key or DEFAULT_SESSION_KEY
         self.currency = request.COOKIES.get(CURRENCY_COOKIE_NAME,
                                             DEFAULT_CURRENCY)
-        self._data = self.request.session.get(CART_SESSION_KEY, None)
+        self._data = self.request.session.get(self.session_key, None)
 
     def _init_session_cart(self):
         if self._data is None:
             data = {"rows": []}
-            self._data = self.request.session[CART_SESSION_KEY] = data
+            self._data = self.request.session[self.session_key] = data
 
     def as_dict(self):
         data = {
@@ -266,7 +267,7 @@ class Cart(object):
 
     def clear(self):
         if self._data is not None:
-            del self.request.session[CART_SESSION_KEY]
+            del self.request.session[self.session_key]
             self._data = None
 
 

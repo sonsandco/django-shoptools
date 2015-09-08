@@ -8,7 +8,7 @@ from .models import Cart
 from . import actions
 
 
-def cart_view(action=None):
+def cart_view(action=None, session_key=None):
     '''Decorator supplies request and current cart as arguments to the action
        function. Returns appropriate errors if the request method is not POST,
        or if any required params are missing.
@@ -22,7 +22,7 @@ def cart_view(action=None):
         if action and not data:
             return HttpResponseNotAllowed(['POST'])
 
-        cart = Cart(request)
+        cart = Cart(request, session_key=session_key)
         if action:
             success = action(data, cart)
             if not success:

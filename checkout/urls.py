@@ -1,8 +1,18 @@
 from django.conf.urls import url
 
+import cart.views
 from . import views
 
-urlpatterns = (
+urlpatterns = [
     url(r'^cart$', views.cart, {}, 'checkout_cart'),
     url(r'^checkout$', views.checkout, {}, 'checkout_checkout'),
-)
+    url(r'^checkout/(\w+)$', views.checkout, {}, 'checkout_checkout'),
+]
+
+# identical to the cart views, but generating a checkout snippet
+
+for action in cart.views.all_actions:
+    urlpatterns.append(
+        url(r'^%s$' % action, getattr(cart.views, action), {
+            'ajax_template': 'checkout/cart_ajax.html',
+        }, 'checkout_%s' % action))

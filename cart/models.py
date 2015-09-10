@@ -56,6 +56,14 @@ class ICart(object):
     def count(self):
         raise NotImplementedError()
 
+    @property
+    def shipping_cost(self):
+        if SHIPPING_CALCULATOR:
+            bits = SHIPPING_CALCULATOR.split('.')
+            calc_module = importlib.import_module('.'.join(bits[:-1]))
+            calc_func = getattr(calc_module, bits[-1])
+            return calc_func(self)
+        return 0
     # Other cart methods:
     # as_dict(self)
     # update_shipping(self, options)
@@ -254,16 +262,6 @@ class Cart(ICart):
         if self._data is None:
             return 0
         return sum(r['qty'] for r in self._data["lines"])
-
-    @property
-    def shipping_cost(self):
-        if SHIPPING_CALCULATOR:
-            bits = SHIPPING_CALCULATOR.split('.')
-            calc_module = importlib.import_module('.'.join(bits[:-1]))
-            calc_func = getattr(calc_module, bits[-1])
-            shipping_options = self.get_shipping_options()
-            return calc_func(self.get_lines(), options=shipping_options)
-        return 0
 
     @property
     def subtotal(self):

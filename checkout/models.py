@@ -9,7 +9,6 @@ from cart.models import BaseOrderLine, ICart
 # from paypal.models import FullTransactionProtocol, Transaction
 
 from .emails import send_email_receipt
-from .shipping import calculate_shipping
 
 
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
@@ -66,10 +65,6 @@ class Order(models.Model, ICart):
 
     def __unicode__(self):
         return u"%s on %s" % (self.name, self.created)
-
-    @property
-    def shipping_cost(self):
-        return calculate_shipping(self.lines.all(), order=self)
 
     @property
     def subtotal(self):

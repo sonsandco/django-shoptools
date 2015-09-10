@@ -5,6 +5,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import never_cache
+from django.conf import settings
 
 from cart.models import Cart
 from cart.actions import update_cart
@@ -15,6 +16,11 @@ from .forms import OrderForm
 from .models import Order
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
+PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
+
+
+def get_payment_module():
+    return importlib.import_module(PAYMENT_MODULE) if PAYMENT_MODULE else None
 
 
 def checkout_view(wrapped_view):
@@ -115,9 +121,7 @@ def checkout(request, cart, secret=None):
 
             # and off we go to pay, if necessary
             if order.total():
-                # TODO make this configurable
-                raise Exception
-                # return make_payment(order, request)
+                return get_payment_module().make_payment(order, request)
             else:
                 order.transaction_succeeded()
                 return redirect(order)

@@ -1,10 +1,13 @@
 from django.contrib import admin
 
 from cart.admin import orderline_inline_factory
-# from dps.admin import TransactionInlineAdmin
-# from paypal.admin import TransactionInlineAdmin
+from cart.models import get_voucher_module
 
 from .models import Order, OrderLine
+
+
+voucher_mod = get_voucher_module()
+voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
 
 
 class OrderAdmin(admin.ModelAdmin):
@@ -13,8 +16,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status', 'created')
     inlines = [
         orderline_inline_factory(OrderLine),
-        # TransactionInlineAdmin,
-    ]
+    ] + voucher_inlines
     save_on_top = True
 
     def has_add_permission(self, request):

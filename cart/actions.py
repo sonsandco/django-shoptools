@@ -81,3 +81,19 @@ def clear(data, cart):
 @cart_action()
 def update_shipping(data, cart):
     return cart.update_shipping(data.dict())
+
+
+@cart_action(required=['code'])
+def add_voucher(data, cart):
+    return cart.add_voucher(data["code"])
+
+
+@cart_action(required=['code'])
+def remove_voucher(data, cart):
+    return cart.remove_voucher(data["code"])
+
+
+@cart_action()
+def update_vouchers(data, cart):
+    codes = map(unicode.strip, data.get('codes', '').split(','))
+    return cart.update_vouchers([c for c in codes if c])

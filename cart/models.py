@@ -13,6 +13,11 @@ DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
 SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
+VOUCHER_MODULE = getattr(settings, 'CART_VOUCHER_MODULE', None)
+
+
+def get_voucher_module():
+    return importlib.import_module(VOUCHER_MODULE) if VOUCHER_MODULE else None
 
 
 # TODO
@@ -66,6 +71,17 @@ class ICart(object):
             calc_func = getattr(calc_module, bits[-1])
             return calc_func(self)
         return 0
+
+    def get_vouchers(self):
+        raise NotImplementedError()
+
+    def calculate_discounts(self):
+        voucher_module = get_voucher_module()
+        if voucher_module:
+            return voucher_module.calculate_discounts(self,
+                                                      self.get_vouchers())
+        return []
+
     # Other cart methods:
     # as_dict(self)
     # update_shipping(self, options)
@@ -186,8 +202,43 @@ class Cart(ICart):
             'shipping_cost': float(self.shipping_cost),
             'total': float(self.total),
             'lines': [dict(line) for line in self.get_lines()],
+            # TODO add vouchers
         }
         return data
+
+    def add_voucher(self, code):
+        self._init_session_cart()
+        if code not in self._data["vouchers"]:
+            self._data["vouchers"].append(code)
+            self.request.session.modified = True
+        return True
+
+    def remove_voucher(self, code):
+        self._init_session_cart()
+        self._data["vouchers"] = filter(lambda c: c != code,
+                                        self._data["vouchers"])
+        self.request.session.modified = True
+        return True
+
+    def get_voucher_codes(self):
+        if self._data is None:
+            return []
+        return self._data["vouchers"]
+
+    def update_vouchers(self, codes):
+        self._init_session_cart()
+        for code in self.get_voucher_codes():
+            self.remove_voucher(code)
+        for code in codes:
+            self.add_voucher(code)
+        return True
+
+    def get_vouchers(self):
+        return get_voucher_module().get_vouchers(self.get_voucher_codes())
+
+    @property
+    def total_discount(self):
+        return sum(d.amount for d in self.calculate_discounts())
 
     def update_shipping(self, options):
         self._init_session_cart()
@@ -270,12 +321,15 @@ class Cart(ICart):
 
     @property
     def total(self):
-        return self.subtotal + self.shipping_cost
+        return self.subtotal + self.shipping_cost - self.total_discount
 
     def save_to(self, obj, orderline_model_cls):
         assert isinstance(obj, ICart)
         assert issubclass(orderline_model_cls, ICartLine)
         assert self._data and (self._data.get("lines", None) is not None)
+
+        # TODO save shipping options to order here?
+
         for cart_line in self.get_lines():
             line = orderline_model_cls()
             line.parent_object = obj
@@ -284,6 +338,11 @@ class Cart(ICart):
             line.currency = self.currency
             line.options = json.dumps(cart_line["options"])
             line.save()
+
+        # save valid discounts
+        voucher_module = get_voucher_module()
+        if voucher_module:
+            voucher_module.save_discounts(obj, self.get_vouchers())
 
     def empty(self):
         return not bool(len(self.get_lines()))
@@ -296,7 +355,7 @@ class Cart(ICart):
     # Private methods
     def _init_session_cart(self):
         if self._data is None:
-            data = {"lines": []}
+            data = {"lines": [], "vouchers": []}
             self._data = self.request.session[self.session_key] = data
 
     def _line_index(self, ctype, pk):

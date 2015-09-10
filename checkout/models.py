@@ -104,4 +104,4 @@ class Order(models.Model, ICart):
 
 
 class OrderLine(BaseOrderLine):
-    parent_object = models.ForeignKey(Order)
+    parent_object = models.ForeignKey(Order, related_name='lines')

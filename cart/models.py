@@ -1,6 +1,7 @@
 from datetime import datetime
 import decimal
 import importlib
+import json
 
 from django.conf import settings
 from django.db import models
@@ -19,6 +20,7 @@ SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
 # so should CartLine and OrderLine
 # in a template we should be able to treat a db-saved or session "cart"
 # exactly the same
+# BUT are interfaces "pythonic"? Should these be ABCs?
 
 
 @property
@@ -27,7 +29,7 @@ def NotImplementedProperty(self):
 
 
 class ICartItem(object):
-    """Defines interface for objects which may be added to a cart. """
+    """Define interface for objects which may be added to a cart. """
 
     def cart_description(self):
         raise NotImplementedError()
@@ -76,33 +78,29 @@ class ICart(object):
 
 
 class ICartLine(object):
-    """Define interface for cart lines, which are attached to an ICart. """
+    """Define interface for cart lines, which are attached to an ICart.
+       Subclasses must implement the following properties
 
-    item = NotImplementedProperty
-    quantity = NotImplementedProperty
-    total = NotImplementedProperty
-    description = NotImplementedProperty
-    options = NotImplementedProperty
+       item
+       quantity
+       total
+       description
+       options
+    """
 
 
 class BaseOrderLine(models.Model, ICartLine):
-    """An OrderLine is the db-persisted version of a Cart item, created by
-    subclassing this model. It uses the same ICartItem interface (see below)
-    to get details, and is intended to be attached to an object you provide via
+    """An OrderLine is the db-persisted version of a Cart line, created by
+    subclassing this model. It implements the same ICartLine interface as the
+    cart lines, and is intended to be attached to an object you provide via
     a parent_object ForeignKey. Your object can be thought of as an Order,
     although it doesn't have to be; it could equally support a "save this cart
     for later" feature.
 
-    The advantage of this is that is lets your shop app support
-    whatever payment/total cost logic it wants -- it might be a
-    straight summing of order lines, it might add shipping, it might
-    not involve payment at all.
-
-    This only handles recording items + quantities + calculated prices
-    against some object.
+    Subclasses must implement a parent_object ForeignKey
     """
 
-    parent_object = NotImplementedProperty
+    # parent_object = NotImplementedProperty
 
     # item object *must* support ICartItem
     item_content_type = models.ForeignKey(ContentType)
@@ -276,7 +274,7 @@ class Cart(ICart):
 
     def save_to(self, obj, orderline_model_cls):
         assert isinstance(obj, ICart)
-        assert issubclass(orderline_model_cls, ICartItem)
+        assert issubclass(orderline_model_cls, ICartLine)
         assert self._data and (self._data.get("lines", None) is not None)
         for cart_line in self.get_lines():
             line = orderline_model_cls()
@@ -284,8 +282,11 @@ class Cart(ICart):
             line.item = cart_line.item
             line.quantity = cart_line["qty"]
             line.currency = self.currency
-            line.options = unicode(cart_line["options"])
+            line.options = json.dumps(cart_line["options"])
             line.save()
+
+    def empty(self):
+        return not bool(len(self.get_lines()))
 
     def clear(self):
         if self._data is not None:

@@ -1,5 +1,6 @@
 from json import dumps
 from functools import partial
+import importlib
 
 from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import get_template
@@ -13,7 +14,7 @@ from cart.actions import update_cart
 # from paypal.transactions import make_payment
 
 from .forms import OrderForm
-from .models import Order
+from .models import Order, OrderLine
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
 PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
@@ -94,10 +95,10 @@ def checkout(request, cart, secret=None):
         initial = request.session.get(CHECKOUT_SESSION_KEY,
                                       cart.get_shipping_options())
         get_form = partial(OrderForm, initial=initial)
-        sanity_check = cart.subtotal
+        sanity_check = lambda: cart.subtotal
         new_order = True
 
-    submitted = request.method == 'POST' and request.POST.get('form')
+    submitted = request.POST.get('form') if request.method == 'POST' else None
 
     if submitted == 'cart':
         update_cart(request.POST, cart)
@@ -116,11 +117,11 @@ def checkout(request, cart, secret=None):
 
             if new_order:
                 # save the cart to a series of orderlines for it
-                cart.save_to(order)
+                cart.save_to(order, OrderLine)
                 cart.clear()
 
             # and off we go to pay, if necessary
-            if order.total():
+            if order.total:
                 return get_payment_module().make_payment(order, request)
             else:
                 order.transaction_succeeded()

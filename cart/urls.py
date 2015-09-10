@@ -1,13 +1,12 @@
 from django.conf.urls import url
 
-from .views import get_cart, update_cart, add, clear, update_shipping, quantity
+from . import views
 
 
-urlpatterns = (
-    url(r'^$', get_cart, {}, 'cart_get_cart'),
-    url(r'^update/$', update_cart, {}, 'cart_update_cart'),
-    url(r'^add/$', add, {}, 'cart_add'),
-    url(r'^quantity/$', quantity, {}, 'cart_quantity'),
-    url(r'^clear/$', clear, {}, 'cart_clear'),
-    url(r'^shipping/$', update_shipping, {}, 'cart_update_shipping'),
-)
+urlpatterns = [
+    url(r'^$', views.get_cart, {}, 'cart_get_cart'),
+]
+
+for action in views.all_actions:
+    urlpatterns.append(url(r'^%s$' % action, getattr(views, action), {},
+                           'cart_%s' % action))

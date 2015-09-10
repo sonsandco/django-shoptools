@@ -24,10 +24,10 @@ def make_uuid():
 
 # class Order(models.Model, FullTransactionProtocol):
 class Order(models.Model, ICart):
-    STATUS_NEW = "new"
-    STATUS_PAID = "paid"
-    STATUS_PAYMENT_FAILED = "payment_failed"
-    STATUS_SHIPPED = "shipped"
+    STATUS_NEW = 1
+    STATUS_PAYMENT_FAILED = 2
+    STATUS_PAID = 3
+    STATUS_SHIPPED = 4
 
     STATUS_CHOICES = [
         (STATUS_NEW, "New"),
@@ -48,8 +48,8 @@ class Order(models.Model, ICart):
     currency = models.CharField(max_length=3, editable=False,
                                 default=DEFAULT_CURRENCY)
     created = models.DateTimeField(default=datetime.now)
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES,
-                              default=STATUS_NEW)
+    status = models.PositiveSmallIntegerField(
+        choices=STATUS_CHOICES, default=STATUS_NEW)
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 

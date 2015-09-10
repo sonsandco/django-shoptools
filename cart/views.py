@@ -8,6 +8,15 @@ from .models import Cart
 from . import actions
 
 
+def get_cart_html(request, cart, template_name):
+    try:
+        template = get_template(template_name)
+    except TemplateDoesNotExist:
+        return None
+    else:
+        return template.render({'cart': cart}, request=request)
+
+
 def cart_view(action=None, session_key=None):
     '''Decorator supplies request and current cart as arguments to the action
        function. Returns appropriate errors if the request method is not POST,
@@ -15,7 +24,8 @@ def cart_view(action=None, session_key=None):
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
 
-    def view_func(request, next_url=None, data=None):
+    def view_func(request, next_url=None, data=None,
+                  ajax_template='checkout/cart_ajax.html'):
         if not data:
             data = request.POST
 
@@ -31,14 +41,8 @@ def cart_view(action=None, session_key=None):
         if request.is_ajax():
             data = {
                 'cart': cart.as_dict(),
+                'html_snippet': get_cart_html(request, cart, ajax_template),
             }
-            try:
-                template = get_template('cart/cart_ajax.html')
-            except TemplateDoesNotExist:
-                pass
-            else:
-                data['cart_html'] = template.render({}, request=request)
-
             return HttpResponse(json.dumps(data),
                                 content_type="application/json")
 

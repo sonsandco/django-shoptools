@@ -7,12 +7,14 @@ from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import never_cache
 from django.conf import settings
+from django.contrib.auth import authenticate, login
 
 from cart.models import Cart
 # from dps.transactions import make_payment
 # from paypal.transactions import make_payment
+from accounts.models import Account
 
-from .forms import OrderForm
+from .forms import OrderForm, CheckoutUserForm
 from .models import Order, OrderLine
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
@@ -81,7 +83,12 @@ def checkout(request, cart, order):
             "order": order,
         }
 
+    if request.user.is_authenticated():
+        account = Account.objects.for_user(request.user)
+        get_user_form = lambda *a: None
     else:
+        account = Account()
+        get_user_form = partial(CheckoutUserForm)
 
     if order:
         get_form = partial(OrderForm, instance=order)
@@ -91,9 +98,13 @@ def checkout(request, cart, order):
 
         new_order = False
     else:
-        # if any shipping options match form fields, prefill them
-        initial = request.session.get(CHECKOUT_SESSION_KEY,
-                                      cart.get_shipping_options())
+        # if there's saved session data, prefill it. If not, and user logged
+        # in, use account data. Failing that, prefill shipping options if any
+        # match from the cart stage
+        initial = request.session.get(
+            CHECKOUT_SESSION_KEY,
+            account.as_dict() if account else cart.get_shipping_options())
+
         get_form = partial(OrderForm, initial=initial)
         sanity_check = lambda: cart.subtotal
         new_order = True
@@ -104,11 +115,36 @@ def checkout(request, cart, order):
     if request.method == 'POST':
         form = get_form(request.POST, sanity_check=sanity_check())
 
+        user_form = get_user_form(request.POST)
+        save_details = not account.pk and request.POST.get('save-details')
+        if save_details and user_form:
+            # if creating a new user, the email needs to be unused
+            form.require_unique_email = True
+            user_form_valid = user_form.is_valid()
+        else:
+            user_form_valid = True
+
         if form.is_valid() and (order or not cart.empty()) and \
-           not len(cart_errors):
+           user_form_valid and not len(cart_errors):
             # save the order obj to the db...
             order = form.save(commit=False)
             order.currency = cart.currency
+
+            # save details to account if requested
+            if save_details:
+                account.from_obj(order)
+                if user_form:
+                    user = user_form.save(email=order.email, name=order.name)
+                    account.user = user
+                    auth_user = authenticate(
+                        username=user.email,
+                        password=user_form.cleaned_data['password1'])
+                    login(request, auth_user)
+                account.save()
+
+            if account.pk:
+                order.account = account
+
             order.save()
 
             if new_order:
@@ -128,10 +164,13 @@ def checkout(request, cart, order):
             request.session.modified = True
     else:
         form = get_form(sanity_check=sanity_check())
+        user_form = get_user_form()
 
     return {
         'form': form,
+        'user_form': user_form,
         'cart': cart,
         'order': order,
+        'account': account,
         'cart_errors': cart_errors,
     }

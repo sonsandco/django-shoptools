@@ -1,10 +1,20 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 from .models import Order
 
 
 class OrderForm(forms.ModelForm):
+    require_unique_email = False
+
     sanity_check = forms.CharField(widget=forms.HiddenInput, required=False)
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if self.require_unique_email and User.objects.filter(email=email):
+            raise forms.ValidationError(u"That email is already in use")
+        return email
 
     def clean(self):
         data = self.cleaned_data
@@ -22,4 +32,17 @@ class OrderForm(forms.ModelForm):
 
     class Meta:
         model = Order
-        exclude = ('created', 'status', 'amount_paid', 'country')
+        exclude = ('created', 'status', 'amount_paid', 'account')
+
+
+class CheckoutUserForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        fields = []
+
+    def save(self, name, email):
+        user = super(CheckoutUserForm, self).save(commit=False)
+        user.first_name = name.split(' ')[0]
+        user.last_name = ' '.join(name.split(' ')[1:])
+        user.email = email
+        user.save()
+        return user

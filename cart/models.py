@@ -334,9 +334,10 @@ class Cart(ICart):
             line = orderline_model_cls()
             line.parent_object = obj
             line.item = cart_line.item
+            line.description = cart_line.description
             line.quantity = cart_line["qty"]
             line.currency = self.currency
-            line.options = json.dumps(cart_line["options"])
+            line.options = json.dumps(cart_line["options"]) or ''
             line.save()
 
         # save valid discounts

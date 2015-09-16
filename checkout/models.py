@@ -8,6 +8,7 @@ from cart.models import BaseOrderLine, ICart
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
+from countries import COUNTRY_CHOICES
 from .emails import send_email_receipt
 
 
@@ -42,7 +43,8 @@ class Order(models.Model, ICart):
     suburb = models.CharField(max_length=255, blank=True)
     postcode = models.CharField(max_length=100)
     city = models.CharField(u"Town / City", max_length=255)
-    country = models.CharField(max_length=255, default=u'New Zealand')
+    country = models.CharField(max_length=255, default=u'New Zealand',
+                               choices=COUNTRY_CHOICES)
     email = models.EmailField()
     currency = models.CharField(max_length=3, editable=False,
                                 default=DEFAULT_CURRENCY)

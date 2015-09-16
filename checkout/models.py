@@ -77,8 +77,8 @@ class Order(models.Model, ICart):
         return self.subtotal + self.shipping_cost
 
     # django-dps integration:
-
-    get_amount = total
+    def get_amount(self):
+        return max(0, self.total - self.amount_paid)
 
     def is_recurring(self):
         return False

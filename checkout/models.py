@@ -72,9 +72,15 @@ class Order(models.Model, ICart):
 
     @property
     def total(self):
-        return self.subtotal + self.shipping_cost
+        return self.subtotal + self.shipping_cost - self.total_discount
 
     # django-dps integration:
+    # voucher integration
+    def calculate_discounts(self):
+        # Return actual saved discounts, rather than calculating afresh. This
+        # means the discounts are set and won't change if the voucher is
+        # removed or modified
+        return self.discount_set.all()
 
     get_amount = total
 

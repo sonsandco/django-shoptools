@@ -72,15 +72,12 @@ class ICart(object):
             return calc_func(self)
         return 0
 
-    def get_vouchers(self):
+    def calculate_discounts(self):
         raise NotImplementedError()
 
-    def calculate_discounts(self):
-        voucher_module = get_voucher_module()
-        if voucher_module:
-            return voucher_module.calculate_discounts(self,
-                                                      self.get_vouchers())
-        return []
+    @property
+    def total_discount(self):
+        return sum(d.amount for d in self.calculate_discounts())
 
     # Other cart methods:
     # as_dict(self)
@@ -236,9 +233,12 @@ class Cart(ICart):
     def get_vouchers(self):
         return get_voucher_module().get_vouchers(self.get_voucher_codes())
 
-    @property
-    def total_discount(self):
-        return sum(d.amount for d in self.calculate_discounts())
+    def calculate_discounts(self):
+        voucher_module = get_voucher_module()
+        if voucher_module:
+            return voucher_module.calculate_discounts(self,
+                                                      self.get_vouchers())
+        return []
 
     def update_shipping(self, options):
         self._init_session_cart()

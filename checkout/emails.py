@@ -10,4 +10,4 @@ def send_email_receipt(order):
     })
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [order.email])
     send_mail(subject, body, settings.DEFAULT_FROM_EMAIL,
-              settings.SHOP_RECIPIENTS)
+              [t[0] for t in settings.CHECKOUT_MANAGERS])

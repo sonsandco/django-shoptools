@@ -3,12 +3,7 @@
   {% for line in order.lines.all() %}
     <li>
       <div class="line">
-        <a href="{{ line.item_object.item.get_absolute_url() }}"
-             class="product">
-          <span class="item">{{ line.item_object.item }}</span>
-          <span class="colour">{{ line.item_object.colour }}</span>
-          <span class="size">Size: {{ line.item_object.get_size_display() }}</span>
-        </a>
+        <span class="description">{{ line.description }}</span>
         <span class="quantity">
           {{ 'x%s' % line.quantity if (line.quantity > 1) else '' }}
         </span>
@@ -25,7 +20,7 @@
   </li>
   <li class="total">
     <h6>Total:</h6>
-    <span class="cost">${{ order.get_amount()|floatformat(-2) }}</span>
+    <span class="cost">${{ order.total|floatformat(-2) }}</span>
     <span class="gst">inc. GST</span>
   </li>
 

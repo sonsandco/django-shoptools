@@ -9,7 +9,6 @@ from django.views.decorators.cache import never_cache
 from django.conf import settings
 
 from cart.models import Cart
-from cart.actions import update_cart
 # from dps.transactions import make_payment
 # from paypal.transactions import make_payment
 
@@ -98,14 +97,10 @@ def checkout(request, cart, secret=None):
         sanity_check = lambda: cart.subtotal
         new_order = True
 
-    submitted = request.POST.get('form') if request.method == 'POST' else None
-
-    if submitted == 'cart':
-        update_cart(request.POST, cart)
-
+    # Add in any custom cart verification here
     cart_errors = []
 
-    if submitted == 'checkout':
+    if request.method == 'POST':
         form = get_form(request.POST, sanity_check=sanity_check())
 
         if form.is_valid() and (order or not cart.empty()) and \

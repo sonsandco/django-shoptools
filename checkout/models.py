@@ -77,14 +77,15 @@ class Order(models.Model, ICart):
         return self.subtotal + self.shipping_cost - self.total_discount
 
     # django-dps integration:
+    def get_amount(self):
+        return max(0, self.total - self.amount_paid)
+
     # voucher integration
     def calculate_discounts(self):
         # Return actual saved discounts, rather than calculating afresh. This
         # means the discounts are set and won't change if the voucher is
         # removed or modified
         return self.discount_set.all()
-
-    get_amount = total
 
     def is_recurring(self):
         return False
@@ -96,7 +97,7 @@ class Order(models.Model, ICart):
             self.status = self.STATUS_PAID
             self.save()
             send_email_receipt(self)
-        return self.get_success_url()
+        return self.get_absolute_url()
 
     def transaction_failed(self, transaction=None, interactive=False,
                            status_updated=True):

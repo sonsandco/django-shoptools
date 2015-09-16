@@ -30,10 +30,14 @@ def checkout_view(wrapped_view):
        by the view.'''
 
     @never_cache
-    def view_func(request, *args):
+    def view_func(request, secret=None):
         cart = Cart(request)
+        if secret:
+            order = get_object_or_404(Order, secret=secret)
+        else:
+            order = None
         ctx = {'request': request, 'cart': cart}
-        result = wrapped_view(request, cart, *args)
+        result = wrapped_view(request, cart, order)
 
         if isinstance(result, HttpResponseRedirect):
             if request.is_ajax() and (result.url.startswith('http://') or
@@ -61,26 +65,23 @@ def checkout_view(wrapped_view):
 
 
 @checkout_view
-def cart(request, cart):
+def cart(request, cart, order):
     return {}
 
 
 @checkout_view
-def checkout(request, cart, secret=None):
-    """Handle checkout process - if a secret is passed, get the corresponding
-       order, and if the order is completed, show the success page, otherwise
-       show the checkout form. If no secret, use the session cart.
+def checkout(request, cart, order):
+    """Handle checkout process - if the order is completed, show the success
+       page, otherwise show the checkout form.
     """
 
-    if secret:
-        order = get_object_or_404(Order, secret=secret)
-        if order.status in [Order.STATUS_PAID, Order.STATUS_SHIPPED]:
-            return {
-                "template": "success",
-                "order": order,
-            }
+    if order and order.status in [Order.STATUS_PAID, Order.STATUS_SHIPPED]:
+        return {
+            "template": "success",
+            "order": order,
+        }
+
     else:
-        order = None
 
     if order:
         get_form = partial(OrderForm, instance=order)
@@ -111,7 +112,7 @@ def checkout(request, cart, secret=None):
             order.save()
 
             if new_order:
-                # save the cart to a series of orderlines for it
+                # save the cart to a series of orderlines
                 cart.save_to(order, OrderLine)
                 cart.clear()
 
@@ -121,7 +122,6 @@ def checkout(request, cart, secret=None):
             else:
                 order.transaction_succeeded()
                 return redirect(order)
-
         else:
             # Save posted data so the user doesn't have to re-enter it
             request.session[CHECKOUT_SESSION_KEY] = request.POST.dict()
@@ -130,8 +130,8 @@ def checkout(request, cart, secret=None):
         form = get_form(sanity_check=sanity_check())
 
     return {
-        "form": form,
-        "cart": cart,
-        "order": order,
+        'form': form,
+        'cart': cart,
+        'order': order,
         'cart_errors': cart_errors,
     }

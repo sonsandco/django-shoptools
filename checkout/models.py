@@ -90,7 +90,7 @@ class Order(models.Model, ICart):
             self.status = self.STATUS_PAID
             self.save()
             send_email_receipt(self)
-        return self.get_success_url()
+        return self.get_absolute_url()
 
     def transaction_failed(self, transaction=None, interactive=False,
                            status_updated=True):

@@ -22,7 +22,7 @@ class Account(models.Model):
     suburb = models.CharField(max_length=255, blank=True)
     postcode = models.CharField(max_length=10)
     city = models.CharField(max_length=255)
-    country = models.CharField(max_length=50, choices=COUNTRY_CHOICES)
+    country = models.CharField(max_length=2, choices=COUNTRY_CHOICES)
 
     objects = AccountManager()
 

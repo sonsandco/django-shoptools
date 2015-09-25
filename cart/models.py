@@ -239,7 +239,7 @@ class Cart(ICart):
     def update_quantity(self, ctype, pk, qty):
         assert isinstance(qty, int)
 
-        if qty == 0:
+        if qty <= 0:
             return self.remove(ctype, pk)
 
         idx = self._line_index(ctype, pk)

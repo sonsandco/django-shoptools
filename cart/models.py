@@ -31,6 +31,12 @@ def get_shipping_module():
 # exactly the same
 # BUT are interfaces "pythonic"? Should these be ABCs?
 
+# This file is getting unwieldy, need to split into cart.session and
+# cart.models or something like that
+
+# Rather than raising NotImplementedError for things like total and
+# shipping_cost, we should check using hasattr and ignore if they're not there
+
 
 @property
 def NotImplementedProperty(self):
@@ -55,10 +61,42 @@ class ICartItem(object):
 
 class ICart(object):
     """Define interface for "cart" objects, which may be a session-based
-       "cart" or a db-saved "order". """
+       "cart" or a db-saved "order".
 
-    subtotal = NotImplementedProperty
-    total = NotImplementedProperty
+       Subclasses should implement the following:
+
+           update_quantity(self, ctype, pk, qty)
+           clear(self)
+           count(self)
+           get_lines(self)
+
+       and may implement the following (optional):
+
+           subtotal
+           total
+           shipping_cost
+
+       """
+
+    def add(self, ctype, pk, qty=1):
+        return self.update_quantity(ctype, pk, qty)
+
+    def remove(self, ctype, pk):
+        return self.update_quantity(ctype, pk, 0)
+
+    def as_dict(self):
+        data = {
+            'count': self.count(),
+            'lines': [line.as_dict() for line in self.get_lines()],
+            # TODO add discounts?
+        }
+        for f in ('shipping_cost', 'total'):
+            if hasattr(self, f):
+                data[f] = float(getattr(self, f))
+        return data
+
+    def update_quantity(self, ctype, pk, qty):
+        raise NotImplementedError()
 
     def get_lines(self):
         raise NotImplementedError()
@@ -66,22 +104,16 @@ class ICart(object):
     def count(self):
         raise NotImplementedError()
 
+    def clear(self):
+        raise NotImplementedError()
+
+    # TODO tidy up discount stuff - does it belong here?
     def calculate_discounts(self):
         raise NotImplementedError()
 
     @property
     def total_discount(self):
         return sum(d.amount for d in self.calculate_discounts())
-
-    # Other cart methods:
-    # as_dict(self)
-    # update_shipping(self, options)
-    # get_shipping_options(self)
-    # add(self, ctype, pk, qty=1, opts={})
-    # remove(self, ctype, pk)
-    # update_options(self, ctype, pk, **options)
-    # update_quantity(self, ctype, pk, qty)
-    # clear(self)
 
 
 class ICartLine(object):
@@ -94,11 +126,21 @@ class ICartLine(object):
        description
     """
 
+    def as_dict(self):
+        return {
+            'description': self.description,
+            'quantity': self.quantity,
+            'total': float(self.total),
+        }
+
 
 class BaseOrder(models.Model, ICart):
     """Base class for "Order" models, which are the db-saved version of a
        session Cart. Theoretically, this model can be used interchangeably with
        the Cart, adding/removing items etc. """
+
+    class Meta:
+        abstract = True
 
     def update_quantity(self, ctype, pk, qty=1):
         app_label, model = ctype.split('.')
@@ -109,26 +151,23 @@ class BaseOrder(models.Model, ICart):
             return False
 
         values = {
-            self.get_line_field(): self,
+            'parent_object': self,
             'item_content_type': ctype_obj,
             'item_object_id': pk,
         }
         line_cls = self.get_line_cls()
+        lines = line_cls.objects.filter(**values)
         if qty < 1:
-            line_cls.objects.filter(**values).delete()
+            lines.delete()
         else:
-            try:
+            updated = lines.update(quantity=qty)
+            if not updated:
                 line_cls.objects.create(quantity=qty, **values)
-            except IntegrityError:
-                line_cls.objects.filter(**values).update(quantity=qty)
 
         return True
 
-    def add(self, ctype, pk, qty=1):
-        return self.update_quantity(ctype, pk, qty)
-
-    def remove(self, ctype, pk):
-        return self.update_quantity(ctype, pk, 0)
+    def get_lines(self):
+        return self.get_line_cls().objects.filter(parent_object=self)
 
     def count(self):
         return self.get_lines().count()
@@ -147,8 +186,6 @@ class BaseOrderLine(models.Model, ICartLine):
 
     Subclasses must implement a parent_object ForeignKey
     """
-
-    # parent_object = NotImplementedProperty
 
     # item object *must* support ICartItem
     item_content_type = models.ForeignKey(ContentType)
@@ -226,16 +263,6 @@ class Cart(ICart):
                                             DEFAULT_CURRENCY)
         self._data = self.request.session.get(self.session_key, None)
 
-    def as_dict(self):
-        data = {
-            'count': self.count(),
-            'shipping_cost': float(self.shipping_cost),
-            'total': float(self.total),
-            'lines': [dict(line) for line in self.get_lines()],
-            # TODO add vouchers
-        }
-        return data
-
     def add_voucher(self, code):
         self._init_session_cart()
         if code not in self._data["vouchers"]:
@@ -287,48 +314,70 @@ class Cart(ICart):
             return shipping_module.calculate_shipping(self)
         return 0
 
-    def add(self, ctype, pk, qty=1):
-        app_label, model = ctype.split('.')
-        ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
-        assert issubclass(ctype_obj.model_class(), ICartItem)
+    def update_quantity(self, ctype, pk, qty=1):
         assert isinstance(qty, int)
-
         idx = self._line_index(ctype, pk)
-        if idx is not None:
-            # Already in the cart, so update the existing line
-            line = self._data["lines"][idx]
-            return self.update_quantity(ctype, pk, qty + line["qty"])
 
-        self._init_session_cart()
-        line = {'key': create_key(ctype, pk), 'qty': qty}
-        self._data["lines"].append(line)
-        # self.update_total()
+        if qty < 1:
+            if idx is None:
+                return False
+            del self._data["lines"][idx]
+            self.request.session.modified = True
+            return True
+
+        if idx is None:
+            self._init_session_cart()
+            line = {'key': create_key(ctype, pk), 'qty': qty}
+            self._data["lines"].append(line)
+        else:
+            # Already in the cart, so update the existing line
+            line = self._data["lines"][idx]['qty'] = qty
+
         self.request.session.modified = True
         return True
 
-    def remove(self, ctype, pk):
-        idx = self._line_index(ctype, pk)
-        if idx is not None:  # might be 0
-            del self._data["lines"][idx]
-            # self.update_total()
-            self.request.session.modified = True
-            return True
-
-        return False
-
-    def update_quantity(self, ctype, pk, qty):
-        assert isinstance(qty, int)
-
-        if qty == 0:
-            return self.remove(ctype, pk)
-
-        idx = self._line_index(ctype, pk)
-        if idx is not None:  # might be 0
-            self._data["lines"][idx]['qty'] = qty
-            self.request.session.modified = True
-            return True
-
-        return False
+    # def add(self, ctype, pk, qty=1):
+    #     app_label, model = ctype.split('.')
+    #     ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
+    #     assert issubclass(ctype_obj.model_class(), ICartItem)
+    #     assert isinstance(qty, int)
+    #
+    #     idx = self._line_index(ctype, pk)
+    #     if idx is not None:
+    #         # Already in the cart, so update the existing line
+    #         line = self._data["lines"][idx]
+    #         return self.update_quantity(ctype, pk, qty + line["qty"])
+    #
+    #     self._init_session_cart()
+    #     line = {'key': create_key(ctype, pk), 'qty': qty}
+    #     self._data["lines"].append(line)
+    #     # self.update_total()
+    #     self.request.session.modified = True
+    #     return True
+    #
+    # def remove(self, ctype, pk):
+    #     idx = self._line_index(ctype, pk)
+    #     if idx is not None:  # might be 0
+    #         del self._data["lines"][idx]
+    #         # self.update_total()
+    #         self.request.session.modified = True
+    #         return True
+    #
+    #     return False
+    #
+    # def update_quantity(self, ctype, pk, qty):
+    #     assert isinstance(qty, int)
+    #
+    #     if qty == 0:
+    #         return self.remove(ctype, pk)
+    #
+    #     idx = self._line_index(ctype, pk)
+    #     if idx is not None:  # might be 0
+    #         self._data["lines"][idx]['qty'] = qty
+    #         self.request.session.modified = True
+    #         return True
+    #
+    #     return False
 
     def get_lines(self):
         if self._data is None:
@@ -352,13 +401,12 @@ class Cart(ICart):
     def total(self):
         return self.subtotal + self.shipping_cost - self.total_discount
 
-    def save_to(self, obj, orderline_model_cls):
+    def save_to(self, obj):
         assert isinstance(obj, ICart)
-        assert issubclass(orderline_model_cls, ICartLine)
         assert self._data and (self._data.get("lines", None) is not None)
 
         for cart_line in self.get_lines():
-            line = orderline_model_cls()
+            line = obj.get_line_cls()()
             line.parent_object = obj
             line.item = cart_line.item
             line.description = cart_line.description
@@ -366,9 +414,11 @@ class Cart(ICart):
             line.currency = self.currency
             line.save()
 
-        # save valid discounts
+        # save valid discounts - TODO should this go here?
+        # Do we need to subclass Cart as DiscountCart?
         voucher_module = get_voucher_module()
-        if voucher_module:
+        vouchers = self.get_vouchers() if voucher_module else None
+        if vouchers:
             voucher_module.save_discounts(obj, self.get_vouchers())
 
     def empty(self):
@@ -388,6 +438,12 @@ class Cart(ICart):
     def _line_index(self, ctype, pk):
         """Returns the line index for a given ctype/pk, if it's already in the
            cart, or None otherwise."""
+
+        app_label, model = ctype.split('.')
+        assert issubclass(
+            ContentType.objects.get(
+                app_label=app_label, model=model).model_class(),
+            ICartItem)
 
         if self._data is not None:
             for i in range(len(self._data["lines"])):

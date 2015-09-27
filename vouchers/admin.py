@@ -5,7 +5,8 @@ from django.contrib import admin
 from utilities.admin_shortcuts import get_readonly_fields, \
     readonly_inline_factory
 
-from .models import PercentageVoucher, FixedVoucher, Discount
+from .models import PercentageVoucher, FixedVoucher, Discount, \
+    FreeShippingVoucher
 
 
 class DiscountAdmin(admin.ModelAdmin):
@@ -30,3 +31,4 @@ class VoucherAdmin(admin.ModelAdmin):
 
 admin.site.register(PercentageVoucher, VoucherAdmin)
 admin.site.register(FixedVoucher, VoucherAdmin)
+admin.site.register(FreeShippingVoucher, VoucherAdmin)

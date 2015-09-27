@@ -40,12 +40,19 @@ def calculate_discounts(obj, vouchers):
     # filter out any that have already been used
     vouchers = filter(lambda v: v.available(exclude=defaults), vouchers)
 
+    # apply free shipping (only one)
+    shipping = filter(lambda v: isinstance(v, FreeShippingVoucher), vouchers)
+    if len(shipping):
+        amount = obj.shipping_cost
+        total -= amount
+        discounts.append(
+            Discount(voucher=shipping[0], amount=amount, **defaults))
+
     # find and apply best percentage voucher
     percentage = filter(lambda v: isinstance(v, PercentageVoucher), vouchers)
     p_voucher = None
     for voucher in percentage:
-        if isinstance(voucher, PercentageVoucher) and \
-                (not p_voucher or p_voucher.amount < voucher.amount):
+        if not p_voucher or p_voucher.amount < voucher.amount:
             p_voucher = voucher
     if p_voucher:
         amount = min(total, total * p_voucher.amount / 100)
@@ -141,6 +148,12 @@ class PercentageVoucher(BaseVoucher):
     @property
     def discount_text(self):
         return '%s%% discount' % floatformat(self.amount, -2)
+
+
+class FreeShippingVoucher(BaseVoucher):
+    @property
+    def discount_text(self):
+        return 'free shipping'
 
 
 class Discount(models.Model):

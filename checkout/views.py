@@ -9,7 +9,7 @@ from django.views.decorators.cache import never_cache
 from django.conf import settings
 from django.contrib.auth import authenticate, login
 
-from cart.models import Cart
+from cart.models import Cart, get_shipping_module
 # from dps.transactions import make_payment
 # from paypal.transactions import make_payment
 from accounts.models import Account
@@ -77,7 +77,7 @@ def checkout(request, cart, order):
        page, otherwise show the checkout form.
     """
 
-    if order and order.status in [Order.STATUS_PAID, Order.STATUS_SHIPPED]:
+    if order and order.status >= Order.STATUS_PAID:
         return {
             "template": "success",
             "order": order,
@@ -98,12 +98,17 @@ def checkout(request, cart, order):
 
         new_order = False
     else:
-        # if there's saved session data, prefill it. If not, and user logged
-        # in, use account data. Failing that, prefill shipping options if any
-        # match from the cart stage
-        initial = request.session.get(
-            CHECKOUT_SESSION_KEY,
-            account.as_dict() if account else cart.get_shipping_options())
+        # set initial data from the user's account, the shipping
+        # options, and any saved session data
+        initial = {}
+        if account.pk and not initial:
+            initial.update(account.as_dict())
+
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            initial.update(shipping_module.get_session(request))
+
+        initial.update(request.session.get(CHECKOUT_SESSION_KEY, {}))
 
         get_form = partial(OrderForm, initial=initial)
         sanity_check = lambda: cart.subtotal
@@ -150,6 +155,12 @@ def checkout(request, cart, order):
             if new_order:
                 # save the cart to a series of orderlines
                 cart.save_to(order, OrderLine)
+
+                # save shipping info
+                order.shipping_options = cart.shipping_options
+                order.shipping_cost = cart.shipping_cost
+                order.save()
+
                 cart.clear()
 
             # and off we go to pay, if necessary

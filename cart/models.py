@@ -1,7 +1,6 @@
 from datetime import datetime
 import decimal
 import importlib
-import json
 
 from django.conf import settings
 from django.db import models
@@ -12,12 +11,17 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
-SHIPPING_CALCULATOR = getattr(settings, 'CART_SHIPPING_CALCULATOR', None)
+SHIPPING_MODULE = getattr(settings, 'CART_SHIPPING_MODULE', None)
 VOUCHER_MODULE = getattr(settings, 'CART_VOUCHER_MODULE', None)
 
 
 def get_voucher_module():
     return importlib.import_module(VOUCHER_MODULE) if VOUCHER_MODULE else None
+
+
+def get_shipping_module():
+    return importlib.import_module(SHIPPING_MODULE) \
+        if SHIPPING_MODULE else None
 
 
 # TODO
@@ -53,7 +57,6 @@ class ICart(object):
     """Define interface for "cart" objects, which may be a session-based
        "cart" or a db-saved "order". """
 
-    shipping_cost = NotImplementedProperty
     subtotal = NotImplementedProperty
     total = NotImplementedProperty
 
@@ -62,15 +65,6 @@ class ICart(object):
 
     def count(self):
         raise NotImplementedError()
-
-    @property
-    def shipping_cost(self):
-        if SHIPPING_CALCULATOR:
-            bits = SHIPPING_CALCULATOR.split('.')
-            calc_module = importlib.import_module('.'.join(bits[:-1]))
-            calc_func = getattr(calc_module, bits[-1])
-            return calc_func(self)
-        return 0
 
     def calculate_discounts(self):
         raise NotImplementedError()
@@ -279,16 +273,21 @@ class Cart(ICart):
                                                       self.get_vouchers())
         return []
 
-    def update_shipping(self, options):
-        self._init_session_cart()
-        self._data["shipping"] = options
-        self.request.session.modified = True
-        return True
+    @property
+    def shipping_options(self):
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            return shipping_module.get_session(self.request)
+        return {}
 
-    def get_shipping_options(self):
-        return (self._data or {}).get("shipping", {})
+    @property
+    def shipping_cost(self):
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            return shipping_module.calculate_shipping(self)
+        return 0
 
-    def add(self, ctype, pk, qty=1, opts={}):
+    def add(self, ctype, pk, qty=1):
         app_label, model = ctype.split('.')
         ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
         assert issubclass(ctype_obj.model_class(), ICartItem)
@@ -357,8 +356,6 @@ class Cart(ICart):
         assert isinstance(obj, ICart)
         assert issubclass(orderline_model_cls, ICartLine)
         assert self._data and (self._data.get("lines", None) is not None)
-
-        # TODO save shipping options to order here?
 
         for cart_line in self.get_lines():
             line = orderline_model_cls()

@@ -98,8 +98,49 @@ class ICartLine(object):
        quantity
        total
        description
-       options
     """
+
+
+class BaseOrder(models.Model, ICart):
+    """Base class for "Order" models, which are the db-saved version of a
+       session Cart. Theoretically, this model can be used interchangeably with
+       the Cart, adding/removing items etc. """
+
+    def update_quantity(self, ctype, pk, qty=1):
+        app_label, model = ctype.split('.')
+        try:
+            ctype_obj = ContentType.objects.get(app_label=app_label,
+                                                model=model)
+        except ContentType.DoesNotExist:
+            return False
+
+        values = {
+            self.get_line_field(): self,
+            'item_content_type': ctype_obj,
+            'item_object_id': pk,
+        }
+        line_cls = self.get_line_cls()
+        if qty < 1:
+            line_cls.objects.filter(**values).delete()
+        else:
+            try:
+                line_cls.objects.create(quantity=qty, **values)
+            except IntegrityError:
+                line_cls.objects.filter(**values).update(quantity=qty)
+
+        return True
+
+    def add(self, ctype, pk, qty=1):
+        return self.update_quantity(ctype, pk, qty)
+
+    def remove(self, ctype, pk):
+        return self.update_quantity(ctype, pk, 0)
+
+    def count(self):
+        return self.get_lines().count()
+
+    def clear(self):
+        return self.get_lines().delete()
 
 
 class BaseOrderLine(models.Model, ICartLine):
@@ -126,7 +167,6 @@ class BaseOrderLine(models.Model, ICartLine):
     #    default=DEFAULT_CURRENCY)
     total = models.DecimalField(max_digits=8, decimal_places=2)
     description = models.CharField(max_length=255, blank=True)
-    options = models.TextField(blank=True)
 
     class Meta:
         abstract = True
@@ -172,7 +212,7 @@ class CartLine(dict, ICartLine):
     '''
 
     def __init__(self, **kwargs):
-        assert sorted(kwargs.keys()) == ['currency', 'key', 'options', 'qty']
+        assert sorted(kwargs.keys()) == ['currency', 'key', 'qty']
         return super(CartLine, self).__init__(**kwargs)
 
     def __setitem__(self, *args):
@@ -182,7 +222,6 @@ class CartLine(dict, ICartLine):
     quantity = property(lambda s: s['qty'])
     total = property(lambda s: s.item.cart_line_total(s['qty'], s['currency']))
     description = property(lambda s: s.item.cart_description())
-    options = property(lambda s: s['options'])
 
 
 class Cart(ICart):
@@ -262,7 +301,7 @@ class Cart(ICart):
             return self.update_quantity(ctype, pk, qty + line["qty"])
 
         self._init_session_cart()
-        line = {'key': create_key(ctype, pk), 'qty': qty, 'options': opts}
+        line = {'key': create_key(ctype, pk), 'qty': qty}
         self._data["lines"].append(line)
         # self.update_total()
         self.request.session.modified = True
@@ -273,15 +312,6 @@ class Cart(ICart):
         if idx is not None:  # might be 0
             del self._data["lines"][idx]
             # self.update_total()
-            self.request.session.modified = True
-            return True
-
-        return False
-
-    def update_options(self, ctype, pk, **options):
-        idx = self._line_index(ctype, pk)
-        if idx is not None:  # might be 0
-            self._data["lines"][idx]['options'].update(options)
             self.request.session.modified = True
             return True
 
@@ -337,7 +367,6 @@ class Cart(ICart):
             line.description = cart_line.description
             line.quantity = cart_line["qty"]
             line.currency = self.currency
-            line.options = json.dumps(cart_line["options"]) or ''
             line.save()
 
         # save valid discounts

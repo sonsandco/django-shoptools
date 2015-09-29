@@ -104,6 +104,9 @@ class Order(BasePerson, BaseOrder):
     def total(self):
         return self.subtotal + self.shipping_cost - self.total_discount
 
+    def get_line_cls(self):
+        return OrderLine
+
     # django-dps integration:
     def get_amount(self):
         return max(0, self.total - self.amount_paid)
@@ -130,7 +133,7 @@ class Order(BasePerson, BaseOrder):
             for line in self.get_lines():
                 item = line.item
                 if hasattr(item, 'purchase'):
-                    item.purchase(line.quantity)
+                    item.purchase(line)
 
         return self.get_absolute_url()
 

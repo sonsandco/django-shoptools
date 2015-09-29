@@ -14,8 +14,8 @@ from cart.models import Cart, get_shipping_module
 # from paypal.transactions import make_payment
 from accounts.models import Account
 
-from .models import Order, OrderLine
 from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm
+from .models import Order
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
 PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
@@ -163,7 +163,7 @@ def checkout(request, cart, order):
 
             if new_order:
                 # save the cart to a series of orderlines
-                cart.save_to(order, OrderLine)
+                cart.save_to(order)
 
                 # save shipping info
                 order.shipping_options = cart.shipping_options

@@ -4,6 +4,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
+from django.template.base import TemplateDoesNotExist
 
 
 TEMPLATE_DIR = 'checkout/emails/'
@@ -19,21 +20,26 @@ def email_content(email_type, **context):
     '''Return tuple of subject, text content and html content for a given email
        type and context.'''
 
+    template_dir = context.pop('template_dir', TEMPLATE_DIR)
+
     context.update({
         'site': Site.objects.get_current(),
     })
-    subject = render_to_string(TEMPLATE_DIR + '%s_subject.txt' % email_type,
+    subject = render_to_string(template_dir + '%s_subject.txt' % email_type,
                                context)
     context['subject'] = subject
-    text_content = render_to_string(TEMPLATE_DIR + '%s.txt' % email_type,
+    text_content = render_to_string(template_dir + '%s.txt' % email_type,
                                     context)
 
     context['text_content'] = text_content
-    html_content = render_to_string(TEMPLATE_DIR + '%s.html' % email_type,
-                                    context)
+    try:
+        html_content = render_to_string(template_dir + '%s.html' % email_type,
+                                        context)
+    except TemplateDoesNotExist:
+        html_content = None
 
     return (subject.strip(), text_content.encode('ascii', 'ignore'),
-            html_content.encode('ascii', 'ignore'))
+            html_content.encode('ascii', 'ignore') if html_content else None)
 
 
 def send_email(email_type, recipients, cc=[], bcc=[], **context_dict):
@@ -44,5 +50,6 @@ def send_email(email_type, recipients, cc=[], bcc=[], **context_dict):
 
     message = EmailMultiAlternatives(subject, text, from_email, recipients,
                                      cc=cc, bcc=bcc)
-    message.attach_alternative(html, "text/html")
+    if html:
+        message.attach_alternative(html, "text/html")
     return message.send()

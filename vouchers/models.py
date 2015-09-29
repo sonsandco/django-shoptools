@@ -125,9 +125,10 @@ class BaseVoucher(models.Model):
 
         return self.amount * self.limit - self.amount_used(exclude)
 
-    def clean(self):
+    def save(self, *args, **kwargs):
         if not self.code:
             self.code = make_code()
+        return super(BaseVoucher, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return self.voucher.discount_text
@@ -135,6 +136,8 @@ class BaseVoucher(models.Model):
 
 class FixedVoucher(BaseVoucher):
     amount = models.DecimalField(max_digits=6, decimal_places=2)
+    order_line = models.OneToOneField('checkout.OrderLine', null=True,
+                                      editable=False)
 
     @property
     def discount_text(self):

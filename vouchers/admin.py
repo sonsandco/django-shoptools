@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib import admin
+from django.core.urlresolvers import reverse
 
 from utilities.admin_shortcuts import get_readonly_fields, \
     readonly_inline_factory
@@ -30,5 +31,18 @@ class VoucherAdmin(admin.ModelAdmin):
         return obj.limit or ''
 
 admin.site.register(PercentageVoucher, VoucherAdmin)
-admin.site.register(FixedVoucher, VoucherAdmin)
 admin.site.register(FreeShippingVoucher, VoucherAdmin)
+
+
+class FixedVoucherAdmin(VoucherAdmin):
+    list_display = VoucherAdmin.list_display + ('order', )
+
+    def order(self, obj):
+        if obj.order_line:
+            order = obj.order_line.parent_object
+            return u'<a href="%s">%s</a>' % (
+                reverse('admin:checkout_order_change', args=(order.pk, )),
+                order)
+        return ''
+    order.allow_tags = True
+admin.site.register(FixedVoucher, FixedVoucherAdmin)

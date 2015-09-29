@@ -14,8 +14,8 @@ from cart.models import Cart, get_shipping_module
 # from paypal.transactions import make_payment
 from accounts.models import Account
 
-from .forms import OrderForm, CheckoutUserForm
 from .models import Order, OrderLine
+from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
 PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
@@ -129,8 +129,12 @@ def checkout(request, cart, order):
         else:
             user_form_valid = True
 
+        gift_form = GiftRecipientForm(request.POST, prefix='gift')
+        is_gift = request.POST.get('is_gift')
+        gift_form_valid = gift_form.is_valid() if is_gift else True
+
         if form.is_valid() and (order or not cart.empty()) and \
-           user_form_valid and not len(cart_errors):
+           user_form_valid and gift_form_valid and not len(cart_errors):
             # save the order obj to the db...
             order = form.save(commit=False)
             order.currency = cart.currency
@@ -151,6 +155,11 @@ def checkout(request, cart, order):
                 order.account = account
 
             order.save()
+
+            if is_gift:
+                recipient = gift_form.save(commit=False)
+                recipient.order = order
+                recipient.save()
 
             if new_order:
                 # save the cart to a series of orderlines
@@ -175,10 +184,12 @@ def checkout(request, cart, order):
             request.session.modified = True
     else:
         form = get_form(sanity_check=sanity_check())
+        gift_form = GiftRecipientForm(prefix='gift')
         user_form = get_user_form()
 
     return {
         'form': form,
+        'gift_form': gift_form,
         'user_form': user_form,
         'cart': cart,
         'order': order,

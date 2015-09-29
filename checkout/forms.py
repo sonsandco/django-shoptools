@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Order
+from .models import Order, GiftRecipient
 
 
 class OrderForm(forms.ModelForm):
@@ -32,7 +32,14 @@ class OrderForm(forms.ModelForm):
 
     class Meta:
         model = Order
-        exclude = ('created', 'status', 'amount_paid', 'account')
+        exclude = ('created', 'status', 'amount_paid', 'account',
+                   'shipping_cost', '_shipping_options', 'tracking_number', )
+
+
+class GiftRecipientForm(forms.ModelForm):
+    class Meta:
+        model = GiftRecipient
+        exclude = ['order', ]
 
 
 class CheckoutUserForm(UserCreationForm):

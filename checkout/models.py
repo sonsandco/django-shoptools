@@ -22,8 +22,22 @@ def make_uuid():
     return str(u).replace('-', '')
 
 
+class BasePerson(models.Model):
+    name = models.CharField(u"Name", max_length=1023, default="")
+    street = models.CharField(u"Address", max_length=1023)
+    suburb = models.CharField(max_length=255, blank=True)
+    postcode = models.CharField(max_length=100)
+    city = models.CharField(u"Town / City", max_length=255)
+    country = models.CharField(max_length=2, default=u'New Zealand',
+                               choices=COUNTRY_CHOICES)
+    email = models.EmailField()
+
+    class Meta:
+        abstract = True
+
+
 # class Order(models.Model, FullTransactionProtocol):
-class Order(BaseOrder):
+class Order(BasePerson, BaseOrder):
 
     # values are integers so we can do numeric comparison, i.e.
     # > Order.objects.filter(status__gte=STATUS_PAID) etc
@@ -41,14 +55,7 @@ class Order(BaseOrder):
 
     secret = models.CharField(max_length=32, editable=False, default=make_uuid,
                               unique=True, db_index=True)
-    name = models.CharField(u"Name", max_length=1023, default="")
-    street = models.CharField(u"Address", max_length=1023)
-    suburb = models.CharField(max_length=255, blank=True)
-    postcode = models.CharField(max_length=100)
-    city = models.CharField(u"Town / City", max_length=255)
-    country = models.CharField(max_length=2, default=u'New Zealand',
-                               choices=COUNTRY_CHOICES)
-    email = models.EmailField()
+
     currency = models.CharField(max_length=3, editable=False,
                                 default=DEFAULT_CURRENCY)
     created = models.DateTimeField(default=datetime.now)
@@ -141,3 +148,10 @@ class Order(BaseOrder):
 
 class OrderLine(BaseOrderLine):
     parent_object = models.ForeignKey(Order, related_name='lines')
+
+
+class GiftRecipient(BasePerson):
+    order = models.OneToOneField(Order)
+
+    def __unicode__(self):
+        return u"Gift to: %s" % (self.name)

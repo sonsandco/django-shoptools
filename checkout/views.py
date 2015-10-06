@@ -81,8 +81,6 @@ def checkout(request, cart, order):
             "order": order,
         }
 
-    else:
-
     if order:
         get_form = partial(OrderForm, instance=order)
 

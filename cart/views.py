@@ -17,7 +17,7 @@ def get_cart_html(request, cart, template_name):
         return template.render({'cart': cart}, request=request)
 
 
-def cart_view(action=None, session_key=None):
+def cart_view(action=None, get_cart=Cart):
     '''Decorator supplies request and current cart as arguments to the action
        function. Returns appropriate errors if the request method is not POST,
        or if any required params are missing.
@@ -32,7 +32,7 @@ def cart_view(action=None, session_key=None):
         if action and not data:
             return HttpResponseNotAllowed(['POST'])
 
-        cart = Cart(request, session_key=session_key)
+        cart = get_cart(request)
         if action:
             success = action(data, cart)
             if not success:

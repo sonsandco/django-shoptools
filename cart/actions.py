@@ -26,6 +26,8 @@ def cart_action(required=[]):
 
 @cart_action()
 def update_cart(data, cart):
+    # TODO blow this away? Use line-level endpoints instead
+
     # remove things if a remove button was clicked
     key_to_remove = data.get('remove', None)
     if key_to_remove:
@@ -42,14 +44,6 @@ def update_cart(data, cart):
                     pass
                 else:
                     cart.update_quantity(*unpack_key(key), qty=qty)
-
-        # and options
-        prefix = "option:"
-        for (name, val) in data.items():
-            if name.startswith(prefix):
-                key, option = name[len(prefix):].split(':')
-                cart.update_options(*unpack_key(key), **{option: val})
-
     return True
 
 

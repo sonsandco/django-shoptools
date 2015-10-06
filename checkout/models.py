@@ -4,7 +4,7 @@ import uuid
 from django.db import models
 from django.conf import settings
 
-from cart.models import BaseOrderLine, ICart
+from cart.models import BaseOrderLine, BaseOrder
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
@@ -16,14 +16,14 @@ DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
 
 def make_uuid():
-    """the hyphens in uuids are unnecessary, and brevity will be an
-    advantage in our urls."""
     u = uuid.uuid4()
     return str(u).replace('-', '')
 
 
 # class Order(models.Model, FullTransactionProtocol):
 class Order(models.Model, ICart):
+    # values are integers so we can do numeric comparison, i.e.
+    # > Order.objects.filter(status__gte=STATUS_PAID) etc
     STATUS_NEW = 1
     STATUS_PAYMENT_FAILED = 2
     STATUS_PAID = 3
@@ -55,7 +55,19 @@ class Order(models.Model, ICart):
                                       default=0)
 
     account = models.ForeignKey('accounts.Account', null=True, blank=True)
+    shipping_cost = models.DecimalField(max_digits=8, decimal_places=2,
+                                        default=0)
+    _shipping_options = models.TextField(blank=True, default='',
+                                         db_column='shipping_options')
     # payments = GenericRelation(Transaction)
+
+    def get_shipping_options(self):
+        return json.loads(self._shipping_options or '{}')
+
+    def set_shipping_options(self, opts):
+        self._shipping_options = json.dumps(opts)
+
+    shipping_options = property(get_shipping_options, set_shipping_options)
 
     @models.permalink
     def get_absolute_url(self):
@@ -76,6 +88,9 @@ class Order(models.Model, ICart):
     def total(self):
         return self.subtotal + self.shipping_cost
 
+    def get_line_cls(self):
+        return OrderLine
+
     # django-dps integration:
     def get_amount(self):
         return max(0, self.total - self.amount_paid)
@@ -86,10 +101,17 @@ class Order(models.Model, ICart):
     def transaction_succeeded(self, transaction=None, interactive=False,
                               status_updated=True):
         if status_updated:
-            self.amount_paid = transaction.amount if transaction else 0
+            self.amount_paid = \
+                self.amount_paid + (transaction.amount if transaction else 0)
             self.status = self.STATUS_PAID
             self.save()
             send_email_receipt(self)
+
+            for line in self.get_lines():
+                item = line.item
+                if hasattr(item, 'purchase'):
+                    item.purchase(line)
+
         return self.get_absolute_url()
 
     def transaction_failed(self, transaction=None, interactive=False,
@@ -101,8 +123,7 @@ class Order(models.Model, ICart):
         return self.get_absolute_url()
 
     def get_lines(self):
-        for line in self.lines.all():
-            yield (line.description, line.quantity, line.total)
+        return self.lines.all()
 
 
 class OrderLine(BaseOrderLine):

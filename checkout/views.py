@@ -75,7 +75,7 @@ def checkout(request, cart, order):
        page, otherwise show the checkout form.
     """
 
-    if order and order.status in [Order.STATUS_PAID, Order.STATUS_SHIPPED]:
+    if order and order.status >= Order.STATUS_PAID:
         return {
             "template": "success",
             "order": order,
@@ -113,7 +113,13 @@ def checkout(request, cart, order):
 
             if new_order:
                 # save the cart to a series of orderlines
-                cart.save_to(order, OrderLine)
+                cart.save_to(order)
+
+                # save shipping info
+                order.shipping_options = cart.shipping_options
+                order.shipping_cost = cart.shipping_cost
+                order.save()
+
                 cart.clear()
 
             # and off we go to pay, if necessary

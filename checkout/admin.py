@@ -1,8 +1,6 @@
 from django.contrib import admin
 
 from cart.admin import orderline_inline_factory
-# from dps.admin import TransactionInlineAdmin
-# from paypal.admin import TransactionInlineAdmin
 
 from .models import Order, OrderLine
 

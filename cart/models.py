@@ -333,9 +333,11 @@ class Cart(ICart):
 
     def get_lines(self):
         if self._data is None:
-            return []
-        return [CartLine(currency=self.currency, **line)
-                for line in self._data["lines"]]
+            return
+        for line in self._data["lines"]:
+            line = CartLine(currency=self.currency, **line)
+            if line.item:
+                yield line
 
     def count(self):
         if self._data is None:

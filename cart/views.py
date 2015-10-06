@@ -59,6 +59,6 @@ def cart_view(action=None, get_cart=Cart):
 
 get_cart = cart_view()
 all_actions = ('update_cart', 'add', 'quantity', 'clear', 'update_shipping',
-               'add_voucher', 'remove_voucher', 'update_vouchers')
+               'update_vouchers')
 for action in all_actions:
     locals()[action] = cart_view(getattr(actions, action))

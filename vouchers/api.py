@@ -1,4 +1,4 @@
-from .models import calculate_discounts, save_discounts, get_vouchers
+from .models import calculate_discounts, save_discounts
 from .admin import DiscountInline
 
 

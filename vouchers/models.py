@@ -1,5 +1,6 @@
 # from datetime import datetime
 import uuid
+import decimal
 
 from django.db import models
 from django.template.defaultfilters import floatformat
@@ -15,7 +16,7 @@ def get_vouchers(codes):
     return BaseVoucher.objects.select_subclasses().filter(code__in=codes)
 
 
-def calculate_discounts(obj, vouchers):
+def calculate_discounts(obj, codes, invalid=False):
     """Calculate the total discount for an ICart instance, for the given
        vouchers. Return a list of Discount instances (unsaved)
        - Multiple percentage vouchers, just take the biggest
@@ -25,6 +26,8 @@ def calculate_discounts(obj, vouchers):
 
     assert isinstance(obj, ICart)
 
+    codes = set(codes)  # remove duplicates
+    vouchers = get_vouchers(codes)
     discounts = []
     total = obj.subtotal + obj.shipping_cost
 
@@ -55,7 +58,12 @@ def calculate_discounts(obj, vouchers):
         if not p_voucher or p_voucher.amount < voucher.amount:
             p_voucher = voucher
     if p_voucher:
-        amount = min(total, total * p_voucher.amount / 100)
+        # percentage discounts can't be used for some products, i.e. gift cards
+        p_total = decimal.Decimal(sum([
+            line.total for line in obj.get_lines()
+            if getattr(line.item, 'allow_discounts', True)]))
+
+        amount = min(total, p_total * p_voucher.amount / 100)
         total -= amount
         discounts.append(
             Discount(voucher=p_voucher, amount=amount, **defaults))
@@ -70,11 +78,20 @@ def calculate_discounts(obj, vouchers):
         total -= amount
         discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
 
+    if invalid:
+        # identify bad codes and add to the list
+        valid_codes = [d.voucher.code for d in discounts]
+        invalid_codes = [c for c in codes if c not in valid_codes]
+
+        return discounts, invalid_codes
+
     return discounts
 
 
-def save_discounts(obj, vouchers):
+def save_discounts(obj, codes):
     assert isinstance(obj, Order)
+
+    vouchers = get_vouchers(codes)
 
     for discount in calculate_discounts(obj, vouchers):
         discount.save()

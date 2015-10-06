@@ -263,19 +263,19 @@ class Cart(ICart):
                                             DEFAULT_CURRENCY)
         self._data = self.request.session.get(self.session_key, None)
 
-    def add_voucher(self, code):
-        self._init_session_cart()
-        if code not in self._data["vouchers"]:
-            self._data["vouchers"].append(code)
-            self.request.session.modified = True
-        return True
-
-    def remove_voucher(self, code):
-        self._init_session_cart()
-        self._data["vouchers"] = filter(lambda c: c != code,
-                                        self._data["vouchers"])
-        self.request.session.modified = True
-        return True
+    # def add_voucher(self, code):
+    #     self._init_session_cart()
+    #     if code not in self._data["vouchers"]:
+    #         self._data["vouchers"].append(code)
+    #         self.request.session.modified = True
+    #     return True
+    #
+    # def remove_voucher(self, code):
+    #     self._init_session_cart()
+    #     self._data["vouchers"] = filter(lambda c: c != code,
+    #                                     self._data["vouchers"])
+    #     self.request.session.modified = True
+    #     return True
 
     def get_voucher_codes(self):
         if self._data is None:
@@ -284,20 +284,15 @@ class Cart(ICart):
 
     def update_vouchers(self, codes):
         self._init_session_cart()
-        for code in self.get_voucher_codes():
-            self.remove_voucher(code)
-        for code in codes:
-            self.add_voucher(code)
+        self._data["vouchers"] = list(codes)
+        self.request.session.modified = True
         return True
 
-    def get_vouchers(self):
-        return get_voucher_module().get_vouchers(self.get_voucher_codes())
-
-    def calculate_discounts(self):
+    def calculate_discounts(self, invalid=False):
         voucher_module = get_voucher_module()
         if voucher_module:
-            return voucher_module.calculate_discounts(self,
-                                                      self.get_vouchers())
+            return voucher_module.calculate_discounts(
+                self, self.get_voucher_codes(), invalid=invalid)
         return []
 
     @property
@@ -335,49 +330,6 @@ class Cart(ICart):
 
         self.request.session.modified = True
         return True
-
-    # def add(self, ctype, pk, qty=1):
-    #     app_label, model = ctype.split('.')
-    #     ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
-    #     assert issubclass(ctype_obj.model_class(), ICartItem)
-    #     assert isinstance(qty, int)
-    #
-    #     idx = self._line_index(ctype, pk)
-    #     if idx is not None:
-    #         # Already in the cart, so update the existing line
-    #         line = self._data["lines"][idx]
-    #         return self.update_quantity(ctype, pk, qty + line["qty"])
-    #
-    #     self._init_session_cart()
-    #     line = {'key': create_key(ctype, pk), 'qty': qty}
-    #     self._data["lines"].append(line)
-    #     # self.update_total()
-    #     self.request.session.modified = True
-    #     return True
-    #
-    # def remove(self, ctype, pk):
-    #     idx = self._line_index(ctype, pk)
-    #     if idx is not None:  # might be 0
-    #         del self._data["lines"][idx]
-    #         # self.update_total()
-    #         self.request.session.modified = True
-    #         return True
-    #
-    #     return False
-    #
-    # def update_quantity(self, ctype, pk, qty):
-    #     assert isinstance(qty, int)
-    #
-    #     if qty == 0:
-    #         return self.remove(ctype, pk)
-    #
-    #     idx = self._line_index(ctype, pk)
-    #     if idx is not None:  # might be 0
-    #         self._data["lines"][idx]['qty'] = qty
-    #         self.request.session.modified = True
-    #         return True
-    #
-    #     return False
 
     def get_lines(self):
         if self._data is None:
@@ -417,9 +369,9 @@ class Cart(ICart):
         # save valid discounts - TODO should this go here?
         # Do we need to subclass Cart as DiscountCart?
         voucher_module = get_voucher_module()
-        vouchers = self.get_vouchers() if voucher_module else None
+        vouchers = self.get_voucher_codes() if voucher_module else None
         if vouchers:
-            voucher_module.save_discounts(obj, self.get_vouchers())
+            voucher_module.save_discounts(obj, vouchers)
 
     def empty(self):
         return not bool(len(self.get_lines()))

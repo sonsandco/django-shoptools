@@ -8,6 +8,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import never_cache
 from django.conf import settings
 from django.contrib.auth import authenticate, login
+from django.contrib.admin.views.decorators import staff_member_required
 
 from cart.models import Cart, get_shipping_module
 # from dps.transactions import make_payment
@@ -16,6 +17,7 @@ from accounts.models import Account
 
 from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm
 from .models import Order
+from .emails import email_content
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
 PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
@@ -92,7 +94,8 @@ def checkout(request, cart, order):
 
     if order:
         get_form = partial(OrderForm, instance=order)
-
+        get_gift_form = partial(GiftRecipientForm, prefix='gift',
+                                instance=order.get_gift_recipient())
         def sanity_check():
             return 0
 
@@ -111,6 +114,7 @@ def checkout(request, cart, order):
         initial.update(request.session.get(CHECKOUT_SESSION_KEY, {}))
 
         get_form = partial(OrderForm, initial=initial)
+        get_gift_form = partial(GiftRecipientForm, prefix='gift')
         sanity_check = lambda: cart.subtotal
         new_order = True
 
@@ -129,7 +133,7 @@ def checkout(request, cart, order):
         else:
             user_form_valid = True
 
-        gift_form = GiftRecipientForm(request.POST, prefix='gift')
+        gift_form = get_gift_form(request.POST)
         is_gift = request.POST.get('is_gift')
         gift_form_valid = gift_form.is_valid() if is_gift else True
 
@@ -160,6 +164,8 @@ def checkout(request, cart, order):
                 recipient = gift_form.save(commit=False)
                 recipient.order = order
                 recipient.save()
+            elif gift_form.instance and gift_form.instance.pk:
+                gift_form.instance.delete()
 
             if new_order:
                 # save the cart to a series of orderlines
@@ -184,7 +190,7 @@ def checkout(request, cart, order):
             request.session.modified = True
     else:
         form = get_form(sanity_check=sanity_check())
-        gift_form = GiftRecipientForm(prefix='gift')
+        gift_form = get_gift_form()
         user_form = get_user_form()
 
     return {
@@ -195,4 +201,19 @@ def checkout(request, cart, order):
         'order': order,
         'account': account,
         'cart_errors': cart_errors,
+    }
+
+
+@staff_member_required
+@checkout_view
+def preview_emails(request, cart, order):
+    # send_email('receipt', [order.email], order=order)
+    # send_email('notification', [t[1] for t in settings.CHECKOUT_MANAGERS],
+    #            order=order)
+    emails = []
+    for t in ('receipt', 'notification'):
+        emails.append(email_content(t, order=order))
+
+    return {
+        'emails': emails,
     }

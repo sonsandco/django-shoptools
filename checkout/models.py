@@ -25,9 +25,9 @@ def make_uuid():
 class BasePerson(models.Model):
     name = models.CharField(u"Name", max_length=1023, default="")
     street = models.CharField(u"Address", max_length=1023)
-    suburb = models.CharField(max_length=255, blank=True)
     postcode = models.CharField(max_length=100)
     city = models.CharField(u"Town / City", max_length=255)
+    state = models.CharField(max_length=255, blank=True, default='')
     country = models.CharField(max_length=2, default=u'New Zealand',
                                choices=COUNTRY_CHOICES)
     email = models.EmailField()
@@ -61,6 +61,7 @@ class Order(BasePerson, BaseOrder):
     created = models.DateTimeField(default=datetime.now)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)
+    tracking_number = models.CharField(blank=True, default='', max_length=50)
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 
@@ -148,6 +149,12 @@ class Order(BasePerson, BaseOrder):
     def get_lines(self):
         return self.lines.all()
 
+    def get_gift_recipient(self):
+        try:
+            return GiftRecipient.objects.get(order=self)
+        except GiftRecipient.DoesNotExist:
+            return GiftRecipient(order=self)
+
 
 class OrderLine(BaseOrderLine):
     parent_object = models.ForeignKey(Order, related_name='lines')
@@ -155,6 +162,7 @@ class OrderLine(BaseOrderLine):
 
 class GiftRecipient(BasePerson):
     order = models.OneToOneField(Order)
+    message = models.TextField(blank=True, default='')
 
     def __unicode__(self):
         return u"Gift to: %s" % (self.name)

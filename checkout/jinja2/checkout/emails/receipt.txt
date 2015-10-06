@@ -12,7 +12,7 @@ Total: ${{ order.total }}
 {{ order.email }}
 {{ order.phone }}
 {{ order.street }}
-{{ order.suburb }}
 {{ order.postcode }}
 {{ order.city }}
+{{ order.state }}
 {{ order.country }}

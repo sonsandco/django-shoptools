@@ -218,7 +218,7 @@ COUNTRY_CHOICES = [
     (u'SE', u'Sweden'),
     (u'CH', u'Switzerland'),
     (u'SY', u'Syrian Arab Republic'),
-    (u'TW', u'Taiwan, Province of China'),
+    (u'TW', u'Taiwan'),
     (u'TJ', u'Tajikistan'),
     (u'TZ', u'Tanzania, United Republic of'),
     (u'TH', u'Thailand'),

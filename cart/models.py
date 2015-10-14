@@ -169,6 +169,9 @@ class BaseOrder(models.Model, ICart):
     def get_lines(self):
         return self.get_line_cls().objects.filter(parent_object=self)
 
+    def empty(self):
+        return not self.get_lines().count()
+
     def count(self):
         return self.get_lines().count()
 
@@ -266,7 +269,7 @@ class Cart(ICart):
     def get_voucher_codes(self):
         if self._data is None:
             return []
-        return self._data["vouchers"]
+        return self._data.get('vouchers', [])
 
     def update_vouchers(self, codes):
         self._init_session_cart()
@@ -343,7 +346,7 @@ class Cart(ICart):
 
     def save_to(self, obj):
         assert isinstance(obj, ICart)
-        assert self._data and (self._data.get("lines", None) is not None)
+        assert self._data
 
         for cart_line in self.get_lines():
             line = obj.get_line_cls()()
@@ -362,7 +365,7 @@ class Cart(ICart):
             voucher_module.save_discounts(obj, vouchers)
 
     def empty(self):
-        return not bool(len(self.get_lines()))
+        return not bool(len(list(self.get_lines())))
 
     def clear(self):
         if self._data is not None:
@@ -372,7 +375,7 @@ class Cart(ICart):
     # Private methods
     def _init_session_cart(self):
         if self._data is None:
-            data = {"lines": [], "vouchers": []}
+            data = {'lines': []}
             self._data = self.request.session[self.session_key] = data
 
     def _line_index(self, ctype, pk):

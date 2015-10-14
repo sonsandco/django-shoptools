@@ -263,20 +263,6 @@ class Cart(ICart):
                                             DEFAULT_CURRENCY)
         self._data = self.request.session.get(self.session_key, None)
 
-    # def add_voucher(self, code):
-    #     self._init_session_cart()
-    #     if code not in self._data["vouchers"]:
-    #         self._data["vouchers"].append(code)
-    #         self.request.session.modified = True
-    #     return True
-    #
-    # def remove_voucher(self, code):
-    #     self._init_session_cart()
-    #     self._data["vouchers"] = filter(lambda c: c != code,
-    #                                     self._data["vouchers"])
-    #     self.request.session.modified = True
-    #     return True
-
     def get_voucher_codes(self):
         if self._data is None:
             return []

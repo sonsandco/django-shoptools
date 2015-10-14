@@ -159,11 +159,11 @@ class Order(BasePerson, BaseOrder):
     def get_lines(self):
         return self.lines.all()
 
-    def get_gift_recipient(self):
+    def get_gift_recipient(self, create=True):
         try:
             return GiftRecipient.objects.get(order=self)
         except GiftRecipient.DoesNotExist:
-            return GiftRecipient(order=self)
+            return GiftRecipient(order=self) if create else None
 
 
 class OrderLine(BaseOrderLine):

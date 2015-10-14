@@ -11,7 +11,7 @@ from cart.models import BaseOrderLine, BaseOrder
 # from paypal.models import FullTransactionProtocol, Transaction
 
 from countries import COUNTRY_CHOICES
-from .emails import send_email_receipt
+from .emails import send_email_receipt, send_dispatch_email
 
 
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
@@ -71,6 +71,16 @@ class Order(BasePerson, BaseOrder):
     _shipping_options = models.TextField(blank=True, default='',
                                          db_column='shipping_options')
     # payments = GenericRelation(Transaction)
+    dispatched = models.DateTimeField(null=True, editable=False)
+
+    def save(self, *args, **kwargs):
+        super(Order, self).save(*args, **kwargs)
+        if self.status == self.STATUS_SHIPPED and not self.dispatched:
+            # Only send the email if the update actually does something,
+            # to guard against race conditions
+            if Order.objects.filter(pk=self.pk, dispatched__isnull=True) \
+                            .update(dispatched=datetime.now()):
+                send_dispatch_email(self)
 
     def clean(self):
         if self.tracking_number:

@@ -16,6 +16,10 @@ def send_email_receipt(order):
                order=order)
 
 
+def send_dispatch_email(order):
+    send_email('dispatch', [order.email], order=order)
+
+
 def email_content(email_type, **context):
     '''Return tuple of subject, text content and html content for a given email
        type and context.'''
@@ -52,4 +56,6 @@ def send_email(email_type, recipients, cc=[], bcc=[], **context_dict):
                                      cc=cc, bcc=bcc)
     if html:
         message.attach_alternative(html, "text/html")
+    # TODO should we be failing silently here? If not will need some way to
+    # tell the user the address didn't work
     return message.send()

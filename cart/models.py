@@ -364,6 +364,16 @@ class Cart(ICart):
         if vouchers:
             voucher_module.save_discounts(obj, vouchers)
 
+        # link the order to the cart
+        self._data['order_obj'] = '%s.%s|%s' % (
+            obj._meta.app_label, obj._meta.model_name, obj.pk)
+        self.request.session.modified = True
+
+    @property
+    def order_obj(self):
+        key = self._data.get('order_obj')
+        return get_item_from_key(key) if key else None
+
     def empty(self):
         return not bool(len(list(self.get_lines())))
 

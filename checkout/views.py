@@ -79,7 +79,13 @@ def checkout(request, cart, order):
        page, otherwise show the checkout form.
     """
 
+    # if the cart is already linked with an order, show that order
+    if not order and cart.order_obj:
+        return redirect(cart.order_obj)
+
     if order and order.status >= Order.STATUS_PAID:
+        if cart.order_obj == order:
+            cart.clear()
         return {
             "template": "success",
             "order": order,
@@ -167,16 +173,16 @@ def checkout(request, cart, order):
             elif gift_form.instance and gift_form.instance.pk:
                 gift_form.instance.delete()
 
-            if new_order:
-                # save the cart to a series of orderlines
+            # save any cart lines to the order, overwriting existing lines, but
+            # only if the order is either new, or matches the cart
+            if not cart.empty() and (new_order or cart.order_obj == order):
+                [l.delete() for l in order.get_lines()]
                 cart.save_to(order)
 
                 # save shipping info
                 order.shipping_options = cart.shipping_options
                 order.shipping_cost = cart.shipping_cost
                 order.save()
-
-                cart.clear()
 
             # and off we go to pay, if necessary
             if order.total:

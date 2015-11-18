@@ -17,14 +17,14 @@ def get_cart_html(request, cart, template_name):
         return template.render({'cart': cart}, request=request)
 
 
-def cart_view(action=None, get_cart=Cart):
+def cart_view(action=None):
     '''Decorator supplies request and current cart as arguments to the action
        function. Returns appropriate errors if the request method is not POST,
        or if any required params are missing.
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
 
-    def view_func(request, next_url=None, data=None,
+    def view_func(request, next_url=None, data=None, get_cart=Cart,
                   ajax_template='checkout/cart_ajax.html'):
         if not data:
             data = request.POST
@@ -41,8 +41,10 @@ def cart_view(action=None, get_cart=Cart):
         if request.is_ajax():
             data = {
                 'cart': cart.as_dict(),
-                'html_snippet': get_cart_html(request, cart, ajax_template),
             }
+            if ajax_template:
+                data['html_snippet'] = get_cart_html(request, cart,
+                                                     ajax_template)
             return HttpResponse(json.dumps(data),
                                 content_type="application/json")
 

@@ -33,7 +33,7 @@ class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
         exclude = ('created', 'status', 'amount_paid', 'account',
-                   'shipping_cost', '_shipping_options', 'tracking_number', )
+                   'estimated_delivery', )
 
 
 class GiftRecipientForm(forms.ModelForm):

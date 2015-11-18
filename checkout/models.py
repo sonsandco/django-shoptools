@@ -6,7 +6,7 @@ from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
-from cart.models import BaseOrderLine, BaseOrder
+from cart.models import BaseOrderLine, BaseOrder, get_shipping_module
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
@@ -61,17 +61,22 @@ class Order(BasePerson, BaseOrder):
     created = models.DateTimeField(default=datetime.now)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)
-    tracking_number = models.CharField(blank=True, default='', max_length=50)
+    estimated_delivery = models.DateField(blank=True, null=True)
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 
     account = models.ForeignKey('accounts.Account', null=True, blank=True)
-    shipping_cost = models.DecimalField(max_digits=8, decimal_places=2,
-                                        default=0)
-    _shipping_options = models.TextField(blank=True, default='',
-                                         db_column='shipping_options')
+    _shipping_cost = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0, db_column='shipping_cost',
+        editable=False, verbose_name='shipping cost')
+    _shipping_options = models.TextField(
+        blank=True, default='', editable=False, db_column='shipping_options',
+        verbose_name='shipping options')
     # payments = GenericRelation(Transaction)
     dispatched = models.DateTimeField(null=True, editable=False)
+    delivery_notes = models.TextField(blank=True, default='')
+    receive_email = models.BooleanField(u"Receive our email news and offers",
+                                        default=False)
 
     def save(self, *args, **kwargs):
         super(Order, self).save(*args, **kwargs)
@@ -82,19 +87,27 @@ class Order(BasePerson, BaseOrder):
                             .update(dispatched=datetime.now()):
                 send_dispatch_email(self)
 
-    def clean(self):
-        if self.tracking_number:
-            if Order.objects.exclude(pk=self.pk).filter(
-                    tracking_number=self.tracking_number):
-                raise ValidationError('Tracking numbers must be unique')
+    def set_shipping(self, options):
+        """Use this method to set shipping options; shipping cost will be
+           calculated and saved to the object so it doesn't change if the
+           shipping rates change in the future. """
 
-    def get_shipping_options(self):
+        # actual country overrides whatever is in the options
+        recipient = self.get_gift_recipient(create=False)
+        options['country'] = recipient.country if recipient else self.country
+
+        self._shipping_options = json.dumps(options)
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            self._shipping_cost = shipping_module.calculate_shipping(self)
+
+    @property
+    def shipping_cost(self):
+        return self._shipping_cost
+
+    @property
+    def shipping_options(self):
         return json.loads(self._shipping_options or '{}')
-
-    def set_shipping_options(self, opts):
-        self._shipping_options = json.dumps(opts)
-
-    shipping_options = property(get_shipping_options, set_shipping_options)
 
     @models.permalink
     def get_absolute_url(self):

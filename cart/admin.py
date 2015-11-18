@@ -15,7 +15,8 @@ def orderline_inline_factory(model_cls):
 
         model = model_cls
         exclude = ('item_content_type', 'item_object_id', 'created')
-        form = OrderLineForm
+        readonly_fields = ('quantity', 'description', 'total')
+        # form = OrderLineForm
 
         def has_add_permission(self, request):
             return False

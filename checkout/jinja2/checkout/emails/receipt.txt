@@ -15,4 +15,4 @@ Total: ${{ order.total }}
 {{ order.postcode }}
 {{ order.city }}
 {{ order.state }}
-{{ order.country }}
+{{ order.get_country_display() }}

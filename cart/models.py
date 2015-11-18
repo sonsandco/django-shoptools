@@ -79,7 +79,7 @@ class ICart(object):
        """
 
     def add(self, ctype, pk, qty=1):
-        return self.update_quantity(ctype, pk, qty)
+        return self.update_quantity(ctype, pk, qty, add=True)
 
     def remove(self, ctype, pk):
         return self.update_quantity(ctype, pk, 0)
@@ -90,7 +90,7 @@ class ICart(object):
             'lines': [line.as_dict() for line in self.get_lines()],
             # TODO add discounts?
         }
-        for f in ('shipping_cost', 'total'):
+        for f in ('subtotal', 'shipping_cost', 'total'):
             if hasattr(self, f):
                 data[f] = float(getattr(self, f))
         return data
@@ -142,7 +142,10 @@ class BaseOrder(models.Model, ICart):
     class Meta:
         abstract = True
 
-    def update_quantity(self, ctype, pk, qty=1):
+    def update_quantity(self, ctype, pk, qty=1, add=False):
+        if qty == 0 and add:
+            return
+
         app_label, model = ctype.split('.')
         try:
             ctype_obj = ContentType.objects.get(app_label=app_label,
@@ -157,12 +160,17 @@ class BaseOrder(models.Model, ICart):
         }
         line_cls = self.get_line_cls()
         lines = line_cls.objects.filter(**values)
-        if qty < 1:
-            lines.delete()
+        if add:
+            update_qty = models.F('quantity') + qty
         else:
-            updated = lines.update(quantity=qty)
-            if not updated:
-                line_cls.objects.create(quantity=qty, **values)
+            update_qty = qty
+        updated = lines.update(quantity=update_qty)
+
+        if not updated and qty:
+            line_cls.objects.create(quantity=qty, **values)
+
+        # purge any with a zero quantity after the update
+        lines.filter(quantity__lte=0).delete()
 
         return True
 
@@ -204,6 +212,8 @@ class BaseOrderLine(models.Model, ICartLine):
 
     class Meta:
         abstract = True
+        unique_together = ('item_content_type', 'item_object_id',
+                           'parent_object')
 
     def save(self, *args, **kwargs):
         assert isinstance(self.item, ICartItem)
@@ -298,9 +308,12 @@ class Cart(ICart):
             return shipping_module.calculate_shipping(self)
         return 0
 
-    def update_quantity(self, ctype, pk, qty=1):
+    def update_quantity(self, ctype, pk, qty=1, add=False):
         assert isinstance(qty, int)
         idx = self._line_index(ctype, pk)
+
+        if add and idx is not None:
+            qty += self._data["lines"][idx]['qty']
 
         if qty < 1:
             if idx is None:
@@ -319,6 +332,12 @@ class Cart(ICart):
 
         self.request.session.modified = True
         return True
+
+    def get_line(self, ctype, pk):
+        idx = self._line_index(ctype, pk)
+        if idx is None:
+            return None
+        return CartLine(currency=self.currency, **self._data["lines"][idx])
 
     def get_lines(self):
         if self._data is None:
@@ -371,6 +390,9 @@ class Cart(ICart):
 
     @property
     def order_obj(self):
+        if self._data is None:
+            return None
+
         key = self._data.get('order_obj')
         return get_item_from_key(key) if key else None
 

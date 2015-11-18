@@ -21,8 +21,8 @@ from .forms import AccountForm, UserForm, CreateUserForm
 def orders(request):
     account = Account.objects.for_user(request.user)
     orders = Order.objects.filter(account=account)
-    current = orders.filter(status__lt=Order.STATUS_SHIPPED) \
-                    .order_by('status', 'created')
+    current = orders.filter(status=Order.STATUS_PAID) \
+                    .order_by('created')
     completed = orders.filter(status=Order.STATUS_SHIPPED) \
                       .order_by('-created')
 
@@ -43,7 +43,7 @@ def details(request):
         if account_form.is_valid() and user_form.is_valid():
             account_form.save()
             user_form.save()
-            messages.info(request, 'Your details were saved.')
+            messages.info(request, 'Your details were saved')
             return redirect(details)
     else:
         account_form = AccountForm(instance=account)

@@ -13,7 +13,7 @@
       {{ order.street }}<br>
       {{ order.city }} {{ order.postcode }}<br>
       {{ order.state }}<br>
-      {{ order.country }}<br>
+      {{ order.get_country_display() }}<br>
       {{ order.created|date('d F Y') }}<br>
       Email: {{ order.email }}<br>
     </p>

@@ -57,6 +57,7 @@ def calculate_discounts(obj, codes, invalid=False):
     for voucher in percentage:
         if not p_voucher or p_voucher.amount < voucher.amount:
             p_voucher = voucher
+
     if p_voucher:
         # percentage discounts can't be used for some products, i.e. gift cards
         p_total = decimal.Decimal(sum([
@@ -91,9 +92,7 @@ def calculate_discounts(obj, codes, invalid=False):
 def save_discounts(obj, codes):
     assert isinstance(obj, Order)
 
-    vouchers = get_vouchers(codes)
-
-    for discount in calculate_discounts(obj, vouchers):
+    for discount in calculate_discounts(obj, codes):
         discount.save()
 
 

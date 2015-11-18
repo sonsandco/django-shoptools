@@ -5,6 +5,7 @@ import importlib
 from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import get_template
 from django.http import HttpResponse, HttpResponseRedirect
+from django.core.urlresolvers import reverse
 from django.views.decorators.cache import never_cache
 from django.conf import settings
 from django.contrib.auth import authenticate, login
@@ -79,8 +80,13 @@ def checkout(request, cart, order):
        page, otherwise show the checkout form.
     """
 
-    # if the cart is already linked with an order, show that order
-    if not order and cart.order_obj:
+    if order and order.account and order.account.user != request.user and \
+       not request.user.is_staff:
+        return redirect(reverse('login') + '?next=' + request.path_info)
+
+    # if the cart is already linked with an (incomplete) order, show that order
+    if not order and cart.order_obj and \
+       cart.order_obj.status < Order.STATUS_PAID:
         return redirect(cart.order_obj)
 
     if order and order.status >= Order.STATUS_PAID:
@@ -102,6 +108,7 @@ def checkout(request, cart, order):
         get_form = partial(OrderForm, instance=order)
         get_gift_form = partial(GiftRecipientForm, prefix='gift',
                                 instance=order.get_gift_recipient())
+
         def sanity_check():
             return 0
 
@@ -177,15 +184,15 @@ def checkout(request, cart, order):
             # only if the order is either new, or matches the cart
             if not cart.empty() and (new_order or cart.order_obj == order):
                 [l.delete() for l in order.get_lines()]
+                [d.delete() for d in order.discount_set.all()]
                 cart.save_to(order)
 
-                # save shipping info
-                order.shipping_options = cart.shipping_options
-                order.shipping_cost = cart.shipping_cost
+                # save shipping info - cost calculated automatically
+                order.set_shipping(cart.shipping_options)
                 order.save()
 
             # and off we go to pay, if necessary
-            if order.total:
+            if order.total > 0:
                 return get_payment_module().make_payment(order, request)
             else:
                 order.transaction_succeeded()
@@ -208,6 +215,16 @@ def checkout(request, cart, order):
         'account': account,
         'cart_errors': cart_errors,
     }
+
+
+def invoice(request, secret):
+    order = get_object_or_404(Order, secret=secret,
+                              status__gte=Order.STATUS_PAID)
+
+    content = get_template('checkout/invoice.html').render({
+        'order': order,
+    }, request=request)
+    return HttpResponse(content)
 
 
 @staff_member_required

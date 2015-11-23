@@ -4,9 +4,9 @@ import importlib
 
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-
 
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
@@ -247,7 +247,10 @@ def get_item_from_key(key):
     ctype, pk = unpack_key(key)
     content_type = ContentType.objects \
         .get_by_natural_key(*ctype.split("."))
-    return content_type.get_object_for_this_type(pk=pk)
+    try:
+        return content_type.get_object_for_this_type(pk=pk)
+    except ObjectDoesNotExist:
+        return None
 
 
 class CartLine(dict, ICartLine):

@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 
+from datetime import date
+
 from django.contrib import admin
 from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 
 from utilities.admin_shortcuts import get_readonly_fields, \
     readonly_inline_factory
 
 from .models import PercentageVoucher, FixedVoucher, Discount, \
     FreeShippingVoucher
+from .export import generate_csv
 
 
 class DiscountAdmin(admin.ModelAdmin):
@@ -35,7 +39,13 @@ admin.site.register(FreeShippingVoucher, VoucherAdmin)
 
 
 class FixedVoucherAdmin(VoucherAdmin):
-    list_display = VoucherAdmin.list_display + ('order', )
+    list_display = VoucherAdmin.list_display + (
+        'order', 'amount_redeemed', 'amount_remaining', )
+    actions = ('csv_export', )
+
+    def amount_remaining(self, obj):
+        val = obj.amount_remaining()
+        return val if val is not None else ''
 
     def order(self, obj):
         if obj.order_line:
@@ -45,4 +55,15 @@ class FixedVoucherAdmin(VoucherAdmin):
                 order)
         return ''
     order.allow_tags = True
+
+    def csv_export(self, request, queryset):
+        filename = 'Vouchers_' + date.today().strftime('%Y%m%d')
+
+        # response = HttpResponse()
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = \
+            "attachment; filename=%s.csv" % filename
+
+        generate_csv(queryset, response)
+        return response
 admin.site.register(FixedVoucher, FixedVoucherAdmin)

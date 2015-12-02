@@ -28,7 +28,7 @@ class OrderAdmin(admin.ModelAdmin):
     ] + voucher_inlines
     save_on_top = True
     actions = ('csv_export', )
-    readonly_fields = ('_shipping_cost', )
+    readonly_fields = ('_shipping_cost', 'id')
 
     def dispatch(self, request, order_pk):
         return

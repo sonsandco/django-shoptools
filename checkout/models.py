@@ -53,6 +53,8 @@ class Order(BasePerson, BaseOrder):
         (STATUS_SHIPPED, "Shipped"),
     ]
 
+    id = models.AutoField(verbose_name='Order number', primary_key=True)
+
     secret = models.CharField(max_length=32, editable=False, default=make_uuid,
                               unique=True, db_index=True)
 

@@ -127,9 +127,9 @@ class BaseVoucher(models.Model):
             return True
         return bool(self.limit - self.uses(exclude).count())
 
-    def amount_used(self, exclude={}):
+    def amount_redeemed(self, exclude={}):
         uses = self.uses(exclude)
-        return uses.aggregate(models.Sum('amount'))['amount__sum']
+        return uses.aggregate(models.Sum('amount'))['amount__sum'] or 0
 
     def amount_remaining(self, exclude={}):
         """Return dollar amount remaining on a voucher, where it makes sense.
@@ -139,7 +139,7 @@ class BaseVoucher(models.Model):
         if not isinstance(self.voucher, FixedVoucher) or self.limit is None:
             return None
 
-        return self.amount * self.limit - self.amount_used(exclude)
+        return self.amount * self.limit - self.amount_redeemed(exclude)
 
     def save(self, *args, **kwargs):
         if not self.code:

@@ -15,7 +15,8 @@ class AccountManager(models.Manager):
 
 
 class Account(models.Model):
-    COMMON_FIELDS = ('street', 'postcode', 'city', 'state', 'country')
+    COMMON_FIELDS = ('street', 'postcode', 'city', 'state', 'country',
+                     'receive_email', 'phone', )
 
     user = models.OneToOneField(User)
     street = models.CharField(u"Address", max_length=1023)
@@ -23,6 +24,7 @@ class Account(models.Model):
     city = models.CharField(max_length=255)
     state = models.CharField(max_length=255, blank=True, default='')
     country = models.CharField(max_length=2, choices=COUNTRY_CHOICES)
+    phone = models.CharField(max_length=50, default='')
 
     objects = AccountManager()
 

@@ -31,6 +31,7 @@ class BasePerson(models.Model):
     country = models.CharField(max_length=2, default=u'New Zealand',
                                choices=COUNTRY_CHOICES)
     email = models.EmailField()
+    phone = models.CharField(max_length=50, default='')
 
     class Meta:
         abstract = True

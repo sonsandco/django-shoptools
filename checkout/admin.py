@@ -5,7 +5,7 @@ from django.conf.urls import url
 from django.core.urlresolvers import reverse
 from django import forms
 
-from cart.models import get_voucher_module
+from cart.cart import get_voucher_module
 
 from .models import Order, OrderLine, GiftRecipient
 from .export import generate_csv

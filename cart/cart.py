@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 import decimal
 import importlib
@@ -25,14 +26,14 @@ def get_shipping_module():
 
 
 # TODO
-# the Cart and the Order object should share an interface
-# so should CartLine and OrderLine
+# the SessionCart and the Order object should share an interface
+# so should SessionCartLine and OrderLine
 # in a template we should be able to treat a db-saved or session "cart"
 # exactly the same
 # BUT are interfaces "pythonic"? Should these be ABCs?
 
 # This file is getting unwieldy, need to split into cart.session and
-# cart.models or something like that
+# cart.cart or something like that
 
 # Rather than raising NotImplementedError for things like total and
 # shipping_cost, we should check using hasattr and ignore if they're not there
@@ -136,8 +137,8 @@ class ICartLine(object):
 
 class BaseOrder(models.Model, ICart):
     """Base class for "Order" models, which are the db-saved version of a
-       session Cart. Theoretically, this model can be used interchangeably with
-       the Cart, adding/removing items etc. """
+       SessionCart. Theoretically, this model can be used interchangeably with
+       the SessionCart, adding/removing items etc. """
 
     class Meta:
         abstract = True
@@ -253,17 +254,17 @@ def get_item_from_key(key):
         return None
 
 
-class CartLine(dict, ICartLine):
+class SessionCartLine(dict, ICartLine):
     '''Thin wrapper around dict providing some convenience methods for
        accessing computed information about the line, according to ICartLine.
     '''
 
     def __init__(self, **kwargs):
         assert sorted(kwargs.keys()) == ['currency', 'key', 'qty']
-        return super(CartLine, self).__init__(**kwargs)
+        return super(SessionCartLine, self).__init__(**kwargs)
 
     def __setitem__(self, *args):
-        raise Exception(u"Sorry, CartLine instances are immutable.")
+        raise Exception(u"Sorry, SessionCartLine instances are immutable.")
 
     item = property(lambda s: get_item_from_key(s['key']))
     quantity = property(lambda s: s['qty'])
@@ -271,7 +272,11 @@ class CartLine(dict, ICartLine):
     description = property(lambda s: s.item.cart_description())
 
 
-class Cart(ICart):
+class SessionCart(ICart):
+    """Default session-saved cart class. To implement multiple "carts" in one
+       site using this class, pass a distinct session_key to the constructor
+       for each. """
+
     def __init__(self, request, session_key=None):
         self.request = request
         self.session_key = session_key or DEFAULT_SESSION_KEY
@@ -340,13 +345,14 @@ class Cart(ICart):
         idx = self._line_index(ctype, pk)
         if idx is None:
             return None
-        return CartLine(currency=self.currency, **self._data["lines"][idx])
+        return SessionCartLine(currency=self.currency,
+                               **self._data["lines"][idx])
 
     def get_lines(self):
         if self._data is None:
             return
         for line in self._data["lines"]:
-            line = CartLine(currency=self.currency, **line)
+            line = SessionCartLine(currency=self.currency, **line)
             if line.item:
                 yield line
 
@@ -428,3 +434,8 @@ class Cart(ICart):
                 if self._data["lines"][i]["key"] == create_key(ctype, pk):
                     return i
         return None
+
+
+def make_uuid():
+    u = uuid.uuid4()
+    return str(u).replace('-', '')

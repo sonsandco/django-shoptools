@@ -1,4 +1,4 @@
-from .models import Cart, unpack_key
+from .cart import SessionCart, unpack_key
 
 
 def cart_action(required=[]):
@@ -10,7 +10,7 @@ def cart_action(required=[]):
             assert cart or request
 
             if not cart:
-                cart = Cart(request, session_key=session_key)
+                cart = SessionCart(request, session_key=session_key)
 
             if not all(data.get(p) for p in required):
                 return False

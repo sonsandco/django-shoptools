@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
     HttpResponseBadRequest, HttpResponseNotAllowed
 from django.template.loader import get_template, TemplateDoesNotExist
 
-from .models import Cart
+from .cart import SessionCart
 from . import actions
 
 
@@ -24,7 +24,7 @@ def cart_view(action=None):
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
 
-    def view_func(request, next_url=None, data=None, get_cart=Cart,
+    def view_func(request, next_url=None, data=None, get_cart=SessionCart,
                   ajax_template='checkout/cart_ajax.html'):
         if not data:
             data = request.POST

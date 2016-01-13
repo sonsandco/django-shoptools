@@ -27,17 +27,23 @@ class OrderAdmin(admin.ModelAdmin):
         orderline_inline_factory(OrderLine),
     ] + voucher_inlines
     save_on_top = True
-    actions = ('csv_export', )
     readonly_fields = ('_shipping_cost', 'id')
+    actions = ('csv_export', 'resend_dispatch_email')
 
-    def dispatch(self, request, order_pk):
-        return
+    def resend_dispatch_email(self, request, queryset):
+        for order in queryset:
+            send_dispatch_email(order)
 
-    def get_urls(self):
-        urls = super(OrderAdmin, self).get_urls()
-        return urls + [
-            url(r'^dispatch/(\d+)$', self.dispatch),
-        ]
+        self.message_user(request, "Emails sent: %s" % queryset.count())
+
+    # def dispatch(self, request, order_pk):
+    #     return
+    #
+    # def get_urls(self):
+    #     urls = super(OrderAdmin, self).get_urls()
+    #     return urls + [
+    #         url(r'^dispatch/(\d+)$', self.dispatch),
+    #     ]
 
     def csv_export(self, request, queryset):
         filename = 'PM_export_' + date.today().strftime('%Y%m%d')

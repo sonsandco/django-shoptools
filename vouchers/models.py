@@ -152,8 +152,8 @@ class BaseVoucher(models.Model):
 
 class FixedVoucher(BaseVoucher):
     amount = models.DecimalField(max_digits=6, decimal_places=2)
-    order_line = models.OneToOneField('checkout.OrderLine', null=True,
-                                      editable=False)
+    order_line = models.ForeignKey('checkout.OrderLine', null=True,
+                                   editable=False)
 
     @property
     def discount_text(self):

@@ -2,8 +2,9 @@ from datetime import date
 from django.contrib import admin
 from django.http import HttpResponse
 from django.conf.urls import url
+from django.core.urlresolvers import reverse
+from django import forms
 
-from cart.admin import orderline_inline_factory
 from cart.models import get_voucher_module
 
 from .models import Order, OrderLine, GiftRecipient
@@ -18,13 +19,64 @@ class GiftRecipientInline(admin.StackedInline):
     extra = 0
 
 
+class OrderLineInline(admin.TabularInline):
+    model = OrderLine
+    exclude = ('item_content_type', 'item_object_id', 'created')
+    readonly_fields = ('quantity', 'description', 'total', )
+    extra = 0
+
+    def has_add_permission(self, request):
+        return False
+
+
+class AddOrderLineForm(forms.ModelForm):
+    item = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'variant-autocomplete'}))
+
+    class Meta:
+        model = OrderLine
+        fields = ('item', 'quantity', )
+
+    def __init__(self, *args, **kwargs):
+        super(AddOrderLineForm, self).__init__(*args, **kwargs)
+
+        # from shop.models import Variant
+        # self.fields['item'].choices = [
+        #     (v.id, unicode(v)) for v in Variant.objects.all()]
+
+    def save(self, commit=True):
+        line = super(AddOrderLineForm, self).save(commit=False)
+
+        from shop.models import Variant
+
+        variant = Variant.objects.get(pk=self.cleaned_data['item'])
+        line.item = variant
+        line.description = variant.cart_description()
+        line.total = variant.cart_line_total(line.quantity)
+        variant.purchase(line)
+        if commit:
+            line.save()
+        return line
+
+
+class AddOrderLineInline(admin.TabularInline):
+    model = OrderLine
+    extra = 0
+    form = AddOrderLineForm
+    fields = ('item', 'quantity')
+
+    def get_queryset(self, request):
+        return OrderLine.objects.none()
+
+
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('name', 'account', 'email', 'status',
                     'amount_paid', 'created', 'links')
     list_filter = ('status', 'created')
     inlines = [
         GiftRecipientInline,
-        orderline_inline_factory(OrderLine),
+        OrderLineInline,
+        AddOrderLineInline,
     ] + voucher_inlines
     save_on_top = True
     readonly_fields = ('_shipping_cost', 'id')

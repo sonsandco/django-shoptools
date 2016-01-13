@@ -49,7 +49,7 @@ class Order(BasePerson, BaseOrder):
 
     STATUS_CHOICES = [
         (STATUS_NEW, "New"),
-        (STATUS_PAID, "Paid"),
+        (STATUS_PAID, "Processing"),
         (STATUS_PAYMENT_FAILED, "Payment Failed"),
         (STATUS_SHIPPED, "Shipped"),
     ]

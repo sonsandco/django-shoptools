@@ -13,5 +13,5 @@ Recommended usage
    or add the django-shoptools directory to your path)
 3. Modify as needed, and check the whole lot in to your project repo.
 4. If you've made changes which are not specific to the project and have
-   general usefulness selectively check them in to the django-shoptools repo
+   general usefulness, selectively commit them to the django-shoptools repo
    and push back upstream

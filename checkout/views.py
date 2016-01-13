@@ -41,6 +41,11 @@ def checkout_view(wrapped_view):
             order = get_object_or_404(Order, secret=secret)
         else:
             order = None
+
+        if order and order.account and order.account.user != request.user and \
+           not request.user.is_staff:
+            return redirect(reverse('login') + '?next=' + request.path_info)
+
         ctx = {'request': request, 'cart': cart}
         result = wrapped_view(request, cart, order)
 
@@ -51,8 +56,10 @@ def checkout_view(wrapped_view):
                                     content_type="application/json")
             else:
                 return result
-
+        elif isinstance(result, HttpResponse):
+            return result
         elif isinstance(result, dict):
+            # TODO make this an else, we should assume it's a dict
             ctx.update(result)
 
         template = result.get('template', wrapped_view.__name__)
@@ -79,10 +86,6 @@ def checkout(request, cart, order):
     """Handle checkout process - if the order is completed, show the success
        page, otherwise show the checkout form.
     """
-
-    if order and order.account and order.account.user != request.user and \
-       not request.user.is_staff:
-        return redirect(reverse('login') + '?next=' + request.path_info)
 
     # if the cart is already linked with an (incomplete) order, show that order
     if not order and cart.order_obj and \
@@ -217,9 +220,10 @@ def checkout(request, cart, order):
     }
 
 
-def invoice(request, secret):
-    order = get_object_or_404(Order, secret=secret,
-                              status__gte=Order.STATUS_PAID)
+@checkout_view
+def invoice(request, cart, order):
+    if order.status < order.STATUS_PAID:
+        raise Http404
 
     content = get_template('checkout/invoice.html').render({
         'order': order,

@@ -12,6 +12,7 @@ from cart.models import BaseOrderLine, BaseOrder, get_shipping_module
 
 from countries import COUNTRY_CHOICES
 from .emails import send_email_receipt, send_dispatch_email
+import chimp
 
 
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
@@ -64,6 +65,8 @@ class Order(BasePerson, BaseOrder):
     created = models.DateTimeField(default=datetime.now)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)
+    tracking_number = models.CharField(blank=True, default='', max_length=50)
+    tracking_url = models.URLField(blank=True, default='')
     estimated_delivery = models.DateField(blank=True, null=True)
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
@@ -82,13 +85,30 @@ class Order(BasePerson, BaseOrder):
                                         default=False)
 
     def save(self, *args, **kwargs):
-        super(Order, self).save(*args, **kwargs)
+        order_qs = Order.objects.filter(pk=self.pk)
+        if self.receive_email:
+            if not self.pk or order_qs.filter(receive_email=False) \
+                                      .update(receive_email=True):
+                chimp.subscribe(self.email, self.name.split(' ')[0])
+        else:
+            if not self.pk or order_qs.filter(receive_email=True) \
+                                      .update(receive_email=False):
+                chimp.unsubscribe(self.email)
+
+        order = super(Order, self).save(*args, **kwargs)
         if self.status == self.STATUS_SHIPPED and not self.dispatched:
             # Only send the email if the update actually does something,
             # to guard against race conditions
             if Order.objects.filter(pk=self.pk, dispatched__isnull=True) \
                             .update(dispatched=datetime.now()):
                 send_dispatch_email(self)
+        return order
+
+    def clean(self):
+        if self.tracking_number:
+            if Order.objects.exclude(pk=self.pk).filter(
+                    tracking_number=self.tracking_number):
+                raise ValidationError('Tracking numbers must be unique')
 
     def set_shipping(self, options):
         """Use this method to set shipping options; shipping cost will be
@@ -118,14 +138,15 @@ class Order(BasePerson, BaseOrder):
 
     @property
     def invoice_number(self):
-        return str(self.pk).zfill(5)
+        return 'TPM-' + str(self.pk).zfill(5)
 
     def __unicode__(self):
         return u"%s on %s" % (self.name, self.created)
 
     @property
     def subtotal(self):
-        return sum(line.total for line in self.lines.all())
+        qs = self.lines.filter(return_status__lt=OrderLine.STATUS_RETURNED)
+        return sum(line.total for line in qs)
 
     @property
     def total(self):
@@ -183,7 +204,16 @@ class Order(BasePerson, BaseOrder):
 
 
 class OrderLine(BaseOrderLine):
+    STATUS_RETURN_REQUESTED = 1
+    STATUS_RETURNED = 2
+    STATUS_CHOICES = (
+        (0, '---'),
+        (STATUS_RETURN_REQUESTED, 'Return requested'),
+        (STATUS_RETURNED, 'Item returned'),
+    )
     parent_object = models.ForeignKey(Order, related_name='lines')
+    return_status = models.PositiveSmallIntegerField(
+        choices=STATUS_CHOICES, default=0)
 
 
 class GiftRecipient(BasePerson):
@@ -192,3 +222,36 @@ class GiftRecipient(BasePerson):
 
     def __unicode__(self):
         return u"Gift to: %s" % (self.name)
+
+
+class OrderReturn(models.Model):
+    TYPE_CHOICES = (
+        ('exchange', 'Exchange'),
+        ('return', 'Return'),
+    )
+    REFUND_TYPE_CHOICES = (
+        ('credit', 'Store Credit'),
+        ('refund', 'Refund'),
+    )
+    STATUS_CHOICES = (
+        (1, 'In Progress'),
+        (2, 'Processed'),
+    )
+
+    order = models.OneToOneField(Order)
+    created = models.DateTimeField(auto_now_add=True)
+    return_type = models.CharField(verbose_name='type', max_length=20,
+                                   choices=TYPE_CHOICES,
+                                   default=TYPE_CHOICES[0][0])
+    exchange_for = models.TextField(default='', blank=True)
+    refund_type = models.CharField(max_length=20, choices=REFUND_TYPE_CHOICES,
+                                   default=REFUND_TYPE_CHOICES[0][0])
+    reason = models.TextField()
+    status = models.PositiveSmallIntegerField(choices=STATUS_CHOICES,
+                                              default=1)
+
+    def __unicode__(self):
+        return 'Return: %s' % self.order
+
+    class Meta:
+        verbose_name = 'return'

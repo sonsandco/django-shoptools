@@ -7,7 +7,7 @@ from django import forms
 
 from cart.models import get_voucher_module
 
-from .models import Order, OrderLine, GiftRecipient
+from .models import Order, OrderLine, GiftRecipient, OrderReturn
 from .export import generate_csv
 from .emails import send_dispatch_email
 
@@ -18,6 +18,19 @@ voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
 class GiftRecipientInline(admin.StackedInline):
     model = GiftRecipient
     extra = 0
+
+
+class OrderReturnInline(admin.StackedInline):
+    model = OrderReturn
+    exclude = ('created', )
+    readonly_fields = ('return_type', 'exchange_for', 'refund_type',
+                       'reason', 'return_link')
+    extra = 0
+
+    def return_link(self, obj):
+        return '<a href="%s">View return</a>' % (
+            reverse('admin:checkout_orderreturn_change', args=[obj.pk]))
+    return_link.allow_tags = True
 
 
 class OrderLineInline(admin.TabularInline):
@@ -78,6 +91,7 @@ class OrderAdmin(admin.ModelAdmin):
         GiftRecipientInline,
         OrderLineInline,
         AddOrderLineInline,
+        OrderReturnInline,
     ] + voucher_inlines
     save_on_top = True
     actions = ('csv_export', 'resend_dispatch_email')
@@ -120,3 +134,21 @@ class OrderAdmin(admin.ModelAdmin):
     links.allow_tags = True
 
 admin.site.register(Order, OrderAdmin)
+
+
+@admin.register(OrderReturn)
+class OrderReturnAdmin(admin.ModelAdmin):
+    list_display = ('__unicode__', 'return_type', 'created',
+                    'status', 'order_link')
+    list_filter = ('status', 'return_type', 'created')
+    readonly_fields = ('order', 'exchange_for', 'refund_type', 'reason',
+                       'return_type', 'created', 'status', 'order_link')
+
+    def order_link(self, obj):
+        return '<a href="%s">%s</a>' % (
+            reverse('admin:checkout_order_change', args=[obj.order.pk]),
+            obj.order)
+    order_link.allow_tags = True
+
+    def has_add_permission(self, request):
+        return False

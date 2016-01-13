@@ -4,6 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from countries import COUNTRY_CHOICES
+import chimp
 
 
 class AccountManager(models.Manager):
@@ -25,6 +26,8 @@ class Account(models.Model):
     state = models.CharField(max_length=255, blank=True, default='')
     country = models.CharField(max_length=2, choices=COUNTRY_CHOICES)
     phone = models.CharField(max_length=50, default='')
+    receive_email = models.BooleanField(u"Receive our email news and offers",
+                                        default=False)
 
     objects = AccountManager()
 
@@ -49,6 +52,21 @@ class Account(models.Model):
     def email(self):
         return self.user.email
     email.admin_order_field = 'user__email'
+
+    def save(self, *args, **kwargs):
+        account_qs = Account.objects.filter(pk=self.pk)
+
+        if self.receive_email:
+            if not self.pk or account_qs.filter(receive_email=False) \
+                                        .update(receive_email=True):
+                chimp.subscribe(self.email(),
+                                self.user.first_name.split(' ')[0])
+        else:
+            if not self.pk or account_qs.filter(receive_email=True) \
+                                        .update(receive_email=False):
+                chimp.unsubscribe(self.email())
+
+        return super(Account, self).save(*args, **kwargs)
 
 
 # generate a random username on save since it's not used

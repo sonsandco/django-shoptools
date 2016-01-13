@@ -4,8 +4,6 @@
 import csv
 # import datetime
 
-from django.db import models
-
 
 def getval(obj, getter):
     """Gets a value from an object, using a getter which
@@ -16,7 +14,7 @@ def getval(obj, getter):
     else:
         val = obj
         for attr in getter.split('.'):
-            val = getattr(val, attr)
+            val = getattr(val, attr, None)
             if callable(val):
                 val = val()
     if val is True:
@@ -26,10 +24,54 @@ def getval(obj, getter):
     return (unicode(val or '')).encode('utf-8')
 
 
+ORDERLINE_FIELDS = (
+    ('ContactName', 'parent_object.name'),
+    ('EmailAddress', 'parent_object.email'),
+    ('Phone', 'parent_object.phone'),
+    ('POAddressLine1', 'parent_object.street'),
+    # ('POAddressLine2', ),
+    # ('POAddressLine3', ),
+    # ('POAddressLine4', ),
+    ('POCity', 'parent_object.city'),
+    ('PORegion', 'parent_object.state'),
+    ('POPostalCode', 'parent_object.postcode'),
+    ('POCountry', 'parent_object.country'),
+    ('InvoiceNumber', 'parent_object.invoice_number'),
+    # ('Reference', ),
+    ('InvoiceDate', lambda o: o.created.strftime('%d-%b-%y')),
+    ('DueDate', lambda o: o.created.strftime('%d-%b-%y')),
+    # Total	TaxTotal	InvoiceAmountPaid	InvoiceAmountDue
+    ('InventoryItemCode', 'item.sku'),
+    ('Description', 'description'),
+    ('Quantity', 'quantity'),
+    ('UnitAmount', 'item.price'),
+    # ('Discount', lambda o: ''),
+    ('LineAmount', 'total'),
+    # AccountCode	TaxType	TaxAmount	TrackingName1	TrackingOption1	TrackingName2	TrackingOption2	Currency	Type	Sent	Status
+)
+
+
+def generate_csv(qs, file_object):
+    csvfile = csv.writer(file_object)
+
+    header = [f[0] for f in ORDERLINE_FIELDS]
+    csvfile.writerow(header)
+
+    for obj in qs:
+        for line in obj.lines.all():
+            row = []
+            for name, getter in ORDERLINE_FIELDS:
+                row.append(getval(line, getter))
+
+            csvfile.writerow(row)
+
+
+"""
 ORDER_FIELDS = (
     ('Created', lambda o: o.created.strftime('%d/%m/%Y %H:%M')),
     ('Status', 'get_status_display'),
     ('Invoice Number', 'invoice_number'),
+    ('Tracking Number', 'tracking_number'),
     ('Delivery Name', 'name'),
     ('Delivery Address', 'street'),
     ('Delivery Postcode', 'postcode'),
@@ -41,10 +83,6 @@ ORDER_FIELDS = (
     ('Shipping Cost', 'shipping_cost'),
     ('Discounts', 'total_discount'),
     ('Total', 'total'),
-
-    # ('School', lambda o: ', '.join([s.name for s in o.object.get_schools()])),
-    # ('Church', lambda o: ', '.join([c.name for c in o.object.get_churches()])),
-    # ('Postal Address', get_default('object.postal_address')),
 )
 LINE_FIELDS = (
     ('Item', 'description'),
@@ -77,7 +115,7 @@ def generate_csv(qs, file_object):
                 row.append(getval(line, getter))
 
         csvfile.writerow(row)
-
+"""
 
 
 """

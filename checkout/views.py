@@ -4,7 +4,7 @@ import importlib
 
 from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import get_template
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.core.urlresolvers import reverse
 from django.views.decorators.cache import never_cache
 from django.conf import settings
@@ -16,9 +16,9 @@ from cart.models import Cart, get_shipping_module
 # from paypal.transactions import make_payment
 from accounts.models import Account
 
-from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm
-from .models import Order
-from .emails import email_content
+from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm, ReturnForm
+from .models import Order, OrderReturn, OrderLine
+from .emails import email_content, send_email
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
 PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
@@ -217,6 +217,49 @@ def checkout(request, cart, order):
         'order': order,
         'account': account,
         'cart_errors': cart_errors,
+    }
+
+
+@checkout_view
+def return_order(request, cart, order):
+    if order.status != order.STATUS_SHIPPED:
+        raise Http404
+
+    try:
+        order_return = OrderReturn.objects.get(order=order)
+    except OrderReturn.DoesNotExist:
+        order_return = OrderReturn(order=order)
+
+    lines = order.lines.filter(return_status__lt=OrderLine.STATUS_RETURNED)
+    error = None
+
+    if request.method == 'POST':
+        form = ReturnForm(request.POST, instance=order_return)
+
+        returns = []
+        for line in lines:
+            if request.POST.get('line-%s' % line.pk):
+                returns.append(line)
+
+        if not len(returns):
+            error = 'Please choose an item:'
+
+        if form.is_valid() and len(returns):
+            order_return = form.save()
+            for line in returns:
+                line.return_status = OrderLine.STATUS_RETURN_REQUESTED
+                line.save()
+
+            recipients = [t[1] for t in settings.CHECKOUT_MANAGERS]
+            send_email('return', recipients, order_return=order_return)
+            return redirect(request.path_info + '?success=1')
+    else:
+        form = ReturnForm(instance=order_return)
+
+    return {
+        'order': order,
+        'form': form,
+        'error': error,
     }
 
 

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from .models import Order, GiftRecipient
+from .models import Order, GiftRecipient, OrderReturn
 
 
 class OrderForm(forms.ModelForm):
@@ -33,7 +33,7 @@ class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
         exclude = ('created', 'status', 'amount_paid', 'account',
-                   'estimated_delivery', )
+                   'tracking_number', 'estimated_delivery', 'tracking_url')
 
 
 class GiftRecipientForm(forms.ModelForm):
@@ -53,3 +53,14 @@ class CheckoutUserForm(UserCreationForm):
         user.email = email
         user.save()
         return user
+
+
+class ReturnForm(forms.ModelForm):
+    def clean(self):
+        data = self.cleaned_data
+        if data['return_type'] == 'exchange' and not data['exchange_for']:
+            self.add_error('exchange_for', 'This field is required')
+
+    class Meta:
+        model = OrderReturn
+        exclude = ['order', 'status', ]

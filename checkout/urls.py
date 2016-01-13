@@ -8,6 +8,7 @@ urlpatterns = [
     url(r'^checkout$', views.checkout, {}, 'checkout_checkout'),
     url(r'^checkout/(\w+)$', views.checkout, {}, 'checkout_checkout'),
     url(r'^checkout/(\w+)/print$', views.invoice, {}, 'checkout_invoice'),
+    url(r'^return/(\w+)$', views.return_order, {}, 'checkout_return_order'),
     url(r'^_emails/(\w+)$', views.preview_emails),
 ]
 

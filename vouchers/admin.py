@@ -57,7 +57,7 @@ class FixedVoucherAdmin(VoucherAdmin):
     order.allow_tags = True
 
     def csv_export(self, request, queryset):
-        filename = 'Vouchers_' + date.today().strftime('%Y%m%d')
+        filename = 'PM_vouchers_' + date.today().strftime('%Y%m%d')
 
         # response = HttpResponse()
         response = HttpResponse(content_type='text/csv')

@@ -9,6 +9,7 @@ from cart.models import get_voucher_module
 
 from .models import Order, OrderLine, GiftRecipient
 from .export import generate_csv
+from .emails import send_dispatch_email
 
 voucher_mod = get_voucher_module()
 voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
@@ -79,8 +80,8 @@ class OrderAdmin(admin.ModelAdmin):
         AddOrderLineInline,
     ] + voucher_inlines
     save_on_top = True
-    readonly_fields = ('_shipping_cost', 'id')
     actions = ('csv_export', 'resend_dispatch_email')
+    readonly_fields = ('_shipping_cost', 'id', 'amount_paid')
 
     def resend_dispatch_email(self, request, queryset):
         for order in queryset:

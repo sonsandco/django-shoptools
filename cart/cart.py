@@ -227,7 +227,13 @@ class BaseOrder(models.Model, ICart):
         return self.get_lines().count()
 
     def clear(self):
-        return self.get_lines().delete()
+        # this doesn't have to delete the Order, it could hang around and
+        # the lines could just be deleted
+        # if we ever want to save details from one order to the next (shipping
+        # options for example) do it here
+
+        # return self.get_lines().delete()
+        self.delete()
 
     @property
     def subtotal(self):
@@ -486,7 +492,7 @@ def get_cart(request):
         try:
             cart = SavedCart.objects.get(user=request.user)
         except SavedCart.DoesNotExist:
-            cart = SavedCart(user=request.user, request=request)
+            cart = SavedCart(user=request.user)
 
         # merge session cart, if it exists
         if session_cart.count():

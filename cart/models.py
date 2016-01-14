@@ -5,7 +5,8 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
-from .cart import make_uuid, BaseOrder, BaseOrderLine, get_shipping_module
+from .cart import make_uuid, BaseOrder, BaseOrderLine, get_shipping_module, \
+    DEFAULT_CURRENCY
 
 
 class SavedCart(BaseOrder):
@@ -24,6 +25,8 @@ class SavedCart(BaseOrder):
     order_obj_content_type = models.ForeignKey(ContentType, null=True)
     order_obj_id = models.PositiveIntegerField(null=True)
     order_obj = GenericForeignKey('order_obj_content_type', 'order_obj_id')
+    currency = models.CharField(max_length=3, editable=False,
+                                default=DEFAULT_CURRENCY)
 
     def set_shipping(self, options):
         """Use this method to set shipping options. """

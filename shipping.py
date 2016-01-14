@@ -1,4 +1,4 @@
-from cart.models import ICart
+from cart.cart import ICart
 
 
 def calculate_shipping(cart):

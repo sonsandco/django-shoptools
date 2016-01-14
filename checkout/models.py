@@ -1,12 +1,11 @@
 from datetime import datetime
-import uuid
 import json
 
 from django.db import models
 from django.conf import settings
-from django.core.exceptions import ValidationError
 
-from cart.models import BaseOrderLine, BaseOrder, get_shipping_module
+from cart.cart import BaseOrderLine, BaseOrder, get_shipping_module, \
+    make_uuid
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
@@ -16,11 +15,6 @@ import chimp
 
 
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
-
-
-def make_uuid():
-    u = uuid.uuid4()
-    return str(u).replace('-', '')
 
 
 class BasePerson(models.Model):
@@ -123,6 +117,8 @@ class Order(BasePerson, BaseOrder):
         shipping_module = get_shipping_module()
         if shipping_module:
             self._shipping_cost = shipping_module.calculate_shipping(self)
+
+        self.save()
 
     @property
     def shipping_cost(self):

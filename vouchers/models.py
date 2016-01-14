@@ -8,7 +8,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from model_utils.managers import InheritanceManager
 
-from cart.models import ICart
+from cart.cart import ICart
 from checkout.models import Order
 
 

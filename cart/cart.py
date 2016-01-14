@@ -3,6 +3,7 @@ from datetime import datetime
 import decimal
 import importlib
 
+from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
@@ -146,6 +147,10 @@ class BaseOrder(models.Model, ICart):
     def update_quantity(self, ctype, pk, qty=1, add=False):
         if qty == 0 and add:
             return
+
+        if not self.pk:
+            # must be an unsaved instance; assume that it's ready to be saved
+            self.save()
 
         app_label, model = ctype.split('.')
         try:
@@ -439,3 +444,35 @@ class SessionCart(ICart):
 def make_uuid():
     u = uuid.uuid4()
     return str(u).replace('-', '')
+
+
+def get_cart(request):
+    """Get the current cart - if the cart app is installed, and user is logged
+       in, return a db cart (which may be an unsaved instance). Otherwise,
+       return a session cart.
+
+       If there's items in the session_cart, merge them into the db cart.
+    """
+
+    session_cart = SessionCart(request)
+
+    if apps.is_installed('cart') and request.user.is_authenticated():
+
+        # django doesn't like this to be imported at compile-time if the app is
+        # not installed
+        from .models import SavedCart
+
+        try:
+            cart = SavedCart.objects.get(user=request.user)
+        except SavedCart.DoesNotExist:
+            cart = SavedCart(user=request.user)
+
+        # merge session cart, if it exists
+        if session_cart.count():
+            if not cart.pk:
+                cart.save()
+            session_cart.save_to(cart)
+            session_cart.clear()
+        return cart
+
+    return session_cart

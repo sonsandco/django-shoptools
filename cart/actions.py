@@ -1,4 +1,4 @@
-from .cart import SessionCart, unpack_key
+from .cart import unpack_key
 
 
 def cart_action(required=[]):
@@ -6,12 +6,7 @@ def cart_action(required=[]):
        action and return True.'''
 
     def inner(wrapped_func):
-        def action_func(data, cart=None, request=None, session_key=None):
-            assert cart or request
-
-            if not cart:
-                cart = SessionCart(request, session_key=session_key)
-
+        def action_func(data, cart):
             if not all(data.get(p) for p in required):
                 return False
 

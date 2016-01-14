@@ -11,7 +11,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.admin.views.decorators import staff_member_required
 
-from cart.cart import SessionCart, get_shipping_module
+from cart.cart import get_cart, get_shipping_module
 # from dps.transactions import make_payment
 # from paypal.transactions import make_payment
 from accounts.models import Account
@@ -36,7 +36,7 @@ def checkout_view(wrapped_view):
 
     @never_cache
     def view_func(request, secret=None):
-        cart = SessionCart(request)
+        cart = get_cart(request)
         if secret:
             order = get_object_or_404(Order, secret=secret)
         else:

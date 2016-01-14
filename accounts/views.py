@@ -9,7 +9,7 @@ from utilities.render import render
 from wishlist.models import get_wishlist
 from shop.views import get_recent_products
 from checkout.models import Order
-from cart.cart import SessionCart
+from cart.cart import get_cart
 import shipping.util
 
 from .models import Account
@@ -95,7 +95,7 @@ def recent(request):
 def account_data(request):
     account = {}
 
-    account['cart'] = SessionCart(request).as_dict()
+    account['cart'] = get_cart(request).as_dict()
 
     if request.user.is_authenticated():
         account['user'] = {

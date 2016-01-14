@@ -3,7 +3,6 @@ import json
 
 from django.db import models
 from django.conf import settings
-from django.core.exceptions import ValidationError
 
 from cart.cart import BaseOrderLine, BaseOrder, get_shipping_module, \
     make_uuid
@@ -99,6 +98,8 @@ class Order(BasePerson, BaseOrder):
         if shipping_module:
             self._shipping_cost = shipping_module.calculate_shipping(self)
 
+        self.save()
+
     @property
     def shipping_cost(self):
         return self._shipping_cost
@@ -117,10 +118,6 @@ class Order(BasePerson, BaseOrder):
 
     def __unicode__(self):
         return u"%s on %s" % (self.name, self.created)
-
-    @property
-    def subtotal(self):
-        return sum(line.total for line in self.lines.all())
 
     @property
     def total(self):

@@ -67,9 +67,9 @@ def clear(data, cart):
         return cart.clear()
 
 
-@cart_action()
-def update_shipping(data, cart):
-    return cart.update_shipping(data.dict())
+# @cart_action()
+# def update_shipping(data, cart):
+#     return cart.update_shipping(data.dict())
 
 
 @cart_action()

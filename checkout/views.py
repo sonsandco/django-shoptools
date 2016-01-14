@@ -190,10 +190,6 @@ def checkout(request, cart, order):
                 [d.delete() for d in order.discount_set.all()]
                 cart.save_to(order)
 
-                # save shipping info - cost calculated automatically
-                order.set_shipping(cart.shipping_options)
-                order.save()
-
             # and off we go to pay, if necessary
             if order.total > 0:
                 return get_payment_module().make_payment(order, request)

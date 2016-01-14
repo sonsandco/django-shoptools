@@ -77,6 +77,7 @@ class ICart(object):
            subtotal
            total
            shipping_cost
+           get_voucher_codes
 
        """
 
@@ -110,12 +111,38 @@ class ICart(object):
         raise NotImplementedError()
 
     # TODO tidy up discount stuff - does it belong here?
-    def calculate_discounts(self):
-        raise NotImplementedError()
+    def calculate_discounts(self, invalid=False):
+        voucher_module = get_voucher_module()
+        if voucher_module:
+            return voucher_module.calculate_discounts(
+                self, self.get_voucher_codes(), invalid=invalid)
+        return []
 
     @property
     def total_discount(self):
         return sum(d.amount for d in self.calculate_discounts())
+
+    def save_to(self, obj):
+        assert isinstance(obj, BaseOrder)
+
+        for cart_line in self.get_lines():
+            line = obj.get_line_cls()()
+            line.parent_object = obj
+            line.item = cart_line.item
+            line.description = cart_line.description
+            line.quantity = cart_line.quantity
+            line.currency = self.currency
+            line.save()
+
+        # save valid discounts - TODO should this go here?
+        # Do we need to subclass Cart as DiscountCart?
+        voucher_module = get_voucher_module()
+        vouchers = self.get_voucher_codes() if voucher_module else None
+        if vouchers:
+            voucher_module.save_discounts(obj, vouchers)
+
+        # save shipping info - cost calculated automatically
+        obj.set_shipping(self.shipping_options)
 
 
 class ICartLine(object):
@@ -180,6 +207,16 @@ class BaseOrder(models.Model, ICart):
 
         return True
 
+    def get_line(self, ctype, pk):
+        app_label, model = ctype.split('.')
+        try:
+            return self.get_lines().get(
+                item_content_type__app_label=app_label,
+                item_content_type__model=model,
+                item_object_id=pk)
+        except self.get_line_cls().DoesNotExist:
+            return None
+
     def get_lines(self):
         return self.get_line_cls().objects.filter(parent_object=self)
 
@@ -191,6 +228,10 @@ class BaseOrder(models.Model, ICart):
 
     def clear(self):
         return self.get_lines().delete()
+
+    @property
+    def subtotal(self):
+        return sum(line.total for line in self.get_lines())
 
 
 class BaseOrderLine(models.Model, ICartLine):
@@ -300,13 +341,6 @@ class SessionCart(ICart):
         self.request.session.modified = True
         return True
 
-    def calculate_discounts(self, invalid=False):
-        voucher_module = get_voucher_module()
-        if voucher_module:
-            return voucher_module.calculate_discounts(
-                self, self.get_voucher_codes(), invalid=invalid)
-        return []
-
     @property
     def shipping_options(self):
         shipping_module = get_shipping_module()
@@ -377,38 +411,19 @@ class SessionCart(ICart):
     def total(self):
         return self.subtotal + self.shipping_cost - self.total_discount
 
-    def save_to(self, obj):
-        assert isinstance(obj, ICart)
-        assert self._data
-
-        for cart_line in self.get_lines():
-            line = obj.get_line_cls()()
-            line.parent_object = obj
-            line.item = cart_line.item
-            line.description = cart_line.description
-            line.quantity = cart_line["qty"]
-            line.currency = self.currency
-            line.save()
-
-        # save valid discounts - TODO should this go here?
-        # Do we need to subclass Cart as DiscountCart?
-        voucher_module = get_voucher_module()
-        vouchers = self.get_voucher_codes() if voucher_module else None
-        if vouchers:
-            voucher_module.save_discounts(obj, vouchers)
-
-        # link the order to the cart
+    def set_order_obj(self, obj):
         self._data['order_obj'] = '%s.%s|%s' % (
             obj._meta.app_label, obj._meta.model_name, obj.pk)
         self.request.session.modified = True
 
-    @property
-    def order_obj(self):
+    def get_order_obj(self):
         if self._data is None:
             return None
 
         key = self._data.get('order_obj')
         return get_item_from_key(key) if key else None
+
+    order_obj = property(get_order_obj, set_order_obj)
 
     def empty(self):
         return not bool(len(list(self.get_lines())))
@@ -417,6 +432,12 @@ class SessionCart(ICart):
         if self._data is not None:
             del self.request.session[self.session_key]
             self._data = None
+
+    def save_to(self, obj):
+        super(SessionCart, self).save_to(obj)
+
+        # link the order to the cart
+        self.order_obj = obj
 
     # Private methods
     def _init_session_cart(self):
@@ -465,7 +486,7 @@ def get_cart(request):
         try:
             cart = SavedCart.objects.get(user=request.user)
         except SavedCart.DoesNotExist:
-            cart = SavedCart(user=request.user)
+            cart = SavedCart(user=request.user, request=request)
 
         # merge session cart, if it exists
         if session_cart.count():

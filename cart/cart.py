@@ -125,6 +125,7 @@ class ICart(object):
     def save_to(self, obj):
         assert isinstance(obj, BaseOrder)
 
+        [l.delete() for l in obj.get_lines()]
         for cart_line in self.get_lines():
             line = obj.get_line_cls()()
             line.parent_object = obj
@@ -139,10 +140,12 @@ class ICart(object):
         voucher_module = get_voucher_module()
         vouchers = self.get_voucher_codes() if voucher_module else None
         if vouchers:
+            [d.delete() for d in obj.discount_set.all()]
             voucher_module.save_discounts(obj, vouchers)
 
         # save shipping info - cost calculated automatically
-        obj.set_shipping(self.shipping_options)
+        if hasattr(obj, 'set_shipping'):
+            obj.set_shipping(self.shipping_options)
 
 
 class ICartLine(object):

@@ -186,8 +186,6 @@ def checkout(request, cart, order):
             # save any cart lines to the order, overwriting existing lines, but
             # only if the order is either new, or matches the cart
             if not cart.empty() and (new_order or cart.order_obj == order):
-                [l.delete() for l in order.get_lines()]
-                [d.delete() for d in order.discount_set.all()]
                 cart.save_to(order)
 
             # and off we go to pay, if necessary

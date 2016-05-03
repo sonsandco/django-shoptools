@@ -111,11 +111,12 @@ class ICart(object):
         raise NotImplementedError()
 
     # TODO tidy up discount stuff - does it belong here?
-    def calculate_discounts(self, invalid=False):
+    def calculate_discounts(self, invalid=False, include_shipping=True):
         voucher_module = get_voucher_module()
         if voucher_module:
             return voucher_module.calculate_discounts(
-                self, self.get_voucher_codes(), invalid=invalid)
+                self, self.get_voucher_codes(), invalid=invalid,
+                include_shipping=include_shipping)
         return []
 
     @property

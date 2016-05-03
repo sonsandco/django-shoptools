@@ -28,7 +28,8 @@ DiscountInline = readonly_inline_factory(Discount)
 
 
 class VoucherAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'limit_', 'code', 'created', )
+    list_display = ('__unicode__', 'limit_', 'minimum_spend', 'code',
+                    'created', )
     list_filter = ('created', )
 
     def limit_(self, obj):

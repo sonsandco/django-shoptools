@@ -16,7 +16,7 @@ def get_vouchers(codes):
     return BaseVoucher.objects.select_subclasses().filter(code__in=codes)
 
 
-def calculate_discounts(obj, codes, invalid=False):
+def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
     """Calculate the total discount for an ICart instance, for the given
        vouchers. Return a list of Discount instances (unsaved)
        - Multiple percentage vouchers, just take the biggest
@@ -29,7 +29,7 @@ def calculate_discounts(obj, codes, invalid=False):
     codes = set(codes)  # remove duplicates
     vouchers = get_vouchers(codes)
     discounts = []
-    total = obj.subtotal + obj.shipping_cost
+    total = obj.subtotal + (obj.shipping_cost if include_shipping else 0)
 
     # if obj is an order, and the voucher has already been used on that order,
     # those instances are ignored when checking limits etc, since they will be
@@ -43,13 +43,19 @@ def calculate_discounts(obj, codes, invalid=False):
     # filter out any that have already been used
     vouchers = filter(lambda v: v.available(exclude=defaults), vouchers)
 
-    # apply free shipping (only one)
-    shipping = filter(lambda v: isinstance(v, FreeShippingVoucher), vouchers)
-    if len(shipping):
-        amount = obj.shipping_cost
-        total -= amount
-        discounts.append(
-            Discount(voucher=shipping[0], amount=amount, **defaults))
+    # filter out any under their minimum_spend value
+    invalid_spend = filter(lambda v: obj.subtotal < v.minimum_spend, vouchers)
+    vouchers = filter(lambda v: obj.subtotal >= v.minimum_spend, vouchers)
+
+    if include_shipping:
+        # apply free shipping (only one)
+        shipping = filter(lambda v: isinstance(v, FreeShippingVoucher),
+                          vouchers)
+        if len(shipping):
+            amount = obj.shipping_cost
+            total -= amount
+            discounts.append(
+                Discount(voucher=shipping[0], amount=amount, **defaults))
 
     # find and apply best percentage voucher
     percentage = filter(lambda v: isinstance(v, PercentageVoucher), vouchers)
@@ -82,9 +88,11 @@ def calculate_discounts(obj, codes, invalid=False):
     if invalid:
         # identify bad codes and add to the list
         valid_codes = [d.voucher.code for d in discounts]
-        invalid_codes = [c for c in codes if c not in valid_codes]
+        invalid_codes = [c for c in codes if
+                         (c not in valid_codes and
+                          c not in [v.code for v in invalid_spend])]
 
-        return discounts, invalid_codes
+        return discounts, invalid_codes, invalid_spend
 
     return discounts
 
@@ -106,6 +114,7 @@ class BaseVoucher(models.Model):
                             help_text=u"Leave blank to auto-generate")
     created = models.DateTimeField(auto_now_add=True)
     limit = models.PositiveSmallIntegerField(null=True, blank=True)
+    minimum_spend = models.PositiveIntegerField(default=0)
 
     objects = InheritanceManager()
 
@@ -147,7 +156,7 @@ class BaseVoucher(models.Model):
         return super(BaseVoucher, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return self.voucher.discount_text
+        return '%s (%s)' % (self.code, self.voucher.discount_text)
 
 
 class FixedVoucher(BaseVoucher):

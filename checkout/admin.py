@@ -23,7 +23,7 @@ class GiftRecipientInline(admin.StackedInline):
 class OrderLineInline(admin.TabularInline):
     model = OrderLine
     exclude = ('item_content_type', 'item_object_id', 'created')
-    readonly_fields = ('quantity', 'description', 'total', )
+    readonly_fields = ('quantity', '_description', '_total', )
     extra = 0
 
     def has_add_permission(self, request):
@@ -52,8 +52,6 @@ class AddOrderLineForm(forms.ModelForm):
 
         variant = Variant.objects.get(pk=self.cleaned_data['item'])
         line.item = variant
-        line.description = variant.cart_description()
-        line.total = variant.cart_line_total(line.quantity)
         variant.purchase(line)
         if commit:
             line.save()

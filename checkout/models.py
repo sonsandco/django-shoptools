@@ -176,6 +176,27 @@ class Order(BasePerson, BaseOrder):
 
 class OrderLine(BaseOrderLine):
     parent_object = models.ForeignKey(Order, related_name='lines')
+    _total = models.DecimalField(max_digits=8, decimal_places=2, db_column='total')
+    _description = models.CharField(max_length=255, blank=True, db_column='description')
+
+    def set_total(self, val):
+        self._total = val
+    total = property(lambda s: s._total, set_total)
+
+    def set_description(self, val):
+        self._description = val
+    description = property(lambda s: s._description, set_description)
+
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            # if the parent has a currency field, use it
+            currency = getattr(self.parent_object, 'currency',
+                               DEFAULT_CURRENCY)
+            self.total = self.item.cart_line_total(self.quantity, currency)
+
+            self.description = self.item.cart_description()
+
+        return super(OrderLine, self).save(*args, **kwargs)
 
 
 class GiftRecipient(BasePerson):

@@ -131,7 +131,6 @@ class ICart(object):
             line = obj.get_line_cls()()
             line.parent_object = obj
             line.item = cart_line.item
-            line.description = cart_line.description
             line.quantity = cart_line.quantity
             line.currency = self.currency
             line.save()
@@ -264,27 +263,23 @@ class BaseOrderLine(models.Model, ICartLine):
     quantity = models.IntegerField()
     # currency = models.CharField(max_length=3, editable=False,
     #    default=DEFAULT_CURRENCY)
-    total = models.DecimalField(max_digits=8, decimal_places=2)
-    description = models.CharField(max_length=255, blank=True)
+    # total = models.DecimalField(max_digits=8, decimal_places=2)
+    # description = models.CharField(max_length=255, blank=True)
 
     class Meta:
         abstract = True
         unique_together = ('item_content_type', 'item_object_id',
                            'parent_object')
 
-    def save(self, *args, **kwargs):
-        assert isinstance(self.item, ICartItem)
+    @property
+    def total(self):
+        currency = getattr(self.parent_object, 'currency', DEFAULT_CURRENCY)
+        return decimal.Decimal(
+            self.item.cart_line_total(self.quantity, currency))
 
-        if self.total is None:
-            # if the parent has a currency field, use it
-            currency = getattr(self.parent_object, 'currency',
-                               DEFAULT_CURRENCY)
-            self.total = self.item.cart_line_total(self.quantity, currency)
-
-        if self.description is None:
-            self.description = self.item.cart_description()
-
-        return super(BaseOrderLine, self).save(*args, **kwargs)
+    @property
+    def description(self):
+        return self.item.cart_description()
 
     def __unicode__(self):
         return u"%s x %s: $%.2f" % (self.description, self.quantity,

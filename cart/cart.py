@@ -137,11 +137,13 @@ class ICart(object):
 
         # save valid discounts - TODO should this go here?
         # Do we need to subclass Cart as DiscountCart?
-        voucher_module = get_voucher_module()
-        vouchers = self.get_voucher_codes() if voucher_module else None
-        if vouchers:
-            [d.delete() for d in obj.discount_set.all()]
-            voucher_module.save_discounts(obj, vouchers)
+        from checkout.models import Order
+        if isinstance(obj, Order):
+            voucher_module = get_voucher_module()
+            vouchers = self.get_voucher_codes() if voucher_module else None
+            if vouchers:
+                [d.delete() for d in obj.discount_set.all()]
+                voucher_module.save_discounts(obj, vouchers)
 
         # save shipping info - cost calculated automatically
         if hasattr(obj, 'set_shipping'):
@@ -492,6 +494,8 @@ def get_cart(request):
             cart = SavedCart.objects.get(user=request.user)
         except SavedCart.DoesNotExist:
             cart = SavedCart(user=request.user)
+
+        cart.set_request(request)
 
         # merge session cart, if it exists
         if session_cart.count():

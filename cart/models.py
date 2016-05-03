@@ -28,15 +28,31 @@ class SavedCart(BaseOrder):
     currency = models.CharField(max_length=3, editable=False,
                                 default=DEFAULT_CURRENCY)
 
-    def set_shipping(self, options):
-        """Use this method to set shipping options. """
 
-        self._shipping_options = json.dumps(options)
-        self.save()
+    # This wasn't getting updated for some reason, so just use the session
+    # shipping options instead - this means shipping options aren't saved with
+    # the cart but the main thing is the cart lines anyway
+
+    # def set_shipping(self, options):
+    #     """Use this method to set shipping options. """
+    #
+    #     self._shipping_options = json.dumps(options)
+    #     self.save()
+    #
+    # @property
+    # def shipping_options(self):
+    #     return json.loads(self._shipping_options or '{}')
+
+    def set_request(self, request):
+        # needs to be called before shipping_options or shipping_cost
+        self.request = request
 
     @property
     def shipping_options(self):
-        return json.loads(self._shipping_options or '{}')
+        shipping_module = get_shipping_module()
+        if shipping_module and hasattr(self, 'request'):
+            return shipping_module.get_session(self.request)
+        return {}
 
     @property
     def shipping_cost(self):

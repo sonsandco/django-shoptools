@@ -257,7 +257,8 @@ class BaseOrderLine(models.Model, ICartLine):
     """
 
     # item object *must* support ICartItem
-    item_content_type = models.ForeignKey(ContentType)
+    item_content_type = models.ForeignKey(ContentType,
+                                          on_delete=models.PROTECT)
     item_object_id = models.PositiveIntegerField()
     item = GenericForeignKey('item_content_type', 'item_object_id')
 
@@ -283,13 +284,13 @@ class BaseOrderLine(models.Model, ICartLine):
     def description(self):
         return self.item.cart_description()
 
-    def __unicode__(self):
-        return u"%s x %s: $%.2f" % (self.description, self.quantity,
+    def _str__(self):
+        return "%s x %s: $%.2f" % (self.description, self.quantity,
                                     self.total)
 
 
 def create_key(ctype, pk):
-    return u'|'.join((ctype, unicode(pk)))
+    return '|'.join((ctype, unicode(pk)))
 
 
 def unpack_key(key):

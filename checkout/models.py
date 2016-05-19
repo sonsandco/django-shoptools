@@ -62,7 +62,8 @@ class Order(BasePerson, BaseOrder):
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 
-    account = models.ForeignKey('accounts.Account', null=True, blank=True)
+    account = models.ForeignKey('accounts.Account', null=True, blank=True,
+                                on_delete=models.SET_NULL)
     _shipping_cost = models.DecimalField(
         max_digits=8, decimal_places=2, default=0, db_column='shipping_cost',
         editable=False, verbose_name='shipping cost')
@@ -116,8 +117,8 @@ class Order(BasePerson, BaseOrder):
     def invoice_number(self):
         return str(self.pk).zfill(5)
 
-    def __unicode__(self):
-        return u"%s on %s" % (self.name, self.created)
+    def _str__(self):
+        return "%s on %s" % (self.name, self.created)
 
     @property
     def total(self):
@@ -175,7 +176,8 @@ class Order(BasePerson, BaseOrder):
 
 
 class OrderLine(BaseOrderLine):
-    parent_object = models.ForeignKey(Order, related_name='lines')
+    parent_object = models.ForeignKey(Order, related_name='lines',
+                                      on_delete=models.CASCADE)
     _total = models.DecimalField(max_digits=8, decimal_places=2, db_column='total')
     _description = models.CharField(max_length=255, blank=True, db_column='description')
 
@@ -200,8 +202,8 @@ class OrderLine(BaseOrderLine):
 
 
 class GiftRecipient(BasePerson):
-    order = models.OneToOneField(Order)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE)
     message = models.TextField(blank=True, default='')
 
-    def __unicode__(self):
-        return u"Gift to: %s" % (self.name)
+    def _str__(self):
+        return "Gift to: %s" % (self.name)

@@ -56,8 +56,8 @@ class Transaction(models.Model):
     class Meta:
         ordering = ('-created', '-id')
 
-    def __unicode__(self):
-        return u"%s %s of $%.2f on %s" % (self.get_status_display(),
+    def _str__(self):
+        return "%s %s of $%.2f on %s" % (self.get_status_display(),
                                          self.get_transaction_type_display().lower(),
                                          self.amount, unicode(self.created))
     

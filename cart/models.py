@@ -13,7 +13,7 @@ class SavedCart(BaseOrder):
     """A db-saved cart class, which can be used interchangeably with Cart. """
 
     created = models.DateTimeField(default=datetime.now)
-    user = models.OneToOneField('auth.User')
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
     secret = models.CharField(max_length=32, editable=False, default=make_uuid,
                               unique=True, db_index=True)
     _shipping_options = models.TextField(
@@ -22,7 +22,8 @@ class SavedCart(BaseOrder):
     _voucher_codes = models.TextField(
         blank=True, default='', editable=False, db_column='voucher_codes',
         verbose_name='voucher codes')
-    order_obj_content_type = models.ForeignKey(ContentType, null=True)
+    order_obj_content_type = models.ForeignKey(
+        ContentType, null=True, on_delete=models.SET_NULL)
     order_obj_id = models.PositiveIntegerField(null=True)
     order_obj = GenericForeignKey('order_obj_content_type', 'order_obj_id')
     currency = models.CharField(max_length=3, editable=False,
@@ -72,9 +73,9 @@ class SavedCart(BaseOrder):
     def get_absolute_url(self):
         return ('cart_cart', (self.secret, ))
 
-    def __unicode__(self):
+    def _str__(self):
         if self.user:
-            return u"Cart by %s, %s" % (self.user.get_full_name(),
+            return "Cart by %s, %s" % (self.user.get_full_name(),
                                         self.created)
         else:
             return "Cart, %s" % (self.created, )
@@ -96,4 +97,4 @@ class SavedCart(BaseOrder):
 
 
 class SavedCartLine(BaseOrderLine):
-    parent_object = models.ForeignKey(SavedCart)
+    parent_object = models.ForeignKey(SavedCart, on_delete=models.CASCADE)

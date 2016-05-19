@@ -4,7 +4,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
-from django.template.base import TemplateDoesNotExist
+from django.template import TemplateDoesNotExist
 
 
 TEMPLATE_DIR = 'checkout/emails/'

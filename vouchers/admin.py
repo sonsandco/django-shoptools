@@ -28,7 +28,7 @@ DiscountInline = readonly_inline_factory(Discount)
 
 
 class VoucherAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'limit_', 'minimum_spend', 'code',
+    list_display = ('_str__', 'limit_', 'minimum_spend', 'code',
                     'created', )
     list_filter = ('created', )
 
@@ -51,7 +51,7 @@ class FixedVoucherAdmin(VoucherAdmin):
     def order(self, obj):
         if obj.order_line:
             order = obj.order_line.parent_object
-            return u'<a href="%s">%s</a>' % (
+            return '<a href="%s">%s</a>' % (
                 reverse('admin:checkout_order_change', args=(order.pk, )),
                 order)
         return ''

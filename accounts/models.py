@@ -18,7 +18,7 @@ class Account(models.Model):
     COMMON_FIELDS = ('street', 'postcode', 'city', 'state', 'country',
                      'receive_email', 'phone', )
 
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     street = models.CharField(u"Address", max_length=1023)
     postcode = models.CharField(max_length=10)
     city = models.CharField(max_length=255)

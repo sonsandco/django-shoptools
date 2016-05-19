@@ -20,7 +20,7 @@ class OrderForm(forms.ModelForm):
         data = self.cleaned_data
         sanity_check = str(self.sanity_check) if self.sanity_check else None
         if sanity_check and str(data['sanity_check']) != sanity_check:
-            err = u"Your cart appears to have changed. Please check and " \
+            err = "Your cart appears to have changed. Please check and " \
                 "confirm, then try again."
             raise forms.ValidationError(err)
         return data

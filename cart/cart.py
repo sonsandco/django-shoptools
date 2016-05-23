@@ -234,7 +234,7 @@ class BaseOrder(models.Model, ICart):
         return not self.get_lines().count()
 
     def count(self):
-        return self.get_lines().count()
+        return self.get_lines().aggregate(c=models.Sum('quantity'))['c'] or 0
 
     def clear(self):
         # this doesn't have to delete the Order, it could hang around and

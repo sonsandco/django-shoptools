@@ -60,6 +60,7 @@ class SavedCart(BaseOrder):
         shipping_module = get_shipping_module()
         if shipping_module:
             return shipping_module.calculate_shipping(self)
+        return 0
 
     def get_voucher_codes(self):
         return filter(bool, self._voucher_codes.split(','))

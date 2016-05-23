@@ -23,7 +23,7 @@ def getval(obj, getter):
         val = 'yes'
     elif val is False:
         val = ''
-    return (unicode(val or '')).encode('utf-8')
+    return (str(val or '')).encode('utf-8')
 
 
 ORDER_FIELDS = (

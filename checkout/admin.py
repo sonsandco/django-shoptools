@@ -43,7 +43,7 @@ class AddOrderLineForm(forms.ModelForm):
 
         # from shop.models import Variant
         # self.fields['item'].choices = [
-        #     (v.id, unicode(v)) for v in Variant.objects.all()]
+        #     (v.id, str(v)) for v in Variant.objects.all()]
 
     def save(self, commit=True):
         line = super(AddOrderLineForm, self).save(commit=False)

@@ -74,5 +74,5 @@ def clear(data, cart):
 
 @cart_action()
 def update_vouchers(data, cart):
-    codes = map(unicode.strip, data.get('codes', '').split(','))
+    codes = map(str.strip, data.get('codes', '').split(','))
     return cart.update_vouchers([c for c in codes if c])

@@ -11,7 +11,7 @@
     {% endif %}
 
 
-    {% if cart.get_lines()|length or order %}
+    {% if order or not cart.empty() %}
       {% if order %}
         {% include 'checkout/snippets/order_lines.html' %}
       {% else %}

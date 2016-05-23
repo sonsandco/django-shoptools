@@ -229,4 +229,4 @@ class Discount(models.Model):
         if self.pk:
             return "%s: %s" % (self.order, self.voucher)
         else:
-            return unicode(self.voucher)
+            return str(self.voucher)

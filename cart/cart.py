@@ -95,7 +95,7 @@ class ICart(object):
         }
         for f in ('subtotal', 'shipping_cost', 'total'):
             if hasattr(self, f):
-                data[f] = float(getattr(self, f))
+                data[f] = float(getattr(self, f) or 0)
         return data
 
     def update_quantity(self, ctype, pk, qty):
@@ -159,6 +159,11 @@ class ICartLine(object):
        total
        description
     """
+
+    @property
+    def ctype(self):
+        # app.model, compatible with the ctype argument to Cart.update etc
+        return '%s.%s' % (self.item._meta.app_label, self.item._meta.model_name)
 
     def as_dict(self):
         return {
@@ -290,7 +295,7 @@ class BaseOrderLine(models.Model, ICartLine):
 
 
 def create_key(ctype, pk):
-    return '|'.join((ctype, unicode(pk)))
+    return '|'.join((ctype, str(pk)))
 
 
 def unpack_key(key):

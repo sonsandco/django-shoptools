@@ -37,10 +37,10 @@ def basic_authorization(user, password):
 
 
 def get_paypal_token():
-  '''Gets a paypal auth token for subsequent api calls as per 
+  '''Gets a paypal auth token for subsequent api calls as per
      https://developer.paypal.com/docs/integration/direct/paypal-oauth2/
   '''
-  
+
   url = PAYPAL_API + '/v1/oauth2/token'
   params = { "grant_type": 'client_credentials'}
   credentials = (PAYPAL_CLIENT_ID, PAYPAL_SECRET)
@@ -55,7 +55,7 @@ def get_paypal_token():
   curl_output = os.popen(curl_command)
   result = curl_output.read()
   data = json.loads(result)
-  
+
   return data['access_token']
 
 
@@ -70,11 +70,11 @@ def make_payment(content_object, request, transaction_opts={}):
   trans = Transaction(content_object=content_object)
   trans.status = Transaction.PROCESSING
   trans.save()
-  
+
   total = content_object.get_amount()
   shipping = content_object.shipping_cost()
   subtotal = (total - shipping)
-  
+
   post_data = {
     'intent':'sale',
     'redirect_urls':{
@@ -93,11 +93,11 @@ def make_payment(content_object, request, transaction_opts={}):
           'shipping': "%.2f" % shipping,
         }
       },
-      'description': unicode(content_object).encode('ascii', 'ignore'),
+      'description': str(content_object).encode('ascii', 'ignore'),
       'item_list': {'items': []},
     }]
   }
-  
+
   if hasattr(content_object, 'get_lines'):
     for line in content_object.get_lines():
       post_data['transactions'][0]['item_list']['items'].append({
@@ -109,19 +109,19 @@ def make_payment(content_object, request, transaction_opts={}):
   else:
     post_data['transactions'][0]['item_list']['items'].append({
       'quantity': 1,
-      'name': unicode(content_object).encode('ascii', 'ignore'),
+      'name': str(content_object).encode('ascii', 'ignore'),
       'price': "%.2f" % subtotal,
       'currency': content_object.currency,
     })
-  
+
   url = PAYPAL_API + '/v1/payments/payment'
   token = get_paypal_token()
-  
+
   # see https://developer.paypal.com/docs/integration/web/accept-paypal-payment/#specify-payment-information-to-create-a-payment
-  
+
   opener = urllib2.build_opener(BetterHTTPErrorProcessor)
   urllib2.install_opener(opener)
-  
+
   encoded_data = json.dumps(post_data)
 
   request = urllib2.Request(url, encoded_data,
@@ -136,7 +136,7 @@ def make_payment(content_object, request, transaction_opts={}):
     raise Exception(e.read())
   else:
     result_data = json.loads(result)
-    
+
     trans.result = result
     trans.save()
     return HttpResponseRedirect(get_link(result_data, 'approval_url'))
@@ -160,16 +160,16 @@ def finish_payment(trans, request):
   result_data = json.loads(result)
 
   # TODO: save actual data here
-  
+
   return result_data
-  
+
 
 
 # def make_payment(order, request):
 #   if param:
-#     payment_attempt = get_object_or_404(content_object.paymentattempt_set, 
+#     payment_attempt = get_object_or_404(content_object.paymentattempt_set,
 #                                         hash=param)
-#     
+#
 #     result_data = json.loads(payment_attempt.result)
 #     url = get_link(result_data, 'execute')
 #     payer_id = request.GET['PayerID']
@@ -181,16 +181,16 @@ def finish_payment(trans, request):
 #     result = urllib2.urlopen(request).read()
 #     payment_attempt.result = result
 #     result_data = json.loads(result)
-#     
-#     amount = sum([Decimal(t['amount']['total']) for t in 
+#
+#     amount = sum([Decimal(t['amount']['total']) for t in
 #                   result_data['transactions']])
 #     payment_attempt.amount = amount
-#     
+#
 #     success = result_data['state'] in ('pending', 'approved')
 #     payment_attempt.success = success
 #     payment_attempt.transaction_ref = result_data['id']
 #     payment_attempt.save()
-#     
+#
 #     if success:
 #       payer = result_data['payer']['payer_info']
 #       content_object.name = payer['first_name'] + ' ' + payer['last_name']
@@ -200,19 +200,19 @@ def finish_payment(trans, request):
 #       content_object.city = payer['shipping_address']['city']
 #       content_object.post_code = payer['shipping_address']['postal_code']
 #       content_object.country = payer['shipping_address']['country_code']
-#       # content_object.phone = 
-#       
+#       # content_object.phone =
+#
 #       content_object.payment_successful = True
 #       content_object.save()
 #       return HttpResponseRedirect(content_object.get_absolute_url())
-#   
+#
 #   payment_attempt = content_object.paymentattempt_set.create()
-#   
-#   return_url = build_url(request, 'cart.views.payment', 
+#
+#   return_url = build_url(request, 'cart.views.payment',
 #                          (content_object.hash, payment_attempt.hash, ))
 #   # cancel URL takes user back to previous step
 #   cancel_url = build_url(request, 'cart.views.delivery')
-#   
+#
 #   post_data = {
 #     'intent':'sale',
 #     'redirect_urls':{
@@ -231,11 +231,11 @@ def finish_payment(trans, request):
 #           'shipping': "%.2f" % content_object.shipping_cost,
 #         }
 #       },
-#       'description': unicode(order).encode('ascii', 'ignore'),
-#       'item_list': { 
+#       'description': str(order).encode('ascii', 'ignore'),
+#       'item_list': {
 #         'items': [{
 #                     'quantity': str(line.quantity),
-#                     'name': unicode(line).encode('ascii', 'ignore'),
+#                     'name': str(line).encode('ascii', 'ignore'),
 #                     'price': "%.2f" % line.price,
 #                     'currency': get_currency(order),
 #                   }
@@ -245,22 +245,22 @@ def finish_payment(trans, request):
 #   }
 #   print post_data
 #   url = PAYPAL_API + '/v1/payments/payment'
-#   
+#
 #   token = get_paypal_token()
-#   
-#   
+#
+#
 #   # see https://developer.paypal.com/docs/integration/web/accept-paypal-payment/#specify-payment-information-to-create-a-payment
-#   
+#
 #   opener = urllib2.build_opener(BetterHTTPErrorProcessor)
 #   urllib2.install_opener(opener)
-#   
+#
 #   encoded_data = json.dumps(post_data)
 #   request = urllib2.Request(url, encoded_data,
 #                             headers={"Authorization": 'Bearer ' + token,
 #                                      "Content-Type": 'application/json'})
 #   result = urllib2.urlopen(request).read()
 #   result_data = json.loads(result)
-#   
+#
 #   payment_attempt.result = result
 #   payment_attempt.save()
 #   return HttpResponseRedirect(get_link(result_data, 'approval_url'))

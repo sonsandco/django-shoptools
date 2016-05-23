@@ -27,7 +27,7 @@ class Transaction(models.Model):
     VALIDATE = "Validate"
     TYPE_CHOICES = [(s, s.title()) for s in
                     [PURCHASE, AUTH, COMPLETE, REFUND, VALIDATE]]
-    
+
     PENDING = "pending"
     PROCESSING = "processing"
     SUCCESSFUL = "successful"
@@ -35,11 +35,11 @@ class Transaction(models.Model):
     STATUS_CHOICES = [(s, s.title()) for s in
                       [PENDING, PROCESSING, SUCCESSFUL, FAILED]]
 
-    content_type = models.ForeignKey(ContentType, 
+    content_type = models.ForeignKey(ContentType,
                                      related_name='paypal_transactions')
     object_id = models.PositiveIntegerField()
     content_object = generic.GenericForeignKey('content_type', 'object_id')
-    
+
     created = models.DateTimeField(default=datetime.now)
     transaction_type = models.CharField(max_length=16, choices=TYPE_CHOICES,
                                         default=PURCHASE)
@@ -52,25 +52,25 @@ class Transaction(models.Model):
     result = models.TextField(blank=True)
 
     objects = TransactionManager()
-    
+
     class Meta:
         ordering = ('-created', '-id')
 
     def _str__(self):
         return "%s %s of $%.2f on %s" % (self.get_status_display(),
                                          self.get_transaction_type_display().lower(),
-                                         self.amount, unicode(self.created))
-    
+                                         self.amount, str(self.created))
+
     def save(self, **kwargs):
         if self.content_object and not self.amount:
             self.amount = self.content_object.get_amount()
 
         return super(Transaction, self).save(**kwargs)
-    
+
     @models.permalink
     def get_absolute_url(self):
         pass
-    
+
     @models.permalink
     def get_success_url(self):
         return ('paypal.views.transaction_success', [self.secret])
@@ -82,7 +82,7 @@ class Transaction(models.Model):
     @property
     def merchant_reference(self):
         # Seems to have an undocumented 50 char limit
-        return (u"(#%d) %s" % (self.pk, unicode(self.content_object)))[:50]
+        return (u"(#%d) %s" % (self.pk, str(self.content_object)))[:50]
 
     @property
     def transaction_id(self):
@@ -99,10 +99,10 @@ class BasicTransactionProtocol(object):
     """This is the minimal subset of the protocol required. Just
     implement 'amount'. This implementation will not support recurring
     payments, or success/failure notifications."""
-    
+
     def get_amount(self):
         raise NotImplementedError()
-    
+
     def is_recurring(self):
         return False
 
@@ -127,12 +127,11 @@ class FullTransactionProtocol(object):
         raise NotImplementedError()
 
     def transaction_succeeded(self, transaction, interactive):
-        """Called when a payment succeeds. Optional. May optionally return a 
+        """Called when a payment succeeds. Optional. May optionally return a
            success url to take the place of views.transaction_success."""
         pass
 
     def transaction_failed(self, transaction, interactive):
-        """Called when a payment fails. Optional. May optionally return a 
+        """Called when a payment fails. Optional. May optionally return a
            success url to take the place of views.transaction_failure."""
         pass
-

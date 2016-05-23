@@ -1,19 +1,30 @@
+import json
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
+from django.http import HttpResponse
 
-from utilities.json_http import JsonResponse
 from utilities.render import render
 
-from wishlist.models import get_wishlist
-from shop.views import get_recent_products
+try:
+    from wishlist.models import get_wishlist
+except ImportError:
+    get_wishlist = None
+
 from checkout.models import Order
 from cart.cart import get_cart
-import shipping.util
+# from cart.cart import get_shipping_module
 
 from .models import Account
 from .forms import AccountForm, UserForm, CreateUserForm
+
+
+class JsonResponse(HttpResponse):
+    def __init__(self, data):
+        super(JsonResponse, self).__init__(json.dumps(data),
+                                           content_type="application/json")
 
 
 @login_required
@@ -57,10 +68,10 @@ def details(request):
 
 @render('accounts/create.html')
 def create(request):
-    shipping_opts = shipping.util.get_session(request)
-    initial = {
-        'country': shipping_opts.get('country'),
-    }
+    # shipping_opts = shipping.util.get_session(request)
+    # initial = {
+    #     'country': shipping_opts.get('country'),
+    # }
 
     if request.method == 'POST':
         account_form = AccountForm(request.POST, initial=initial)
@@ -85,27 +96,21 @@ def create(request):
     }
 
 
-@render('accounts/recent.html')
-def recent(request):
-    return {
-        'products': get_recent_products(request),
-    }
-
-
 def account_data(request):
-    account = {}
+    data = {}
 
-    account['cart'] = get_cart(request).as_dict()
+    data['cart'] = get_cart(request).as_dict()
 
     if request.user.is_authenticated():
-        account['user'] = {
+        data['account'] = {
             'first_name': request.user.first_name,
         }
 
-    account['wishlist'] = get_wishlist(request).as_dict()
+    if get_wishlist:
+        data['wishlist'] = get_wishlist(request).as_dict()
 
-    return account
+    return data
 
 
 def account_data_view(request):
-    return JsonResponse({'account': account_data(request)})
+    return JsonResponse(account_data(request))

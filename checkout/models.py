@@ -136,7 +136,10 @@ class Order(BasePerson, BaseOrder):
         # Return actual saved discounts, rather than calculating afresh. This
         # means the discounts are set and won't change if the voucher is
         # removed or modified
-        return self.discount_set.all()
+
+        if hasattr(self, 'discount_set'):
+            return self.discount_set.all()
+        return []
 
     def is_recurring(self):
         return False

@@ -69,9 +69,9 @@ def details(request):
 @render('accounts/create.html')
 def create(request):
     # shipping_opts = shipping.util.get_session(request)
-    # initial = {
-    #     'country': shipping_opts.get('country'),
-    # }
+    initial = {
+        # 'country': shipping_opts.get('country'),
+    }
 
     if request.method == 'POST':
         account_form = AccountForm(request.POST, initial=initial)

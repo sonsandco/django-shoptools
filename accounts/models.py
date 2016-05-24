@@ -16,7 +16,7 @@ class AccountManager(models.Manager):
 
 class Account(models.Model):
     COMMON_FIELDS = ('street', 'postcode', 'city', 'state', 'country',
-                     'receive_email', 'phone', )
+                     'phone', )
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     street = models.CharField(u"Address", max_length=1023)

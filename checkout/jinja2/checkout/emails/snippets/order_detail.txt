@@ -1,0 +1,8 @@
+{{ order.name }}
+{{ order.street }}
+{{ order.city }} {{ order.postcode }}
+{{ order.state }}
+{{ order.get_country_display() }}
+{{ order.created|date('d F y') }}
+Email: {{ order.email }}
+Phone: {{ order.phone }}

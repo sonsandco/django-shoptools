@@ -1,0 +1,8 @@
+{% extends "registration/base.html" %}
+
+{% set registration_title = 'Logged Out' %}
+
+{% block registration_content %}
+  <p>You have been logged out.</p>
+  <p><a href="{{ url('login') }}">Log in again</a></p>
+{% endblock %}

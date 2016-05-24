@@ -1,0 +1,23 @@
+{% extends "accounts/base.html" %}
+
+{% set page_title = 'Create an account' %}
+
+{% block bodyclass %}create-account{% endblock %}
+
+{% block accounts_content %}
+  <div class="user">
+    {% include 'checkout/snippets/side_login.html' %}
+  </div>
+
+  <form action="{{ request.path_info }}" method="post"
+        class="accounts-form">
+
+    {% set form = user_form %}
+    {% include 'snippets/form.html' %}
+
+    {% set form = account_form %}
+    {% include 'snippets/form.html' %}
+
+    <input type="submit" name="confirm" value="Create account">
+  </form>
+{% endblock %}

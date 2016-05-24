@@ -1,0 +1,10 @@
+Order details:
+
+{% include 'checkout/emails/snippets/order_lines.txt' %}
+
+{% include 'checkout/emails/snippets/order_detail.txt' %}
+
+View order details:
+http://{{ site.domain }}{{ url('admin:checkout_order_change', order.pk) }}
+
+{% include 'checkout/emails/snippets/signature.txt' %}

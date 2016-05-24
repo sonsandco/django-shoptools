@@ -1,0 +1,34 @@
+<!doctype html>
+<html nomarginboxes disallowselectionprint>
+  <head>
+    <title>{{ order }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    {% assets "printable_all_css" %}
+      <link href="{{ ASSET_URL }}" rel="stylesheet" type="text/css"
+            media="screen,projection,print">
+    {% endassets %}
+  </head>
+  <body onload="window.print()">
+    <header>
+      <div class="detail">
+        {{ order.name }}<br>
+        {{ order.street }}<br>
+        {{ order.city }} {{ order.postcode }}<br>
+        {{ order.state }}<br>
+        {{ order.get_country_display() }}<br>
+        {{ order.created|date('d F Y') }}<br>
+        Email: {{ order.email }}<br>
+        Phone: {{ order.phone }}<br>
+      </div>
+    </header>
+
+    <h6>{{ order.invoice_number }} {{ order.created|date('d F y') }}</h6>
+    <h2>Your Order</h2>
+
+    {% include 'checkout/snippets/invoice_rows.html' %}
+
+    {{ cms_block('contact-details', filters='linebreaks', site=True) }}
+
+  </body>
+</html>

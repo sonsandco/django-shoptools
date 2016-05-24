@@ -1,0 +1,24 @@
+<form action="{{ url('django.contrib.auth.views.login') }}"
+      method="post" class="registration-form">
+
+  <h5>Already have an account?</h5>
+  
+  {{ csrf_input }}
+  <input type="hidden" name="next" value="{{ request.path_info }}">
+
+  <div class="form-field">
+    <input type="text" name="username" placeholder="Your email">
+  </div>
+
+  <div class="form-field">
+    <input type="password" name="password" placeholder="Your password">
+  </div>
+
+  <input type="submit" value="Log in">
+
+  <p class="forgot">
+    Forgot your password?<br>
+    <a href="{{ url('password_reset') }}">
+      Click here</a> to reset it.
+  </p>
+</form>

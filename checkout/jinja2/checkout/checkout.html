@@ -1,84 +1,64 @@
 {% extends "checkout/base.html" %}
 
-{% block title %}Checkout{% endblock %}
+{% set page_title = 'Your details' %}
 
 {% block content %}
-  <article class="checkout">
-    <h3>Your Order</h3>
-
-    {% if cart_errors or form.errors %}
-      <p class="error">Please correct the errors below</p>
-    {% endif %}
-
+  <article class="checkout-checkout">
+    <section class="user">
+      {% if request.user.is_authenticated() %}
+        <h6>Logged in as {{ request.user.first_name }}</h6>
+      {% else %}
+        {% include 'checkout/snippets/side_login.html' %}
+      {% endif %}
+    </section>
 
     {% if order or not cart.empty() %}
-      {% if order %}
-        {% include 'checkout/snippets/order_lines.html' %}
-      {% else %}
-        <form action="{{ request.path_info }}" method="post" class="cart">
-          {{ csrf_input }}
-          <input type="hidden" name="form" value="cart">
+      <form action="{{ request.path_info }}#form" method="post"
+            class="checkout-form">
+        {% include 'snippets/form_hidden.html' %}
 
-          <ul class="errorlist">
-            {% for error in cart_errors %}
-              <li>{{ error }}</li>
-            {% endfor %}
-          </ul>
+        <h3>Delivery details</h3>
 
-          <ul class="cart">
-            {% for line in cart.get_lines() %}
-              <li>
-                <a href="{{ line.item.get_absolute_url() }}"
-                     class="product">
-                  <span class="item">{{ line.item }}</span>
-                </a>
-
-                <span class="quantity">
-                  {# <input type="number" name="qty:{{ line['key'] }}"
-                         value="{{ line['qty'] }}"> #}
-                  {{ 'x%s' % line['qty'] if (line['qty'] > 1) else '' }}
-                </span>
-
-                {# <input type="submit" value="Update" class="update"> #}
-
-                <span class="price">
-                  ${{ '%2f' % line.line_total() }} {{ currency }}
-                </span>
-                <button name="remove" value="{{ line['key'] }}">Remove</button>
-              </li>
-            {% endfor %}
-            <li class="shipping">
-              <h6>Shipping:</h6>
-              <span class="cost">
-                {% if cart.shipping_cost %}
-                  ${{ '%2f' % cart.shipping_cost }}
-                {% else %}
-                  Free within NZ
-                {% endif %}
-              </span>
-            </li>
-            <li class="total">
-              <h6>Total:</h6>
-              <span class="cost">${{ '%2f' % cart.total() }}</span>
-              <span class="gst">inc. GST</span>
-            </li>
-          </ul>
-        </form>
-      {% endif %}
-
-      <form action="{{ request.path_info }}" method="post"
-            class="delivery">
-        {{ csrf_input }}
-        <input type="hidden" name="form" value="checkout">
-        {% for field in form.hidden_fields() %}{{ field|safe }}{% endfor %}
-
-        {{ form.non_field_errors()|safe }}
+        {% if cart_errors or form.errors %}
+          <p class="error-warning">Please correct the errors below</p>
+        {% endif %}
 
         {% for field in form.visible_fields() %}
           {% include 'snippets/form_field.html' %}
         {% endfor %}
 
-        <div class="submit">
+        {% if not account.pk %}
+          <div class="form-field save-details">
+            <div class="checkbox-mask">
+              <input type="checkbox" name="save-details" value="1"
+                     id="save_details"
+                     {% if request.POST.get('save-details') %}
+                      checked{% endif %}>
+            </div>
+            <label for="save_details">
+              Would you like to save these details?
+              {% if user_form %}
+                <span>Create a login</span>
+              {% endif %}
+            </label>
+          </div>
+
+          {% if user_form %}
+            {% for field in user_form.hidden_fields() %}
+              {{ field|safe }}{% endfor %}
+
+            <div class="user-form">
+              {{ user_form.non_field_errors()|safe }}
+
+              {% for field in user_form.visible_fields() %}
+                {% include 'snippets/form_field.html' %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endif %}
+
+        <div class="checkout-buttons">
+          <a href="{{ url('checkout_cart') }}" class="back">Back to cart</a>
           <input type="submit" name="confirm" value="Continue to payment">
         </div>
       </form>

@@ -1,9 +1,8 @@
-Your order:
+{% set plaintext = True %}
+{% include 'checkout/emails/snippets/dispatch_summary.txt' %}
 
 {% include 'checkout/emails/snippets/order_lines.txt' %}
 {% include 'checkout/emails/snippets/order_detail.txt' %}
-
-{{ cms_block('email-receipt-text', site=True) }}
 
 View your order:
 http://{{ site.domain }}{{ order.get_absolute_url() }}

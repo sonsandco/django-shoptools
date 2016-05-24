@@ -1,0 +1,30 @@
+{% extends 'checkout/email/base.html' %}
+
+{% macro full_path_img(img) %}
+  {% if img %}
+    <img src="http://{{ site.domain }}{{ img.url }}" alt="{{ img.caption }}"
+         width={{ img.width }} height={{ img.height }}>
+  {% endif %}
+{% endmacro %}
+
+{% block header %}
+  {% filter linebreaks %}
+    {% include 'checkout/emails/snippets/order_detail.txt' %}
+  {% endfilter %}
+{% endblock %}
+
+{% block content %}
+  {{ cms_image('email-receipt-header', '720', renderer=full_path_img,
+               site=True) }}
+  <div style="font-size: 1.5em; margin-bottom: 2em;">
+    {{ cms_block('email-receipt-text', filters='linebreaks', site=True) }}
+  </div>
+
+  <div>{{ order.invoice_number }} {{ order.created|date('d F y') }}</div>
+  <br>
+  <div style="font-size: 2em;">Your Order</div>
+  <hr>
+
+  {% include 'checkout/snippets/invoice_rows.html' %}
+
+{% endblock %}

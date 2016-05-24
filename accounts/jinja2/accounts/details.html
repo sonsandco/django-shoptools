@@ -1,0 +1,20 @@
+{% extends "accounts/base.html" %}
+
+{% set page_title = 'Your details' %}
+
+{% block accounts_content %}
+  <section class="user">
+    <h6>Logged in as {{ request.user.first_name }}</h6>
+  </section>
+  <form action="{{ request.path_info }}" method="post"
+        class="accounts-form">
+
+    {% set form = user_form %}
+    {% include 'snippets/form.html' %}
+
+    {% set form = account_form %}
+    {% include 'snippets/form.html' %}
+
+    <input type="submit" name="confirm" value="Save details">
+  </form>
+{% endblock %}

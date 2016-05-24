@@ -1,0 +1,20 @@
+{% extends 'checkout/email/base.html' %}
+
+{% block header %}
+  {% filter linebreaks %}
+    {% include 'checkout/emails/snippets/order_detail.txt' %}
+  {% endfilter %}
+{% endblock %}
+
+{% block content %}
+  <div>{{ order.invoice_number }} {{ order.created|date('d F y') }}</div>
+  <br>
+  <div style="font-size: 2em;">
+    {% filter linebreaks %}
+      {% include 'checkout/emails/snippets/dispatch_summary.txt' %}
+    {% endfilter %}
+  </div>
+  <hr>
+
+  {% include 'checkout/snippets/invoice_rows.html' %}
+{% endblock %}

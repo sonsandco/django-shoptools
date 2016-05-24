@@ -1,0 +1,25 @@
+{% from 'checkout/snippets/order.html' import order_lines with context %}
+
+
+{% if not cart.empty() %}
+
+  {{ order_lines(cart, quantity_url=url('cart_quantity'),
+                 show_quantity=True) }}
+
+  <p class="checkout-totals">
+    <strong>Total</strong>
+    <span class="price">
+      $<span class="cart-total">{{ cart.total|floatformat(-2) }}</span>
+    </span>
+  </p>
+
+  <div class="checkout-buttons">
+    <a href="{{ url('wines_index') }}" class="back">Continue shopping</a>
+    <a class="checkout" href="{{ url('checkout_checkout') }}">
+      Continue to Payment & Shipping</a>
+  </div>
+{% else %}
+  <p class="checkout-empty">
+    No products in your bag.
+  </p>
+{% endif %}

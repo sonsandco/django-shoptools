@@ -1,0 +1,24 @@
+{% extends "registration/base.html" %}
+
+{% set registration_title = 'Log in' %}
+
+{% block registration_content %}
+
+<form action="." method="post" class="registration-form">
+  <input type="hidden" name="next"
+         value="{{ request.GET.get('next') or
+                   request.POST.get('next') or
+                   '/' }}">
+
+  {% include 'snippets/form.html' %}
+
+  <input type="submit" value="Log in">
+</form>
+
+<p class="forgot">
+  Forgot your password?<br>
+  <a href="{{ url('password_reset') }}">
+    Click here</a> to reset it.
+</p>
+
+{% endblock %}

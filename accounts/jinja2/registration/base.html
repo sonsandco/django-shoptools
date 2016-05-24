@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}{{ registration_title }}{% endblock %}
+
+{% block content %}
+  <article class="registration">
+    <h3>{{ registration_title }}</h3>
+
+    {% block registration_content %}{% endblock %}
+  </article>
+{% endblock %}

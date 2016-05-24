@@ -1,22 +1,40 @@
 {% extends "checkout/base.html" %}
+{% from 'checkout/snippets/order.html' import order_lines with context %}
 
-{% block title %}Order Confirmation{% endblock %}
+{% block title %}Order Completed{% endblock %}
 
 {% block content %}
-  <article class="checkout">
-    <h3>Your Order</h3>
+  <article class="checkout-success">
+    <section class="checkout-order-status">
+      <p class="order">
+        Order {{ order.invoice_number }}
+        {{ order.created|date('d F y') }}
+      </p>
+      <p class="status">Status: <span>{{ order.get_status_display() }}</span>
+      </p>
+    </section>
 
-    {% include 'checkout/snippets/order_lines.html' %}
+    {{ order_lines(order, show_quantity=True) }}
 
-    <p>
-      {{ order.name }}<br>
-      {{ order.street }}<br>
-      {{ order.city }} {{ order.postcode }}<br>
-      {{ order.state }}<br>
-      {{ order.get_country_display() }}<br>
-      {{ order.created|date('d F Y') }}<br>
-      Email: {{ order.email }}<br>
-      Phone: {{ order.phone }}<br>
+    <p class="checkout-totals">
+      <strong>Total</strong>
+      <span class="price">
+        $<span class="cart-total">{{ order.total|floatformat(-2) }}</span>
+      </span>
     </p>
+
+    <div class="checkout-order-detail">
+      <h5>Order details</h5>
+      <p>
+        {{ order.name }}<br>
+        {{ order.street }}<br>
+        {{ order.city }} {{ order.postcode }}<br>
+        {{ order.state }}<br>
+        {{ order.get_country_display() }}<br>
+        {{ order.created|date('d F Y') }}<br>
+        Email: {{ order.email }}<br>
+        Phone: {{ order.phone }}<br>
+      </p>
+    </div>
   </article>
 {% endblock %}

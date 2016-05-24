@@ -1,0 +1,35 @@
+{# used in email receipt and printable invoice #}
+
+<table border=0 width=100%>
+  {% for line in order.get_lines() %}
+    <tr>
+      <td>
+        {% if line.quantity > 1 %}
+          {{ line.quantity }}x
+        {% endif %}
+        {{ line.description }}
+      </td>
+      <td>&nbsp;</td>
+      <td style="width: 200px;">${{ line.total }}</td>
+    </tr>
+    <tr><td colspan=3>&nbsp;</td></tr>
+  {% endfor %}
+  <tr>
+    <td>&nbsp;</td>
+    <td style="width: 100px">Shipping</td>
+    <td>${{ order.shipping_cost }}</td>
+  </tr>
+  <tr><td colspan=3>&nbsp;</td></tr>
+  {% if order.total_discount -%}
+    <tr>
+      <td>&nbsp;</td>
+      <td>Discount</td>
+      <td>-${{ order.total_discount }}</td>
+    </tr>
+    <tr><td colspan=3>&nbsp;</td></tr>
+  {% endif -%}
+  <tr>
+    <td colspan=2>&nbsp;</td>
+    <td>Total ${{ order.total }} AUD</td>
+  </tr>
+</table>

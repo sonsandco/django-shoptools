@@ -1,0 +1,7 @@
+{% include 'snippets/form_hidden.html' %}
+
+{{ form.non_field_errors() }}
+
+{% for field in form.visible_fields() %}
+  {% include 'snippets/form_field.html' %}
+{% endfor %}

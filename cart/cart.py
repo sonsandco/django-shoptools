@@ -54,7 +54,7 @@ class ICartItem(object):
     def cart_reference(self):
         raise NotImplementedError()
 
-    def cart_line_total(self, qty, currency):
+    def cart_line_total(self, qty, order_obj):
         # currently must return a float/int, not decimal, due to django's
         # serialization limitations - see
         # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
@@ -281,9 +281,8 @@ class BaseOrderLine(models.Model, ICartLine):
 
     @property
     def total(self):
-        currency = getattr(self.parent_object, 'currency', DEFAULT_CURRENCY)
         return decimal.Decimal(
-            self.item.cart_line_total(self.quantity, currency))
+            self.item.cart_line_total(self.quantity, self.parent_object))
 
     @property
     def description(self):

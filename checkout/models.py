@@ -181,8 +181,10 @@ class Order(BasePerson, BaseOrder):
 class OrderLine(BaseOrderLine):
     parent_object = models.ForeignKey(Order, related_name='lines',
                                       on_delete=models.CASCADE)
-    _total = models.DecimalField(max_digits=8, decimal_places=2, db_column='total')
-    _description = models.CharField(max_length=255, blank=True, db_column='description')
+    _total = models.DecimalField(max_digits=8, decimal_places=2,
+                                 db_column='total')
+    _description = models.CharField(max_length=255, blank=True,
+                                    db_column='description')
 
     def set_total(self, val):
         self._total = val
@@ -194,10 +196,8 @@ class OrderLine(BaseOrderLine):
 
     def save(self, *args, **kwargs):
         if self.pk is None:
-            # if the parent has a currency field, use it
-            currency = getattr(self.parent_object, 'currency',
-                               DEFAULT_CURRENCY)
-            self.total = self.item.cart_line_total(self.quantity, currency)
+            self.total = self.item.cart_line_total(
+                self.quantity, self.parent_object)
 
             self.description = self.item.cart_description()
 

@@ -173,7 +173,6 @@ class ICartLine(object):
             'description': self.description,
             'quantity': self.quantity,
             'total': float(self.total),
-            'parent_object': self.parent_object,
         }
 
 

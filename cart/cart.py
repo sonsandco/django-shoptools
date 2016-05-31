@@ -158,18 +158,22 @@ class ICartLine(object):
        quantity
        total
        description
+       parent_object
+
     """
 
     @property
     def ctype(self):
         # app.model, compatible with the ctype argument to Cart.update etc
-        return '%s.%s' % (self.item._meta.app_label, self.item._meta.model_name)
+        return '%s.%s' % (self.item._meta.app_label,
+                          self.item._meta.model_name)
 
     def as_dict(self):
         return {
             'description': self.description,
             'quantity': self.quantity,
             'total': float(self.total),
+            'parent_object': self.parent_object,
         }
 
 
@@ -290,7 +294,7 @@ class BaseOrderLine(models.Model, ICartLine):
 
     def _str__(self):
         return "%s x %s: $%.2f" % (self.description, self.quantity,
-                                    self.total)
+                                   self.total)
 
 
 def create_key(ctype, pk):
@@ -318,7 +322,7 @@ class SessionCartLine(dict, ICartLine):
     '''
 
     def __init__(self, **kwargs):
-        assert sorted(kwargs.keys()) == ['currency', 'key', 'qty']
+        assert sorted(kwargs.keys()) == ['key', 'parent_object', 'qty']
         return super(SessionCartLine, self).__init__(**kwargs)
 
     def __setitem__(self, *args):
@@ -326,8 +330,9 @@ class SessionCartLine(dict, ICartLine):
 
     item = property(lambda s: get_item_from_key(s['key']))
     quantity = property(lambda s: s['qty'])
-    total = property(lambda s: s.item.cart_line_total(s['qty'], s['currency']))
+    total = property(lambda s: s.item.cart_line_total(s['qty'], s))
     description = property(lambda s: s.item.cart_description())
+    parent_object = property(lambda s: s['parent_object'])
 
 
 class SessionCart(ICart):
@@ -396,14 +401,13 @@ class SessionCart(ICart):
         idx = self._line_index(ctype, pk)
         if idx is None:
             return None
-        return SessionCartLine(currency=self.currency,
-                               **self._data["lines"][idx])
+        return SessionCartLine(parent_object=self, **self._data["lines"][idx])
 
     def get_lines(self):
         if self._data is None:
             return
         for line in self._data["lines"]:
-            line = SessionCartLine(currency=self.currency, **line)
+            line = SessionCartLine(parent_object=self, **line)
             if line.item:
                 yield line
 

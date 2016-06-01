@@ -31,7 +31,7 @@ class JsonResponse(HttpResponse):
 @render('accounts/orders.html')
 def orders(request):
     account = Account.objects.for_user(request.user)
-    orders = Order.objects.filter(account=account)
+    orders = Order.objects.filter(user=account.user)
     current = orders.filter(status=Order.STATUS_PAID) \
                     .order_by('created')
     completed = orders.filter(status=Order.STATUS_SHIPPED) \

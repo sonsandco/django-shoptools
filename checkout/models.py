@@ -62,8 +62,8 @@ class Order(BasePerson, BaseOrder):
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 
-    account = models.ForeignKey('accounts.Account', null=True, blank=True,
-                                on_delete=models.SET_NULL)
+    user = models.ForeignKey('auth.User', null=True, blank=True,
+                             on_delete=models.SET_NULL)
     _shipping_cost = models.DecimalField(
         max_digits=8, decimal_places=2, default=0, db_column='shipping_cost',
         editable=False, verbose_name='shipping cost')

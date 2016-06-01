@@ -69,7 +69,7 @@ class AddOrderLineInline(admin.TabularInline):
 
 
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('name', 'account', 'email', 'status',
+    list_display = ('name', 'user', 'email', 'status',
                     'amount_paid', 'created', 'links')
     list_filter = ('status', 'created')
     inlines = [

@@ -32,7 +32,7 @@ class OrderForm(forms.ModelForm):
 
     class Meta:
         model = Order
-        exclude = ('created', 'status', 'amount_paid', 'account',
+        exclude = ('created', 'status', 'amount_paid', 'user',
                    'estimated_delivery', )
 
 

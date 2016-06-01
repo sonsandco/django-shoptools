@@ -4,7 +4,7 @@ import importlib
 
 from django.shortcuts import redirect, get_object_or_404
 from django.template.loader import get_template
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.core.urlresolvers import reverse
 from django.views.decorators.cache import never_cache
 from django.conf import settings
@@ -42,7 +42,7 @@ def checkout_view(wrapped_view):
         else:
             order = None
 
-        if order and order.account and order.account.user != request.user and \
+        if order and order.user and order.user != request.user and \
            not request.user.is_staff:
             return redirect(reverse('login') + '?next=' + request.path_info)
 
@@ -172,7 +172,7 @@ def checkout(request, cart, order):
                 account.save()
 
             if account.pk:
-                order.account = account
+                order.user = account.user
 
             order.save()
 

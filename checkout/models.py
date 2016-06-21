@@ -126,7 +126,10 @@ class Order(BasePerson, BaseOrder):
 
     @property
     def shipping_options(self):
-        return json.loads(self._shipping_options or '{}')
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            return shipping_module.ShippingOptions(
+                json.loads(self._shipping_options or '{}'))
 
     @models.permalink
     def get_absolute_url(self):
@@ -156,7 +159,7 @@ class Order(BasePerson, BaseOrder):
         return max(0, self.total - self.amount_paid)
 
     # voucher integration
-    def calculate_discounts(self):
+    def calculate_discounts(self, include_shipping=True):
         # Return actual saved discounts, rather than calculating afresh. This
         # means the discounts are set and won't change if the voucher is
         # removed or modified

@@ -48,10 +48,10 @@ def NotImplementedProperty(self):
 class ICartItem(object):
     """Define interface for objects which may be added to a cart. """
 
-    def cart_description(self):
-        raise NotImplementedError()
+    def cart_errors(self, line):
+        return []
 
-    def cart_reference(self):
+    def cart_description(self):
         raise NotImplementedError()
 
     def cart_line_total(self, qty, order_obj):
@@ -86,6 +86,16 @@ class ICart(object):
 
     def remove(self, ctype, pk):
         return self.update_quantity(ctype, pk, 0)
+
+    def get_errors(self):
+        """Validate each cart line item. Subclasses may override this method
+           to perform whole-cart validation. Return a list of error strings
+        """
+
+        errors = []
+        for line in self.get_lines():
+            errors += line.get_errors()
+        return errors
 
     def as_dict(self):
         data = {
@@ -161,6 +171,10 @@ class ICartLine(object):
        parent_object
 
     """
+
+    def get_errors(self):
+        """Validate this line's item. Return a list of error strings"""
+        return self.item.cart_errors(self)
 
     @property
     def ctype(self):

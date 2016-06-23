@@ -17,8 +17,8 @@ DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
 
 class BasePerson(models.Model):
-    street = models.CharField(u"Address", max_length=1023)
     name = models.CharField(max_length=1023, default="")
+    address = models.CharField(max_length=1023)
     postcode = models.CharField(max_length=100)
     city = models.CharField("Town / City", max_length=255)
     state = models.CharField(max_length=255, blank=True, default='')

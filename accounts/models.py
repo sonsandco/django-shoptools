@@ -15,16 +15,17 @@ class AccountManager(models.Manager):
 
 
 class Account(models.Model):
-    COMMON_FIELDS = ('street', 'postcode', 'city', 'state', 'country',
+    COMMON_FIELDS = ('address', 'postcode', 'city', 'state', 'country',
                      'phone', )
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    street = models.CharField(u"Address", max_length=1023)
-    postcode = models.CharField(max_length=10)
-    city = models.CharField(max_length=255)
+    address = models.CharField(max_length=1023, blank=True, default='')
+    postcode = models.CharField(max_length=10, blank=True, default='')
+    city = models.CharField(max_length=255, blank=True, default='')
     state = models.CharField(max_length=255, blank=True, default='')
-    country = models.CharField(max_length=2, choices=COUNTRY_CHOICES)
-    phone = models.CharField(max_length=50, default='')
+    country = models.CharField(max_length=2, choices=COUNTRY_CHOICES,
+                               blank=True, default='')
+    phone = models.CharField(max_length=50, default='', blank=True)
 
     objects = AccountManager()
 

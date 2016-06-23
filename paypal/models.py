@@ -82,13 +82,13 @@ class Transaction(models.Model):
     @property
     def merchant_reference(self):
         # Seems to have an undocumented 50 char limit
-        return (u"(#%d) %s" % (self.pk, str(self.content_object)))[:50]
+        return ("(#%d) %s" % (self.pk, str(self.content_object)))[:50]
 
     @property
     def transaction_id(self):
         """DPS has a stupid 16-char limit on TxnId. We use the last
         half (most random part) of the uuid with pk appended."""
-        return (u"%s/%d" % (self.secret, self.pk))[-16:]
+        return ("%s/%d" % (self.secret, self.pk))[-16:]
 
 
 ## Two choices follow. BasicTransactionProtocol is the minimal subset

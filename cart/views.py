@@ -36,7 +36,7 @@ def cart_view(action=None):
         if action:
             success = action(data, cart)
             if not success:
-                return HttpResponseBadRequest(u"Invalid request")
+                return HttpResponseBadRequest("Invalid request")
 
         if request.is_ajax():
             data = {

@@ -325,7 +325,7 @@ class SessionCartLine(dict, ICartLine):
         return super(SessionCartLine, self).__init__(**kwargs)
 
     def __setitem__(self, *args):
-        raise Exception(u"Sorry, SessionCartLine instances are immutable.")
+        raise Exception("Sorry, SessionCartLine instances are immutable.")
 
     item = property(lambda s: get_item_from_key(s['key']))
     quantity = property(lambda s: s['qty'])

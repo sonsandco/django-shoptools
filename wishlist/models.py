@@ -44,7 +44,7 @@ class Wishlist(BaseOrder):
         return ('wishlist_wishlist', (self.secret, ))
 
     def __unicode__(self):
-        return u"Wishlist by %s" % self.user.get_full_name()
+        return "Wishlist by %s" % self.user.get_full_name()
 
     # BaseOrder integration
     def get_line_cls(self):

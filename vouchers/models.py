@@ -111,7 +111,7 @@ def make_code():
 
 class BaseVoucher(models.Model):
     code = models.CharField(max_length=32, blank=True, unique=True,
-                            help_text=u"Leave blank to auto-generate")
+                            help_text="Leave blank to auto-generate")
     created = models.DateTimeField(auto_now_add=True)
     limit = models.PositiveSmallIntegerField(null=True, blank=True)
     minimum_spend = models.PositiveIntegerField(default=0)
@@ -214,11 +214,11 @@ class Discount(models.Model):
         uses = voucher.uses(exclude={'pk': self.pk})
 
         if voucher.limit is not None and uses.count() > voucher.limit:
-            raise ValidationError(u"Voucher has already been used")
+            raise ValidationError("Voucher has already been used")
 
         if isinstance(voucher, FixedVoucher):
             if self.amount > voucher.amount:
-                raise ValidationError(u"Discount exceeds voucher amount")
+                raise ValidationError("Discount exceeds voucher amount")
 
         remaining = voucher.amount_remaining(exclude={'pk': self.pk})
         if remaining is not None and self.amount > remaining:

@@ -81,7 +81,7 @@ def create(request):
             account.user = user_form.save()
             account.save()
             auth_user = authenticate(
-                username=account.user.email,
+                username=account.user.username,
                 password=user_form.cleaned_data['password1'])
             login(request, auth_user)
             messages.info(request, 'Your account was created.')

@@ -275,12 +275,16 @@ class BaseOrderLine(models.Model, ICartLine):
 
     @property
     def total(self):
+        if not self.item:
+            return 0
         currency = getattr(self.parent_object, 'currency', DEFAULT_CURRENCY)
         return decimal.Decimal(
             self.item.cart_line_total(self.quantity, currency))
 
     @property
     def description(self):
+        if not self.item:
+            return ''
         return self.item.cart_description()
 
     def __unicode__(self):

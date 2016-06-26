@@ -298,11 +298,15 @@ class BaseOrderLine(models.Model, ICartLine):
 
     @property
     def total(self):
+        if not self.item:
+            return 0
         return decimal.Decimal(
             self.item.cart_line_total(self.quantity, self.parent_object))
 
     @property
     def description(self):
+        if not self.item:
+            return ''
         return self.item.cart_description()
 
     def _str__(self):

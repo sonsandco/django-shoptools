@@ -12,7 +12,8 @@ TEMPLATE_DIR = 'checkout/emails/'
 
 def send_email_receipt(order):
     send_email('receipt', [order.email], order=order)
-    send_email('notification', [t[1] for t in settings.CHECKOUT_MANAGERS],
+    manager_emails = getattr(settings, 'CHECKOUT_MANAGERS', [])
+    send_email('notification', [t[1] for t in manager_emails],
                order=order)
 
 

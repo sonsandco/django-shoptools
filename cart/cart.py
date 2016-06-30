@@ -329,7 +329,8 @@ class SessionCartLine(dict, ICartLine):
 
     item = property(lambda s: get_item_from_key(s['key']))
     quantity = property(lambda s: s['qty'])
-    total = property(lambda s: s.item.cart_line_total(s['qty'], s))
+    total = property(lambda s: s.item.cart_line_total(s['qty'],
+                                                      s['parent_object']))
     description = property(lambda s: s.item.cart_description())
     parent_object = property(lambda s: s['parent_object'])
 

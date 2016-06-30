@@ -1,11 +1,5 @@
-{% extends 'checkout/email/base.html' %}
-
-{% macro full_path_img(img) %}
-  {% if img %}
-    <img src="http://{{ site.domain }}{{ img.url }}" alt="{{ img.caption }}"
-         width={{ img.width }} height={{ img.height }}>
-  {% endif %}
-{% endmacro %}
+{% extends 'checkout/emails/base.html' %}
+{% from 'checkout/snippets/macros.html' import full_path_img with context %}
 
 {% block header %}
   {% filter linebreaks %}

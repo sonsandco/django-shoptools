@@ -34,8 +34,8 @@ class Wishlist(BaseOrder):
     """This model is used interchangeably with cart.cart.SessionCart, so it
        implements many of the same methods. """
 
-    created = models.DateTimeField(default=datetime.now)
-    user = models.ForeignKey('auth.User')
+    created = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey('auth.User', on_delete=models.PROTECT)
     secret = models.CharField(max_length=32, editable=False, default=make_uuid,
                               unique=True, db_index=True)
 
@@ -44,7 +44,7 @@ class Wishlist(BaseOrder):
         return ('wishlist_wishlist', (self.secret, ))
 
     def __unicode__(self):
-        return u"Wishlist by %s" % self.user.get_full_name()
+        return "Wishlist by %s" % self.user.get_full_name()
 
     # BaseOrder integration
     def get_line_cls(self):

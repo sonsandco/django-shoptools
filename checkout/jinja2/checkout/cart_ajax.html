@@ -3,6 +3,10 @@
 
 {% if not cart.empty() %}
 
+  {% for error in cart.get_errors() %}
+    <p class="error">{{ error }}</p>
+  {% endfor %}
+
   {{ order_lines(cart, quantity_url=url('cart_quantity'),
                  show_quantity=True) }}
 

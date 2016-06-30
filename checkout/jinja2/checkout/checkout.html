@@ -19,7 +19,11 @@
 
         <h3>Delivery details</h3>
 
-        {% if cart_errors or form.errors %}
+        {% for error in cart_errors %}
+          <p class="error">{{ error }}</p>
+        {% endfor %}
+
+        {% if form.errors %}
           <p class="error-warning">Please correct the errors below</p>
         {% endif %}
 

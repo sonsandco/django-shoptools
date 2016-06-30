@@ -37,6 +37,10 @@ def checkout_view(wrapped_view):
     @never_cache
     def view_func(request, secret=None):
         cart = get_cart(request)
+        # TODO simplify this by just passing through one "order obj", which may
+        # be an order or a cart, rather than both. This should be possible
+        # since they share an interface. Will require some view rearranging
+        # though
         if secret:
             order = get_object_or_404(Order, secret=secret)
         else:
@@ -134,8 +138,8 @@ def checkout(request, cart, order):
         sanity_check = lambda: cart.subtotal
         new_order = True
 
-    # Add in any custom cart verification here
-    cart_errors = []
+    # Verify the order (stock levels etc should be picked up here)
+    cart_errors = (order or cart).get_errors()
 
     if request.method == 'POST':
         form = get_form(request.POST, sanity_check=sanity_check())

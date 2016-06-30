@@ -17,12 +17,12 @@ DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
 
 class BasePerson(models.Model):
-    name = models.CharField(u"Name", max_length=1023, default="")
-    street = models.CharField(u"Address", max_length=1023)
+    name = models.CharField(max_length=1023, default="")
+    address = models.CharField(max_length=1023)
     postcode = models.CharField(max_length=100)
-    city = models.CharField(u"Town / City", max_length=255)
+    city = models.CharField("Town / City", max_length=255)
     state = models.CharField(max_length=255, blank=True, default='')
-    country = models.CharField(max_length=2, default=u'New Zealand',
+    country = models.CharField(max_length=2, default='New Zealand',
                                choices=COUNTRY_CHOICES)
     email = models.EmailField()
     phone = models.CharField(max_length=50, default='')
@@ -73,7 +73,7 @@ class Order(BasePerson, BaseOrder):
     # payments = GenericRelation(Transaction)
     dispatched = models.DateTimeField(null=True, editable=False)
     delivery_notes = models.TextField(blank=True, default='')
-    receive_email = models.BooleanField(u"Receive our email news and offers",
+    receive_email = models.BooleanField("Receive our email news and offers",
                                         default=False)
 
     def save(self, *args, **kwargs):

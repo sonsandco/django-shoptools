@@ -13,7 +13,7 @@ class OrderForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data['email']
         if self.require_unique_email and User.objects.filter(email=email):
-            raise forms.ValidationError(u"That email is already in use")
+            raise forms.ValidationError("That email is already in use")
         return email
 
     def clean(self):

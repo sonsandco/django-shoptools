@@ -29,7 +29,6 @@ class SavedCart(BaseOrder):
     currency = models.CharField(max_length=3, editable=False,
                                 default=DEFAULT_CURRENCY)
 
-
     # This wasn't getting updated for some reason, so just use the session
     # shipping options instead - this means shipping options aren't saved with
     # the cart but the main thing is the cart lines anyway
@@ -77,7 +76,7 @@ class SavedCart(BaseOrder):
     def _str__(self):
         if self.user:
             return "Cart by %s, %s" % (self.user.get_full_name(),
-                                        self.created)
+                                       self.created)
         else:
             return "Cart, %s" % (self.created, )
 

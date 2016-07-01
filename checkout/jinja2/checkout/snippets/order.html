@@ -49,7 +49,7 @@
                 line.item.available() %}
             <form action="{{ url('shop_add', line.item.product.pk) }}"
                   method="post" class="cart
-                  {%- if in_cart(request, line.item) %} in-bag{% endif %}">
+                  {%- if in_cart(request, line.item) %} in-cart{% endif %}">
               {{ csrf_input }}
               {% if line.item.colour %}
                 <input type="hidden" name="colour"
@@ -60,9 +60,9 @@
                        value="{{ line.item.size.size }}">
               {% endif %}
               <input type="hidden" name="qty" value=1>
-              <button type="submit" name="cart">Add to bag</button>
+              <button type="submit" name="cart">Add to cart</button>
 
-              <a class="cart" href="{{ url('checkout_cart') }}">In bag</a>
+              <a class="cart" href="{{ url('checkout_cart') }}">In cart</a>
             </form>
           {% endif %}
         {% endif #}

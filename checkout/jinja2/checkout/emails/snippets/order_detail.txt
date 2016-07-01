@@ -1,5 +1,5 @@
 {{ order.name }}
-{{ order.street }}
+{{ order.address }}
 {{ order.city }} {{ order.postcode }}
 {{ order.state }}
 {{ order.get_country_display() }}

@@ -26,12 +26,11 @@
               </form>
               <form action="{{ quantity_url }}" method="post" class="remove">
                 {{ csrf_input }}
-
                 <input type="hidden" name="qty" value="0">
                 <input type="hidden" name="ctype"
-                       value="shop.{{ line.item.product_type }}">
+                       value="{{ line.ctype }}">
                 <input type="hidden" name="pk" value="{{ line.item.pk }}">
-                <input type="submit" value="Remove">
+                <input type="submit" name="Update" value="Remove">
               </form>
             {% else %}
               <p class="qty">{{ line.quantity }}</p>

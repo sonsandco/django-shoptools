@@ -5,7 +5,8 @@
 
   <ul class="checkout-item-list">
     {% for line in order_obj.get_lines() %}
-      <li>
+      <li id='{{ line.item.ctype.replace('.', '-') }}-{{ line.item.id }}'
+          class='form-row'>
         <h6>{{ line.description }}</h6>
         {#- -#}
         <p class="unit-price">

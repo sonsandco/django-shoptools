@@ -60,6 +60,12 @@ class ICartItem(object):
         # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
         raise NotImplementedError()
 
+    @property
+    def ctype(self):
+        # app.model, compatible with the ctype argument to Cart.add etc
+        return '%s.%s' % (self._meta.app_label,
+                          self._meta.model_name)
+
 
 class ICart(object):
     """Define interface for "cart" objects, which may be a session-based

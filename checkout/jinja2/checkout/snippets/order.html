@@ -19,7 +19,8 @@
               <form action="{{ quantity_url }}" method="post" class="quantity">
                 {{ csrf_input }}
                 <label>Qty</label>
-                <input type="number" name="qty" value="{{ line.quantity }}">
+                <input type="number" name="qty" value="{{ line.quantity }}"
+                       min="0" step="1">
                 <input type="hidden" name="ctype"
                        value="{{ line.ctype }}">
                 <input type="hidden" name="pk" value="{{ line.item.pk }}">

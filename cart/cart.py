@@ -48,13 +48,24 @@ def NotImplementedProperty(self):
 class ICartItem(object):
     """Define interface for objects which may be added to a cart. """
 
+    def purchase(self, line):
+        """Called on successful purchase. """
+        pass
+
     def cart_errors(self, line):
+        """Used by the cart and checkout to check for errors, i.e. out of
+           stock. """
         return []
 
     def cart_description(self):
+        """Describes the item in the checkout admin. Needed because the needs
+           to store a description of the item as purchased, even if it is
+           deleted or changed down the track. """
         raise NotImplementedError()
 
     def cart_line_total(self, qty, order_obj):
+        """Returns the total price for qty of this item. """
+
         # currently must return a float/int, not decimal, due to django's
         # serialization limitations - see
         # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization

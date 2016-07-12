@@ -60,6 +60,12 @@ class ICartItem(object):
         # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
         raise NotImplementedError()
 
+    @property
+    def ctype(self):
+        # app.model, compatible with the ctype argument to Cart.add etc
+        return '%s.%s' % (self._meta.app_label,
+                          self._meta.model_name)
+
 
 class ICart(object):
     """Define interface for "cart" objects, which may be a session-based
@@ -309,11 +315,15 @@ class BaseOrderLine(models.Model, ICartLine):
 
     @property
     def total(self):
+        if not self.item:
+            return 0
         return decimal.Decimal(
             self.item.cart_line_total(self.quantity, self.parent_object))
 
     @property
     def description(self):
+        if not self.item:
+            return ''
         return self.item.cart_description()
 
     def _str__(self):
@@ -354,7 +364,8 @@ class SessionCartLine(dict, ICartLine):
 
     item = property(lambda s: get_item_from_key(s['key']))
     quantity = property(lambda s: s['qty'])
-    total = property(lambda s: s.item.cart_line_total(s['qty'], s))
+    total = property(lambda s: s.item.cart_line_total(s['qty'],
+                                                      s['parent_object']))
     description = property(lambda s: s.item.cart_description())
     parent_object = property(lambda s: s['parent_object'])
 

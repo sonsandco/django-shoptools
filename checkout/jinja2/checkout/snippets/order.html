@@ -5,7 +5,8 @@
 
   <ul class="checkout-item-list">
     {% for line in order_obj.get_lines() %}
-      <li>
+      <li id='{{ line.item.ctype.replace('.', '-') }}-{{ line.item.id }}'
+          class='form-row'>
         <h6>{{ line.description }}</h6>
         {#- -#}
         <p class="unit-price">
@@ -18,7 +19,8 @@
               <form action="{{ quantity_url }}" method="post" class="quantity">
                 {{ csrf_input }}
                 <label>Qty</label>
-                <input type="number" name="qty" value="{{ line.quantity }}">
+                <input type="number" name="qty" value="{{ line.quantity }}"
+                       min="0" step="1">
                 <input type="hidden" name="ctype"
                        value="{{ line.ctype }}">
                 <input type="hidden" name="pk" value="{{ line.item.pk }}">
@@ -26,12 +28,11 @@
               </form>
               <form action="{{ quantity_url }}" method="post" class="remove">
                 {{ csrf_input }}
-
                 <input type="hidden" name="qty" value="0">
                 <input type="hidden" name="ctype"
-                       value="shop.{{ line.item.product_type }}">
+                       value="{{ line.ctype }}">
                 <input type="hidden" name="pk" value="{{ line.item.pk }}">
-                <input type="submit" value="Remove">
+                <input type="submit" name="Update" value="Remove">
               </form>
             {% else %}
               <p class="qty">{{ line.quantity }}</p>
@@ -50,7 +51,7 @@
                 line.item.available() %}
             <form action="{{ url('shop_add', line.item.product.pk) }}"
                   method="post" class="cart
-                  {%- if in_cart(request, line.item) %} in-bag{% endif %}">
+                  {%- if in_cart(request, line.item) %} in-cart{% endif %}">
               {{ csrf_input }}
               {% if line.item.colour %}
                 <input type="hidden" name="colour"
@@ -61,9 +62,9 @@
                        value="{{ line.item.size.size }}">
               {% endif %}
               <input type="hidden" name="qty" value=1>
-              <button type="submit" name="cart">Add to bag</button>
+              <button type="submit" name="cart">Add to cart</button>
 
-              <a class="cart" href="{{ url('checkout_cart') }}">In bag</a>
+              <a class="cart" href="{{ url('checkout_cart') }}">In cart</a>
             </form>
           {% endif %}
         {% endif #}

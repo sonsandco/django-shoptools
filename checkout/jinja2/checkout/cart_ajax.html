@@ -13,7 +13,7 @@
   <p class="checkout-totals">
     <strong>Total</strong>
     <span class="price">
-      $<span class="cart-total">{{ cart.total|floatformat(-2) }}</span>
+      $<span class="cart-total">{{ cart.total|floatformat(2) }}</span>
     </span>
   </p>
 
@@ -24,6 +24,6 @@
   </div>
 {% else %}
   <p class="checkout-empty">
-    No products in your bag.
+    No products in your cart.
   </p>
 {% endif %}

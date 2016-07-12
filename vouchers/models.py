@@ -49,8 +49,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
 
     if include_shipping:
         # apply free shipping (only one)
-        shipping = filter(lambda v: isinstance(v, FreeShippingVoucher),
-                          vouchers)
+        shipping = [v for v in vouchers if isinstance(v, FreeShippingVoucher)]
         if len(shipping):
             amount = obj.shipping_cost
             total -= amount
@@ -76,7 +75,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
             Discount(voucher=p_voucher, amount=amount, **defaults))
 
     # apply fixed vouchers, smallest remaining amount first
-    fixed = filter(lambda v: isinstance(v, FixedVoucher), vouchers)
+    fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
     fixed.sort(key=lambda v: v.amount_remaining)
     for voucher in fixed:
         amount = min(total, voucher.amount, voucher.amount_remaining)

@@ -1,0 +1,6 @@
+{% macro full_path_img(img) %}
+  {% if img %}
+    <img src="http://{{ site.domain }}{{ img.url }}" alt="{{ img.caption }}"
+         width={{ img.width }} height={{ img.height }}>
+  {% endif %}
+{% endmacro %}

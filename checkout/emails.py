@@ -12,7 +12,8 @@ TEMPLATE_DIR = 'checkout/emails/'
 
 def send_email_receipt(order):
     send_email('receipt', [order.email], order=order)
-    send_email('notification', [t[1] for t in settings.CHECKOUT_MANAGERS],
+    manager_emails = getattr(settings, 'CHECKOUT_MANAGERS', [])
+    send_email('notification', [t[1] for t in manager_emails],
                order=order)
 
 
@@ -42,8 +43,8 @@ def email_content(email_type, **context):
     except TemplateDoesNotExist:
         html_content = None
 
-    return (subject.strip(), text_content.encode('ascii', 'ignore'),
-            html_content.encode('ascii', 'ignore') if html_content else None)
+    return (subject.strip(), text_content,
+            html_content if html_content else None)
 
 
 def send_email(email_type, recipients, cc=[], bcc=[], **context_dict):

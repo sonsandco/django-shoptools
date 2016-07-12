@@ -43,7 +43,7 @@ class Wishlist(BaseOrder):
     def get_absolute_url(self):
         return ('wishlist_wishlist', (self.secret, ))
 
-    def __unicode__(self):
+    def __str__(self):
         return "Wishlist by %s" % self.user.get_full_name()
 
     # BaseOrder integration

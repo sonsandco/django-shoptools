@@ -503,8 +503,7 @@ class SessionCart(ICart):
 
 
 def make_uuid():
-    u = uuid.uuid4()
-    return str(u).replace('-', '')
+    return uuid.uuid4()
 
 
 def get_cart(request):

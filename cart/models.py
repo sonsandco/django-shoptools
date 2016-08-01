@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -14,8 +13,7 @@ class SavedCart(BaseOrder):
 
     created = models.DateTimeField(default=datetime.now)
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
-    secret = models.CharField(max_length=32, editable=False, default=make_uuid,
-                              unique=True, db_index=True)
+    secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
     _shipping_options = models.TextField(
         blank=True, default='', editable=False, db_column='shipping_options',
         verbose_name='shipping options')

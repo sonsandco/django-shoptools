@@ -1,22 +1,17 @@
 from datetime import datetime
-import uuid
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 
-
-def make_uuid():
-    """the hyphens in uuids are unnecessary, and brevity will be an
-    advantage in our urls."""
-    u = uuid.uuid4()
-    return str(u).replace('-', '')
+from cart.models import make_uuid
 
 
 class TransactionManager(models.Manager):
     def for_object(self, obj):
         ctype = ContentType.objects.get_for_model(obj)
-        return self.get_query_set().filter(content_type=ctype, object_id=obj.id)
+        return self.get_query_set().filter(content_type=ctype,
+                                           object_id=obj.id)
 
 
 class Transaction(models.Model):
@@ -47,8 +42,7 @@ class Transaction(models.Model):
                               default=PENDING)
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True)
 
-    secret = models.CharField(max_length=32, editable=False, default=make_uuid,
-                              unique=True, db_index=True)
+    secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
     result = models.TextField(blank=True)
 
     objects = TransactionManager()

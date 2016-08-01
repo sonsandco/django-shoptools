@@ -36,8 +36,7 @@ class Wishlist(BaseOrder):
 
     created = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey('auth.User', on_delete=models.PROTECT)
-    secret = models.CharField(max_length=32, editable=False, default=make_uuid,
-                              unique=True, db_index=True)
+    secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
     @models.permalink
     def get_absolute_url(self):

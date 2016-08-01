@@ -50,8 +50,7 @@ class Order(BasePerson, BaseOrder):
 
     id = models.AutoField(verbose_name='Order number', primary_key=True)
 
-    secret = models.CharField(max_length=32, editable=False, default=make_uuid,
-                              unique=True, db_index=True)
+    secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
     currency = models.CharField(max_length=3, editable=False,
                                 default=DEFAULT_CURRENCY)

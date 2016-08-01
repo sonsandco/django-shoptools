@@ -139,7 +139,7 @@ def checkout(request, cart, order):
         new_order = True
 
     # Verify the order (stock levels etc should be picked up here)
-    cart_errors = (order or cart).get_errors()
+    cart_errors = cart.get_errors()
 
     if request.method == 'POST':
         form = get_form(request.POST, sanity_check=sanity_check())

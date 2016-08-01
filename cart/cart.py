@@ -5,10 +5,10 @@ import importlib
 
 from django.apps import apps
 from django.conf import settings
-from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.db import models
 
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
@@ -48,13 +48,24 @@ def NotImplementedProperty(self):
 class ICartItem(object):
     """Define interface for objects which may be added to a cart. """
 
+    def purchase(self, line):
+        """Called on successful purchase. """
+        pass
+
     def cart_errors(self, line):
+        """Used by the cart and checkout to check for errors, i.e. out of
+           stock. """
         return []
 
     def cart_description(self):
+        """Describes the item in the checkout admin. Needed because the needs
+           to store a description of the item as purchased, even if it is
+           deleted or changed down the track. """
         raise NotImplementedError()
 
     def cart_line_total(self, qty, order_obj):
+        """Returns the total price for qty of this item. """
+
         # currently must return a float/int, not decimal, due to django's
         # serialization limitations - see
         # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
@@ -217,7 +228,7 @@ class BaseOrder(models.Model, ICart):
             ctype_obj = ContentType.objects.get(app_label=app_label,
                                                 model=model)
         except ContentType.DoesNotExist:
-            return False
+            return (False, ['Invalid item'])
 
         values = {
             'parent_object': self,
@@ -225,20 +236,31 @@ class BaseOrder(models.Model, ICart):
             'item_object_id': pk,
         }
         line_cls = self.get_line_cls()
-        lines = line_cls.objects.filter(**values)
+
+        # get the line from the db, or a new one if it doesn't exist
+        try:
+            line = line_cls.objects.get(**values)
+        except line_cls.DoesNotExist:
+            line = line_cls(**values)
+
+        # qty may be an addition or a straight update
         if add:
-            update_qty = models.F('quantity') + qty
+            line.quantity = (line.quantity or 0) + qty
         else:
-            update_qty = qty
-        updated = lines.update(quantity=update_qty)
+            line.quantity = qty
 
-        if not updated and qty:
-            line_cls.objects.create(quantity=qty, **values)
+        # purge if quantity is zero after the update
+        if not line.quantity:
+            line.delete()
+            return (True, None)
 
-        # purge any with a zero quantity after the update
-        lines.filter(quantity__lte=0).delete()
+        # verify the order line object before saving
+        errors = line.get_errors()
+        if errors:
+            return (False, errors)
 
-        return True
+        line.save()
+        return (True, None)
 
     def get_line(self, ctype, pk):
         app_label, model = ctype.split('.')
@@ -380,7 +402,7 @@ class SessionCart(ICart):
         self._init_session_cart()
         self._data["vouchers"] = list(codes)
         self.request.session.modified = True
-        return True
+        return (True, None)
 
     @property
     def shipping_options(self):
@@ -398,40 +420,65 @@ class SessionCart(ICart):
 
     def update_quantity(self, ctype, pk, qty=1, add=False):
         assert isinstance(qty, int)
-        idx = self._line_index(ctype, pk)
+        index = self._line_index(ctype, pk)
 
-        if add and idx is not None:
-            qty += self._data["lines"][idx]['qty']
+        # quantity may be additive or a straight update
+        if add and index is not None:
+            qty += self._data["lines"][index]['qty']
 
+        # purge if quantity is zero
         if qty < 1:
-            if idx is None:
+            if index is None:
                 return False
-            del self._data["lines"][idx]
+            del self._data["lines"][index]
             self.request.session.modified = True
-            return True
+            return (True, None)
 
-        if idx is None:
+        if index is None:
+            # Add to cart if not in there already
+            data = {'key': create_key(ctype, pk), 'qty': qty}
+            line = self.make_line_obj(data)
+            errors = line.get_errors()
+            if errors:
+                return (False, errors)
+
+            # Append line if no errors
             self._init_session_cart()
-            line = {'key': create_key(ctype, pk), 'qty': qty}
-            self._data["lines"].append(line)
+            self._data["lines"].append(data)
         else:
             # Already in the cart, so update the existing line
-            line = self._data["lines"][idx]['qty'] = qty
+            data = self._data["lines"][index]
+            data['qty'] = qty
+            line = self.make_line_obj(data)
+            errors = line.get_errors()
+            if errors:
+                return (False, errors)
+
+            # Update data if no errors
+            self._data["lines"][index] = data
 
         self.request.session.modified = True
-        return True
+        return (True, None)
+
+    def get_line_cls(self):
+        """Subclasses should override this if SessionCartLine is also
+           subclassed. """
+        return SessionCartLine
+
+    def make_line_obj(self, data):
+        return self.get_line_cls()(parent_object=self, **data)
 
     def get_line(self, ctype, pk):
-        idx = self._line_index(ctype, pk)
-        if idx is None:
+        index = self._line_index(ctype, pk)
+        if index is None:
             return None
-        return SessionCartLine(parent_object=self, **self._data["lines"][idx])
+        return self.make_line_obj(self._data["lines"][index])
 
     def get_lines(self):
         if self._data is None:
             return
         for line in self._data["lines"]:
-            line = SessionCartLine(parent_object=self, **line)
+            line = self.make_line_obj(line)
             if line.item:
                 yield line
 

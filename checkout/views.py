@@ -236,7 +236,7 @@ def preview_emails(request, cart, order):
     # send_email('notification', [t[1] for t in settings.CHECKOUT_MANAGERS],
     #            order=order)
     emails = []
-    for t in ('receipt', 'notification'):
+    for t in ('receipt', 'notification', 'dispatch'):
         emails.append(email_content(t, order=order))
 
     return {

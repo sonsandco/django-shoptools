@@ -104,6 +104,7 @@ def account_data(request):
     if request.user.is_authenticated():
         data['account'] = {
             'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
         }
 
     if get_wishlist:

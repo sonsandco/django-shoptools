@@ -7,4 +7,4 @@
 View your order:
 http://{{ site.domain }}{{ order.get_absolute_url() }}
 
-{% include 'checkout/emails/snippets/signature.txt' %}
+{% include 'checkout/emails/snippets/text_signature.txt' %}

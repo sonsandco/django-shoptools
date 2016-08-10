@@ -350,7 +350,7 @@ class BaseOrderLine(models.Model, ICartLine):
             return ''
         return self.item.cart_description()
 
-    def _str__(self):
+    def __str__(self):
         return "%s x %s: $%.2f" % (self.description, self.quantity,
                                    self.total)
 

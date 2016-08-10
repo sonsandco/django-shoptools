@@ -41,11 +41,11 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
         defaults = {}
 
     # filter out any that have already been used
-    vouchers = filter(lambda v: v.available(exclude=defaults), vouchers)
+    vouchers = [v for v in vouchers if v.available(exclude=defaults)]
 
     # filter out any under their minimum_spend value
-    invalid_spend = filter(lambda v: obj.subtotal < v.minimum_spend, vouchers)
-    vouchers = filter(lambda v: obj.subtotal >= v.minimum_spend, vouchers)
+    invalid_spend = [v for v in vouchers if obj.subtotal < v.minimum_spend]
+    vouchers = [v for v in vouchers if obj.subtotal >= v.minimum_spend]
 
     if include_shipping:
         # apply free shipping (only one)
@@ -57,7 +57,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
                 Discount(voucher=shipping[0], amount=amount, **defaults))
 
     # find and apply best percentage voucher
-    percentage = filter(lambda v: isinstance(v, PercentageVoucher), vouchers)
+    percentage = [v for v in vouchers if isinstance(v, PercentageVoucher)]
     p_voucher = None
     for voucher in percentage:
         if not p_voucher or p_voucher.amount < voucher.amount:

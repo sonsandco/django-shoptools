@@ -77,6 +77,12 @@ class ICartItem(object):
         return '%s.%s' % (self._meta.app_label,
                           self._meta.model_name)
 
+    @property
+    def unique_identifier(self):
+        # unique across all models, intended for use as an id or class
+        # attribute where the ability to get a specific item is required
+        return self.ctype.replace('.', '-') + '-%d' % self.id
+
 
 class ICart(object):
     """Define interface for "cart" objects, which may be a session-based
@@ -199,11 +205,18 @@ class ICartLine(object):
         return '%s.%s' % (self.item._meta.app_label,
                           self.item._meta.model_name)
 
+    @property
+    def unique_identifier(self):
+        # unique across all models, intended for use as an id or class
+        # attribute where the ability to get a specific item is required
+        return self.ctype.replace('.', '-') + '-%d' % self.item.id
+
     def as_dict(self):
         return {
             'description': self.description,
             'quantity': self.quantity,
             'total': float(self.total),
+            'unique_identifier': self.unique_identifier
         }
 
 

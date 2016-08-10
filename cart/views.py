@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
     HttpResponseBadRequest, HttpResponseNotAllowed
 from django.template.loader import get_template, TemplateDoesNotExist
 
-from . import cart
+from .cart import get_cart as default_get_cart, get_shipping_module
 from . import actions
 
 
@@ -24,7 +24,7 @@ def cart_view(action=None):
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
 
-    def view_func(request, next_url=None, data=None, get_cart=cart.get_cart,
+    def view_func(request, next_url=None, data=None, get_cart=default_get_cart,
                   ajax_template='checkout/cart_ajax.html'):
         if not data:
             data = request.POST
@@ -40,6 +40,12 @@ def cart_view(action=None):
             success = action(data, cart)
             if success is None:
                 return HttpResponseBadRequest('Invalid request')
+
+            if success:
+                # Update shipping since country, quantity etc may have changed
+                shipping_module = get_shipping_module()
+                if shipping_module:
+                    shipping_module.save_to_cart(cart, **cart.get_shipping())
 
         if request.is_ajax():
             data = {

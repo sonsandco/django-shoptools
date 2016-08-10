@@ -1,11 +1,12 @@
 from datetime import datetime
+import json
+import decimal
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
-from .cart import make_uuid, BaseOrder, BaseOrderLine, get_shipping_module, \
-    DEFAULT_CURRENCY
+from .cart import make_uuid, BaseOrder, BaseOrderLine, DEFAULT_CURRENCY
 
 
 class SavedCart(BaseOrder):
@@ -31,33 +32,35 @@ class SavedCart(BaseOrder):
     # shipping options instead - this means shipping options aren't saved with
     # the cart but the main thing is the cart lines anyway
 
-    # def set_shipping(self, options):
-    #     """Use this method to set shipping options. """
-    #
-    #     self._shipping_options = json.dumps(options)
-    #     self.save()
-    #
-    # @property
-    # def shipping_options(self):
-    #     return json.loads(self._shipping_options or '{}')
-
     def set_request(self, request):
-        # needs to be called before shipping_options or shipping_cost
+        # needs to be called before get_shipping
         self.request = request
 
-    @property
-    def shipping_options(self):
-        shipping_module = get_shipping_module()
-        if shipping_module and hasattr(self, 'request'):
-            return shipping_module.get_session(self.request)
+    def set_shipping(self, options):
+        '''
+            Saves the provided options to this SavedCart. Assumes the
+            options have already been validated, if necessary.
+        '''
+        self._shipping_options = json.dumps(options)
+        self.save()
+
+    def get_shipping(self):
+        '''
+            Get shipping options for this cart, if any, falling back to the
+            shipping options saved against the session.
+        '''
+        if self._shipping_options:
+            return json.loads(self._shipping_options)
+
         return {}
 
     @property
     def shipping_cost(self):
-        shipping_module = get_shipping_module()
-        if shipping_module:
-            return shipping_module.calculate_shipping(self)
-        return 0
+        return self.get_shipping().get('cost', None)
+
+    @property
+    def has_valid_shipping(self):
+        return self.shipping_cost is not None
 
     def get_voucher_codes(self):
         return filter(bool, self._voucher_codes.split(','))
@@ -80,7 +83,11 @@ class SavedCart(BaseOrder):
 
     @property
     def total(self):
-        return self.subtotal + self.shipping_cost - self.total_discount
+        if self.has_valid_shipping:
+            return self.subtotal + decimal.Decimal(self.shipping_cost) \
+                - self.total_discount
+        else:
+            return self.subtotal - self.total_discount
 
     # BaseOrder integration
     def get_line_cls(self):

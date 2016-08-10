@@ -15,7 +15,6 @@ except ImportError:
 
 from checkout.models import Order
 from cart.cart import get_cart
-# from cart.cart import get_shipping_module
 
 from .models import Account
 from .forms import AccountForm, UserForm, CreateUserForm
@@ -68,10 +67,10 @@ def details(request):
 
 @render('accounts/create.html')
 def create(request):
-    # shipping_opts = shipping.util.get_session(request)
-    initial = {
-        # 'country': shipping_opts.get('country'),
-    }
+    initial = {}
+
+    cart = get_cart(request)
+    initial.update(cart.get_shipping())
 
     if request.method == 'POST':
         account_form = AccountForm(request.POST, initial=initial)

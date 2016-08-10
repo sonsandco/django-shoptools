@@ -28,7 +28,34 @@
         {% endif %}
 
         {% for field in form.visible_fields() %}
-          {% include 'snippets/form_field.html' %}
+          {% if field.name == 'country' %}
+            {# TODO: Allow any country if there is a gift recipient #}
+            <div class="form-field {{ field.name -}}
+                        {%- if field.errors %} error{% endif -%}
+                        {%- if field.field.required %} required{% endif %}">
+              {{- field.errors|safe }}
+
+              {{- field.label_tag(label_suffix='')|safe }}
+              {% if valid_countries %}
+                <select id='id_country' name='country'>
+                  {% for code, name in valid_countries %}
+                    {% set selected = not selected_country and loop.first or code == selected_country %}
+                    <option value='{{ code }}' {{ 'selected' if selected else ''}}>
+                      {{ name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                {{- field|safe }}
+              {% endif %}
+
+              {%- if field.help_text -%}
+                <p class="help">{{ field.help_text }}</p>
+              {%- endif -%}
+            </div>
+          {% else %}
+            {% include 'snippets/form_field.html' %}
+          {% endif %}
         {% endfor %}
 
         {% if not account.pk %}
@@ -60,6 +87,53 @@
             </div>
           {% endif %}
         {% endif %}
+
+        {% set is_gift = request.POST.get('is-gift') or gift_form.instance.pk %}
+          <section class="gift-wrap {% if is_gift %}active{% endif %}">
+            <div class="form-field is-gift">
+              <input type="checkbox" name="is-gift" value="1" id="is-gift"
+                     {% if is_gift %}checked{% endif %}>
+              {#- -#}
+              <label for="is-gift">Is this a gift?</label>
+            </div>
+            <div class="gift-form">
+              {% for field in gift_form.hidden_fields() %}
+                {{ field|safe }}{% endfor %}
+
+              {{ gift_form.non_field_errors()|safe }}
+              {% for field in gift_form.visible_fields() %}
+                {% if field.name == 'country' %}
+                  <div class="form-field {{ field.name -}}
+                              {%- if field.errors %} error{% endif -%}
+                              {%- if field.field.required %} required{% endif %}">
+                    {{- field.errors|safe }}
+
+                    {{- field.label_tag(label_suffix='')|safe }}
+                    {% if valid_countries %}
+                      <select id='id_country' name='country'>
+                        {% for code, name in valid_countries %}
+                          {% set selected = not selected_country and loop.first
+                                            or code == selected_country %}
+                          <option value='{{ code }}'
+                                  {{ 'selected' if selected else ''}}>
+                            {{ name }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    {% else %}
+                      {{- field|safe }}
+                    {% endif %}
+
+                    {%- if field.help_text -%}
+                      <p class="help">{{ field.help_text }}</p>
+                    {%- endif -%}
+                  </div>
+                {% else %}
+                  {% include 'snippets/form_field.html' %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          </section>
 
         <div class="checkout-buttons">
           <a href="{{ url('checkout_cart') }}" class="back">Back to cart</a>

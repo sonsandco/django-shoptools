@@ -2,13 +2,14 @@ import uuid
 from datetime import datetime
 import decimal
 import importlib
+import json
 
 from django.apps import apps
 from django.conf import settings
+from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.db import models
 
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
@@ -124,11 +125,13 @@ class ICart(object):
         data = {
             'count': self.count(),
             'lines': [line.as_dict() for line in self.get_lines()],
+            'shipping': self.get_shipping()
             # TODO add discounts?
         }
-        for f in ('subtotal', 'shipping_cost', 'total'):
+        for f in ('subtotal', 'total'):
             if hasattr(self, f):
-                data[f] = float(getattr(self, f) or 0)
+                attr = getattr(self, f)
+                data[f] = float(attr) if attr is not None else None
         return data
 
     def update_quantity(self, ctype, pk, qty):
@@ -149,7 +152,8 @@ class ICart(object):
         if voucher_module:
             return voucher_module.calculate_discounts(
                 self, self.get_voucher_codes(), invalid=invalid,
-                include_shipping=include_shipping)
+                include_shipping=include_shipping and
+                self.shipping_cost is not None)
         return []
 
     @property
@@ -168,6 +172,12 @@ class ICart(object):
             line.currency = self.currency
             line.save()
 
+        # save shipping info - cost calculated automatically
+        if hasattr(obj, 'set_shipping'):
+            # No need to validate options here, as was done when they were
+            # saved to self.
+            obj.set_shipping(self.get_shipping())
+
         # save valid discounts - TODO should this go here?
         # Do we need to subclass Cart as DiscountCart?
         from checkout.models import Order
@@ -177,10 +187,6 @@ class ICart(object):
             if vouchers:
                 [d.delete() for d in obj.discount_set.all()]
                 voucher_module.save_discounts(obj, vouchers)
-
-        # save shipping info - cost calculated automatically
-        if hasattr(obj, 'set_shipping'):
-            obj.set_shipping(self.shipping_options)
 
 
 class ICartLine(object):
@@ -305,7 +311,7 @@ class BaseOrder(models.Model, ICart):
 
     @property
     def subtotal(self):
-        return sum(line.total for line in self.get_lines())
+        return decimal.Decimal(sum(line.total for line in self.get_lines()))
 
 
 class BaseOrderLine(models.Model, ICartLine):
@@ -340,7 +346,7 @@ class BaseOrderLine(models.Model, ICartLine):
     @property
     def total(self):
         if not self.item:
-            return 0
+            return decimal.Decimal(0)
         return decimal.Decimal(
             self.item.cart_line_total(self.quantity, self.parent_object))
 
@@ -402,6 +408,7 @@ class SessionCart(ICart):
     def __init__(self, request, session_key=None):
         self.request = request
         self.session_key = session_key or DEFAULT_SESSION_KEY
+        self._shipping_options = {}
         self.currency = request.COOKIES.get(CURRENCY_COOKIE_NAME,
                                             DEFAULT_CURRENCY)
         self._data = self.request.session.get(self.session_key, None)
@@ -417,19 +424,31 @@ class SessionCart(ICart):
         self.request.session.modified = True
         return (True, None)
 
-    @property
-    def shipping_options(self):
-        shipping_module = get_shipping_module()
-        if shipping_module:
-            return shipping_module.get_session(self.request)
-        return {}
+    def set_shipping(self, options):
+        '''
+            Saves the provided options to this SessionCart. Assumes the
+            options have already been validated, if necessary.
+        '''
+        self._init_session_cart()
+        self._data['shipping'] = json.dumps(options)
+        self.request.session.modified = True
+
+    def get_shipping(self):
+        '''
+            Get shipping options for this cart, if any, falling back to the
+            shipping options saved against the session.
+        '''
+        if self._data is None:
+            return {}
+        return json.loads(self._data.get('shipping', '{}'))
 
     @property
     def shipping_cost(self):
-        shipping_module = get_shipping_module()
-        if shipping_module:
-            return shipping_module.calculate_shipping(self)
-        return 0
+        return self.get_shipping().get('cost', None)
+
+    @property
+    def has_valid_shipping(self):
+        return self.shipping_cost is not None
 
     def update_quantity(self, ctype, pk, qty=1, add=False):
         assert isinstance(qty, int)
@@ -503,13 +522,16 @@ class SessionCart(ICart):
     @property
     def subtotal(self):
         if self._data is None:
-            return 0
-        return decimal.Decimal(
-            sum(line.total for line in self.get_lines()))
+            return decimal.Decimal(0)
+        return decimal.Decimal(sum(line.total for line in self.get_lines()))
 
     @property
     def total(self):
-        return self.subtotal + self.shipping_cost - self.total_discount
+        if self.shipping_cost is not None:
+            return self.subtotal + decimal.Decimal(self.shipping_cost) \
+                - self.total_discount
+        else:
+            return self.subtotal - self.total_discount
 
     def set_order_obj(self, obj):
         self._data['order_obj'] = '%s.%s|%s' % (

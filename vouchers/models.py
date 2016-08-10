@@ -28,9 +28,10 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
 
     codes = set(codes)  # remove duplicates
     vouchers = get_vouchers(codes)
-    discounts = []
-    total = obj.subtotal + (obj.shipping_cost if include_shipping else 0)
 
+    discounts = []
+    total = obj.subtotal + (decimal.Decimal(obj.shipping_cost)
+                            if include_shipping else decimal.Decimal(0))
     # if obj is an order, and the voucher has already been used on that order,
     # those instances are ignored when checking limits etc, since they will be
     # overridden when it's saved. The order is also attached to each Discount
@@ -51,7 +52,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
         # apply free shipping (only one)
         shipping = [v for v in vouchers if isinstance(v, FreeShippingVoucher)]
         if len(shipping):
-            amount = obj.shipping_cost
+            amount = decimal.Decimal(obj.shipping_cost)
             total -= amount
             discounts.append(
                 Discount(voucher=shipping[0], amount=amount, **defaults))

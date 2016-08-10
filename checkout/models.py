@@ -1,11 +1,11 @@
 from datetime import datetime
 import json
+import decimal
 
 from django.db import models
 from django.conf import settings
 
-from cart.cart import BaseOrderLine, BaseOrder, get_shipping_module, \
-    make_uuid
+from cart.cart import BaseOrderLine, BaseOrder, make_uuid
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
@@ -84,29 +84,25 @@ class Order(BasePerson, BaseOrder):
                             .update(dispatched=datetime.now()):
                 send_dispatch_email(self)
 
-    def set_shipping(self, options):
-        """Use this method to set shipping options; shipping cost will be
-           calculated and saved to the object so it doesn't change if the
-           shipping rates change in the future. """
-
-        # actual country overrides whatever is in the options
-        recipient = self.get_gift_recipient(create=False)
-        options['country'] = recipient.country if recipient else self.country
-
+    def set_shipping(self, options, validate=True):
+        '''
+            Saves the provided options to this SavedCart. Assumes the
+            options have already been validated, if necessary.
+        '''
         self._shipping_options = json.dumps(options)
-        shipping_module = get_shipping_module()
-        if shipping_module:
-            self._shipping_cost = shipping_module.calculate_shipping(self)
-
+        self._shipping_cost = options.get('cost', 0)
         self.save()
+
+    def get_shipping(self):
+        return json.loads(self._shipping_options or '{}')
 
     @property
     def shipping_cost(self):
         return self._shipping_cost
 
     @property
-    def shipping_options(self):
-        return json.loads(self._shipping_options or '{}')
+    def has_valid_shipping(self):
+        return self._shipping_cost is not None
 
     @models.permalink
     def get_absolute_url(self):
@@ -121,7 +117,11 @@ class Order(BasePerson, BaseOrder):
 
     @property
     def total(self):
-        return self.subtotal + self.shipping_cost - self.total_discount
+        if self.has_valid_shipping:
+            return self.subtotal + decimal.Decimal(self.shipping_cost) \
+                - self.total_discount
+        else:
+            return self.subtotal - self.total_discount
 
     def get_line_cls(self):
         return OrderLine
@@ -135,7 +135,6 @@ class Order(BasePerson, BaseOrder):
         # Return actual saved discounts, rather than calculating afresh. This
         # means the discounts are set and won't change if the voucher is
         # removed or modified
-
         if hasattr(self, 'discount_set'):
             return self.discount_set.all()
         return []

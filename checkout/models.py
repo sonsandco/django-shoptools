@@ -205,6 +205,7 @@ class OrderLine(BaseOrderLine):
 
 class GiftRecipient(BasePerson):
     order = models.OneToOneField(Order, on_delete=models.CASCADE)
+    delivery_notes = models.TextField(blank=True, default='')
     message = models.TextField(blank=True, default='')
 
     def __str__(self):

@@ -41,6 +41,10 @@ class GiftRecipientForm(forms.ModelForm):
         model = GiftRecipient
         exclude = ['order', ]
 
+    def __init__(self, *args, **kwargs):
+        super(GiftRecipientForm, self).__init__(*args, **kwargs)
+        self.fields['name'].label = 'Recipient name'
+
 
 class CheckoutUserForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):

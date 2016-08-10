@@ -131,7 +131,8 @@ class BaseVoucher(models.Model):
                                .filter(base_voucher=self.base_voucher)
 
     def available(self, exclude={}):
-        if self.limit is None:
+        # FixedVoucher always unlimited uses
+        if self.limit is None or isinstance(self.voucher, FixedVoucher):
             return True
         return bool(self.limit - self.uses(exclude).count())
 
@@ -144,10 +145,10 @@ class BaseVoucher(models.Model):
            If not, return None to indicate an unlimited amount remaining.
         """
 
-        if not isinstance(self.voucher, FixedVoucher) or self.limit is None:
+        if not isinstance(self.voucher, FixedVoucher):
             return None
 
-        return self.amount * self.limit - self.amount_redeemed(exclude)
+        return self.amount - self.amount_redeemed(exclude)
 
     def save(self, *args, **kwargs):
         if not self.code:

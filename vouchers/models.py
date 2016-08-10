@@ -154,7 +154,7 @@ class BaseVoucher(models.Model):
             self.code = make_code()
         return super(BaseVoucher, self).save(*args, **kwargs)
 
-    def _str__(self):
+    def __str__(self):
         return '%s (%s)' % (self.code, self.voucher.discount_text)
 
 
@@ -224,7 +224,7 @@ class Discount(models.Model):
             msg = "Discount exceeds voucher's remaining balance"
             raise ValidationError(msg)
 
-    def _str__(self):
+    def __str__(self):
         if self.pk:
             return "%s: %s" % (self.order, self.voucher)
         else:

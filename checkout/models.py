@@ -116,7 +116,7 @@ class Order(BasePerson, BaseOrder):
     def invoice_number(self):
         return str(self.pk).zfill(5)
 
-    def _str__(self):
+    def __str__(self):
         return "%s on %s" % (self.name, self.created)
 
     @property
@@ -207,5 +207,5 @@ class GiftRecipient(BasePerson):
     order = models.OneToOneField(Order, on_delete=models.CASCADE)
     message = models.TextField(blank=True, default='')
 
-    def _str__(self):
+    def __str__(self):
         return "Gift to: %s" % (self.name)

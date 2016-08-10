@@ -71,7 +71,7 @@ class SavedCart(BaseOrder):
     def get_absolute_url(self):
         return ('cart_cart', (self.secret, ))
 
-    def _str__(self):
+    def __str__(self):
         if self.user:
             return "Cart by %s, %s" % (self.user.get_full_name(),
                                        self.created)

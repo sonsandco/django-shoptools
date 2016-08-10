@@ -28,7 +28,7 @@ DiscountInline = readonly_inline_factory(Discount)
 
 
 class VoucherAdmin(admin.ModelAdmin):
-    list_display = ('_str__', 'limit_', 'minimum_spend', 'code',
+    list_display = ('__str__', 'limit_', 'minimum_spend', 'code',
                     'created', )
     list_filter = ('created', )
 

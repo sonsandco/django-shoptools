@@ -1,3 +1,6 @@
+{# TODO: This is unideal as the user will get incorrect information if the
+         price of an item is changed after they have ordered it. May
+          need to decouple cart and order here. #}
 
 {% macro order_lines(order_obj, quantity_url, show_quantity=False,
                      add_to_cart=False) %}
@@ -18,12 +21,17 @@
             {% if quantity_url %}
               <form action="{{ quantity_url }}" method="post" class="quantity">
                 {{ csrf_input }}
+                {#- -#}
                 <label>Qty</label>
+                {#- -#}
                 <input type="number" name="qty" value="{{ line.quantity }}"
                        min="0" step="1">
+                {#- -#}
                 <input type="hidden" name="ctype"
                        value="{{ line.ctype }}">
+                {#- -#}
                 <input type="hidden" name="pk" value="{{ line.item.pk }}">
+                {#- -#}
                 <input type="submit" value="Update">
               </form>
               <form action="{{ quantity_url }}" method="post" class="remove">

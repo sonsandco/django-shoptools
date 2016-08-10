@@ -15,7 +15,7 @@
         {{ order.name }}<br>
         {{ order.created|date('d F y') }}<br>
         {{ order.lines.count() }} item{{ order.lines.count()|pluralize }}<br>
-        {{ order.total|floatformat(-2) }} AUD {# TODO currency #}
+        ${{ order.total|floatformat(2) }} {{ order.currency }}
       </a></h6>
       <p class="status">
         Status: {{ order.get_status_display() }}

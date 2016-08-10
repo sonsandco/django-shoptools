@@ -77,8 +77,9 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
     # apply fixed vouchers, smallest remaining amount first
     fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
     fixed.sort(key=lambda v: v.amount_remaining)
+
     for voucher in fixed:
-        amount = min(total, voucher.amount, voucher.amount_remaining)
+        amount = min(total, voucher.amount, voucher.amount_remaining())
         if amount == 0:
             continue
         total -= amount

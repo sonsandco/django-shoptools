@@ -60,12 +60,10 @@
 
         {% if not account.pk %}
           <div class="form-field save-details">
-            <div class="checkbox-mask">
-              <input type="checkbox" name="save-details" value="1"
-                     id="save_details"
-                     {% if request.POST.get('save-details') %}
-                      checked{% endif %}>
-            </div>
+            <input type="checkbox" name="save-details" value="1"
+                   id="save_details"
+                   {% if request.POST.get('save-details') %}
+                    checked{% endif %}>
             <label for="save_details">
               Would you like to save these details?
               {% if user_form %}

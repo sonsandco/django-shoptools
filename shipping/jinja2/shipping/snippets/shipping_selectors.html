@@ -47,8 +47,8 @@
 
 {% macro cart_shipping_selectors(cart, show_currency=False) -%}
   {% set shipping = cart.get_shipping() -%}
-  {% if shipping.get('country', None) -%}
-    <div class='shipping'>
+  <div class='shipping'>
+    {% if shipping.get('country', None) -%}
       <div class='label-wrap region'>
         {% set valid_regions = shipping.get('valid_regions') -%}
         {% if valid_regions %}
@@ -81,13 +81,13 @@
           </div>
         {% endif %}
       </div>
-      <p class='shipping-cost'>
-        {% if cart.has_valid_shipping %}
-          $<span class='cart-shipping'>
-            {{- cart.shipping_cost|floatformat(2) -}}
-          </span>
-        {% endif %}
-      </p>
-    </div>
-  {%- endif %}
+    {%- endif %}
+    <p class='shipping-cost'>
+      {% if cart.has_valid_shipping %}
+        $<span class='cart-shipping'>
+          {{- cart.shipping_cost|floatformat(2) -}}
+        </span>
+      {% endif %}
+    </p>
+  </div>
 {%- endmacro %}

@@ -56,6 +56,16 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
             discounts.append(
                 Discount(voucher=shipping[0], amount=amount, **defaults))
 
+    # apply fixed vouchers, smallest remaining amount first
+    fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
+    fixed.sort(key=lambda v: v.amount_remaining)
+    for voucher in fixed:
+        amount = min(total, voucher.amount, voucher.amount_remaining)
+        if amount == 0:
+            continue
+        total -= amount
+        discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
+
     # find and apply best percentage voucher
     percentage = filter(lambda v: isinstance(v, PercentageVoucher), vouchers)
     p_voucher = None
@@ -69,20 +79,14 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
             line.total for line in obj.get_lines()
             if getattr(line.item, 'allow_discounts', True)]))
 
-        amount = min(total, p_total * p_voucher.amount / 100)
+        # apply percentage to the smaller of p_total and the running total,
+        # because total may have already been discounted, and percentage
+        # discount should apply after fixed discounts
+        amount = min(total, p_total) * p_voucher.amount / 100
+
         total -= amount
         discounts.append(
             Discount(voucher=p_voucher, amount=amount, **defaults))
-
-    # apply fixed vouchers, smallest remaining amount first
-    fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
-    fixed.sort(key=lambda v: v.amount_remaining)
-    for voucher in fixed:
-        amount = min(total, voucher.amount, voucher.amount_remaining)
-        if amount == 0:
-            continue
-        total -= amount
-        discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
 
     if invalid:
         # identify bad codes and add to the list

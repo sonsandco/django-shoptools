@@ -56,6 +56,31 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
             discounts.append(
                 Discount(voucher=shipping[0], amount=amount, **defaults))
 
+    # TODO make this generic - let apps define their own product-specific
+    # vouchers and process them here
+
+    # apply product vouchers (max one per product), using the largest if more
+    # than one
+    # product = filter(lambda v: isinstance(v, ProductVoucher), vouchers)
+    # product.sort(key=lambda v: v.amount_remaining, reverse=True)
+    # products_discounted = []
+    # for voucher in product:
+    #     # one per product
+    #     if voucher.product.id in products_discounted:
+    #         continue
+    #     products_discounted.append(voucher.product.id)
+    #
+    #     # get the order total for this specific product
+    #     product_total = decimal.Decimal(sum([
+    #         line.total for line in obj.get_lines()
+    #         if line.item == voucher.product]))
+    #
+    #     amount = min(product_total, voucher.amount, voucher.amount_remaining)
+    #     if amount == 0:
+    #         continue
+    #     total -= amount
+    #     discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
+
     # apply fixed vouchers, smallest remaining amount first
     fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
     fixed.sort(key=lambda v: v.amount_remaining)

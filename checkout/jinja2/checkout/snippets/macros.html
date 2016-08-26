@@ -1,6 +1,14 @@
 {% macro full_path_img(img) %}
-  {% if img %}
+  {% if img and img.image %}
     <img src="http://{{ site.domain }}{{ img.url }}" alt="{{ img.caption }}"
          width={{ img.width }} height={{ img.height }}>
+  {% endif %}
+{% endmacro %}
+
+
+{% macro full_path_retina_img(img) %}
+  {% if img and img.image %}
+    <img src="http://{{ site.domain }}{{ img.url }}" alt="{{ img.caption }}"
+         width={{ img.width / 2 }} height={{ img.height / 2 }}>
   {% endif %}
 {% endmacro %}

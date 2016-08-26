@@ -1,10 +1,13 @@
 {{ order.invoice_number }} {{ order.created|date('d F y') }}
 
+---
 {% for line in order.get_lines() %}
-{{ line.quantity }}x {{ line.description }} - ${{ line.total }}{% endfor %}
+{{ line.quantity }}x {{ line.description }} - ${{ line.total }}
+{% endfor %}
+---
 
 Shipping: ${{ order.shipping_cost }}
-{# if order.total_discount -%}
+{% if order.total_discount -%}
   Discount: -${{ order.total_discount }}
-{% endif -#}
+{% endif -%}
 Total: ${{ order.total }}

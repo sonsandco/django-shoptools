@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
     HttpResponseBadRequest, HttpResponseNotAllowed
 from django.template.loader import get_template, TemplateDoesNotExist
 
-from . import cart
+from .cart import get_cart as default_get_cart, get_shipping_module
 from . import actions
 
 
@@ -24,7 +24,7 @@ def cart_view(action=None):
        Successful return value is either cart data as json, or a redirect, for
        ajax and non-ajax requests, respectively.'''
 
-    def view_func(request, next_url=None, data=None, get_cart=cart.get_cart,
+    def view_func(request, next_url=None, data=None, get_cart=default_get_cart,
                   ajax_template='checkout/cart_ajax.html'):
         if not data:
             data = request.POST
@@ -33,26 +33,38 @@ def cart_view(action=None):
             return HttpResponseNotAllowed(['POST'])
 
         cart = get_cart(request)
+        success = True
         if action:
-            success, errors = action(data, cart)
-            if not success:
-                # TODO return errors
-                return HttpResponseBadRequest("Invalid request")
+            # success is a nulleable boolean, None = InvalidRequest,
+            # False = failure, True = success
+            success = action(data, cart)
+            if success is None:
+                return HttpResponseBadRequest('Invalid request')
+
+            if success:
+                # Update shipping since country, quantity etc may have changed
+                shipping_module = get_shipping_module()
+                if shipping_module:
+                    shipping_module.save_to_cart(cart, **cart.get_shipping())
 
         if request.is_ajax():
             data = {
-                'cart': cart.as_dict(),
+                'success': success,
+                'cart': cart.as_dict()
             }
             if ajax_template:
                 data['html_snippet'] = get_cart_html(request, cart,
                                                      ajax_template)
             return HttpResponse(json.dumps(data),
-                                content_type="application/json")
+                                content_type='application/json')
 
-        if not next_url:
-            next_url = request.POST.get("next",
-                                        request.META.get('HTTP_REFERER', '/'))
-        return HttpResponseRedirect(next_url)
+        if success:
+            if not next_url:
+                next_url = data.get('next',
+                                    request.META.get('HTTP_REFERER', '/'))
+            return HttpResponseRedirect(next_url)
+        else:
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
     if action:
         view_func.__name__ = action.__name__

@@ -1,0 +1,8 @@
+{% for subject, text, html in emails %}
+  <h1>{{ subject }}</h1>
+  <hr><br><br>
+  {{ html|safe }}
+  <br><br><hr><br><br>
+  <pre>{{ text }}</pre>
+  <br><br><hr><br><br><br><br><br>
+{% endfor %}

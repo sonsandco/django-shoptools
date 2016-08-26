@@ -28,9 +28,10 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
 
     codes = set(codes)  # remove duplicates
     vouchers = get_vouchers(codes)
-    discounts = []
-    total = obj.subtotal + (obj.shipping_cost if include_shipping else 0)
 
+    discounts = []
+    total = obj.subtotal + (decimal.Decimal(obj.shipping_cost)
+                            if include_shipping else decimal.Decimal(0))
     # if obj is an order, and the voucher has already been used on that order,
     # those instances are ignored when checking limits etc, since they will be
     # overridden when it's saved. The order is also attached to each Discount
@@ -41,17 +42,17 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
         defaults = {}
 
     # filter out any that have already been used
-    vouchers = filter(lambda v: v.available(exclude=defaults), vouchers)
+    vouchers = [v for v in vouchers if v.available(exclude=defaults)]
 
     # filter out any under their minimum_spend value
-    invalid_spend = filter(lambda v: obj.subtotal < v.minimum_spend, vouchers)
-    vouchers = filter(lambda v: obj.subtotal >= v.minimum_spend, vouchers)
+    invalid_spend = [v for v in vouchers if obj.subtotal < v.minimum_spend]
+    vouchers = [v for v in vouchers if obj.subtotal >= v.minimum_spend]
 
     if include_shipping:
         # apply free shipping (only one)
         shipping = [v for v in vouchers if isinstance(v, FreeShippingVoucher)]
         if len(shipping):
-            amount = obj.shipping_cost
+            amount = decimal.Decimal(obj.shipping_cost)
             total -= amount
             discounts.append(
                 Discount(voucher=shipping[0], amount=amount, **defaults))
@@ -62,7 +63,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
     # apply product vouchers (max one per product), using the largest if more
     # than one
     # product = filter(lambda v: isinstance(v, ProductVoucher), vouchers)
-    # product.sort(key=lambda v: v.amount_remaining, reverse=True)
+    # product.sort(key=lambda v: v.amount_remaining(), reverse=True)
     # products_discounted = []
     # for voucher in product:
     #     # one per product
@@ -75,7 +76,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
     #         line.total for line in obj.get_lines()
     #         if line.item == voucher.product]))
     #
-    #     amount = min(product_total, voucher.amount, voucher.amount_remaining)
+    #     amount = min(product_total, voucher.amount, voucher.amount_remaining())
     #     if amount == 0:
     #         continue
     #     total -= amount
@@ -83,16 +84,17 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
 
     # apply fixed vouchers, smallest remaining amount first
     fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
-    fixed.sort(key=lambda v: v.amount_remaining)
+    fixed.sort(key=lambda v: v.amount_remaining())
+
     for voucher in fixed:
-        amount = min(total, voucher.amount, voucher.amount_remaining)
+        amount = min(total, voucher.amount, voucher.amount_remaining())
         if amount == 0:
             continue
         total -= amount
         discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
 
     # find and apply best percentage voucher
-    percentage = filter(lambda v: isinstance(v, PercentageVoucher), vouchers)
+    percentage = [v for v in vouchers if isinstance(v, PercentageVoucher)]
     p_voucher = None
     for voucher in percentage:
         if not p_voucher or p_voucher.amount < voucher.amount:
@@ -160,7 +162,8 @@ class BaseVoucher(models.Model):
                                .filter(base_voucher=self.base_voucher)
 
     def available(self, exclude={}):
-        if self.limit is None:
+        # FixedVoucher always unlimited uses
+        if self.limit is None or isinstance(self.voucher, FixedVoucher):
             return True
         return bool(self.limit - self.uses(exclude).count())
 
@@ -173,17 +176,17 @@ class BaseVoucher(models.Model):
            If not, return None to indicate an unlimited amount remaining.
         """
 
-        if not isinstance(self.voucher, FixedVoucher) or self.limit is None:
+        if not isinstance(self.voucher, FixedVoucher):
             return None
 
-        return self.amount * self.limit - self.amount_redeemed(exclude)
+        return self.amount - self.amount_redeemed(exclude)
 
     def save(self, *args, **kwargs):
         if not self.code:
             self.code = make_code()
         return super(BaseVoucher, self).save(*args, **kwargs)
 
-    def _str__(self):
+    def __str__(self):
         return '%s (%s)' % (self.code, self.voucher.discount_text)
 
 
@@ -253,7 +256,7 @@ class Discount(models.Model):
             msg = "Discount exceeds voucher's remaining balance"
             raise ValidationError(msg)
 
-    def _str__(self):
+    def __str__(self):
         if self.pk:
             return "%s: %s" % (self.order, self.voucher)
         else:

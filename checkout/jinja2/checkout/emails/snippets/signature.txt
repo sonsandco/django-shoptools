@@ -1,3 +1,0 @@
-{{ cms_block('contact-details', site=True) }}
-
-http://{{ site.domain }}

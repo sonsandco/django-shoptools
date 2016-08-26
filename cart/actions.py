@@ -8,7 +8,7 @@ def cart_action(required=[]):
     def inner(wrapped_func):
         def action_func(data, cart):
             if not all(data.get(p) for p in required):
-                return False
+                return None
 
             return wrapped_func(data, cart)
 
@@ -47,7 +47,7 @@ def quantity(data, cart):
     try:
         qty = int(data["qty"])
     except ValueError:
-        return False
+        return None
     return cart.update_quantity(data["ctype"], data["pk"], qty)
 
 
@@ -56,7 +56,7 @@ def add(data, cart):
     try:
         qty = int(data.get("qty", 1))
     except ValueError:
-        return False
+        return None
     return cart.add(data["ctype"], data["pk"], qty)
 
 

@@ -1,0 +1,3 @@
+{{ cms_block('text-email-footer', site=True) }}
+
+http://{{ site.domain }}

@@ -1,10 +1,12 @@
 from django.conf.urls import url
+from django.views.generic.base import RedirectView
 
 import cart.views
 from . import views
 
 urlpatterns = [
     url(r'^cart$', views.cart, {}, 'checkout_cart'),
+    url(r'^$', RedirectView.as_view(url='cart', permanent=True), {}),
     url(r'^checkout$', views.checkout, {}, 'checkout_checkout'),
     url(r'^checkout/(\w+)$', views.checkout, {}, 'checkout_checkout'),
     url(r'^checkout/(\w+)/print$', views.invoice, {}, 'checkout_invoice'),

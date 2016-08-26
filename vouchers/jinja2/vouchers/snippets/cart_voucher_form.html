@@ -1,0 +1,37 @@
+{% macro cart_voucher_form(cart) %}
+  <div class="add-voucher">
+    <p>Enter Voucher Code</p>
+    <form action="{{ url('cart_update_vouchers') }}" method="post">
+      {{ csrf_input }}
+      <div class="input-wrap">
+        <input type="text" name="codes"
+               value="{{ ', '.join(cart.get_voucher_codes()) }}">
+        <p>Separate multiple vouchers with a comma</p>
+      </div>
+      <div class="discount">
+        {% set valid, invalid, invalid_spend =
+          cart.calculate_discounts(invalid=True,
+                                   include_shipping=cart.has_valid_shipping) %}
+        {% for discount in valid %}
+          <p>
+            {{ discount.voucher.discount_text }}<br>
+            - ${{ discount.amount|floatformat(2) }}
+          </p>
+        {% endfor %}
+        {% for voucher in invalid_spend %}
+          <p class="invalid">
+            <span>{{ voucher.code }}</span> can only be used for orders over
+            ${{ voucher.minimum_spend }}
+          </p>
+        {% endfor %}
+        {% for code in invalid %}
+          <p class="invalid">
+            <span>{{ code }}</span> is invalid or expired
+          </p>
+        {% endfor %}
+      </div>
+
+      <input type="submit" value="Update">
+    </form>
+  </div>
+{% endmacro %}

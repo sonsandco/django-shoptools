@@ -1,4 +1,6 @@
 {% from 'checkout/snippets/order.html' import order_lines with context %}
+{% from 'shipping/snippets/shipping_selectors.html' import cart_shipping_selectors with context %}
+{% from 'vouchers/snippets/cart_voucher_form.html' import cart_voucher_form with context %}
 
 
 {% if not cart.empty() %}
@@ -10,17 +12,30 @@
   {{ order_lines(cart, quantity_url=url('cart_quantity'),
                  show_quantity=True) }}
 
+  {{ cart_shipping_selectors(cart) }}
+
+  {{ cart_voucher_form(cart) }}
+
   <p class="checkout-totals">
-    <strong>Total</strong>
-    <span class="price">
-      $<span class="cart-total">{{ cart.total|floatformat(2) }}</span>
-    </span>
+    {% if cart.has_valid_shipping %}
+      <strong>Total</strong>
+      <span class="price">
+        $<span class="cart-total">
+          {{ cart.total|floatformat(2) }}
+        </span>
+      </span>
+    {% endif %}
   </p>
 
-  <div class="checkout-buttons">
-    <a href="{{ url('wines_index') }}" class="back">Continue shopping</a>
-    <a class="checkout" href="{{ url('checkout_checkout') }}">
-      Continue to Payment & Shipping</a>
+  <div class="checkout-buttons proceed-to-checkout">
+    {% if cart.has_valid_shipping %}
+      <a href="{{ url('wines_index') }}" class="back">Continue shopping</a>
+      {#- spaceless -#}
+      <a class="checkout"
+         href="{{ url('checkout_checkout') }}">
+        Continue to<br/>Payment & Shipping
+      </a>
+    {% endif %}
   </div>
 {% else %}
   <p class="checkout-empty">

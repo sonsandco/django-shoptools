@@ -97,7 +97,7 @@ class OrderAdmin(admin.ModelAdmin):
     #     ]
 
     def csv_export(self, request, queryset):
-        filename = 'PM_export_' + date.today().strftime('%Y%m%d')
+        filename = 'order_export_' + date.today().strftime('%Y%m%d')
 
         # response = HttpResponse()
         response = HttpResponse(content_type='text/csv')

@@ -1,4 +1,5 @@
 {% extends 'checkout/emails/base.html' %}
+{% from 'checkout/snippets/macros.html' import full_path_img with context %}
 
 {% block header %}
   {% filter linebreaks %}
@@ -7,14 +8,17 @@
 {% endblock %}
 
 {% block content %}
+  {{ cms_image('email-receipt-header', '720', renderer=full_path_img,
+               site=True) }}
+  <div style="font-size: 1.5em; margin-bottom: 2em;">
+    {{ cms_block('email-dispatch-text', filters='linebreaks', site=True) }}
+  </div>
+
   <div>{{ order.invoice_number }} {{ order.created|date('d F y') }}</div>
   <br>
-  <div style="font-size: 2em;">
-    {% filter linebreaks %}
-      {% include 'checkout/emails/snippets/dispatch_summary.txt' %}
-    {% endfilter %}
-  </div>
+  <div style="font-size: 2em;">Your Order</div>
   <hr>
 
   {% include 'checkout/snippets/invoice_rows.html' %}
+
 {% endblock %}

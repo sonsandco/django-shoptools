@@ -16,10 +16,26 @@
 
     {{ order_lines(order, show_quantity=True) }}
 
+    <div class='shipping'>
+      <strong>Shipping</strong>
+      <p class='shipping-cost'>
+        ${{ order.shipping_cost|floatformat(2) }}
+      </p>
+    </div>
+
+    {% if order.total_discount -%}
+      <div class='discount'>
+        <strong>Discount</strong>
+        <p class='total-discount'>
+          -${{ order.total_discount|floatformat(2) }}
+        </p>
+      </div>
+    {% endif -%}
+
     <p class="checkout-totals">
       <strong>Total</strong>
       <span class="price">
-        $<span class="cart-total">{{ order.total|floatformat(-2) }}</span>
+        $<span class="cart-total">{{ order.total|floatformat(2) }}</span>
       </span>
     </p>
 

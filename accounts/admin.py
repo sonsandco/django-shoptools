@@ -1,9 +1,13 @@
+from datetime import date
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from django.http import HttpResponse
 from django import forms
 
 from .models import Account
+from .export import generate_csv
 
 
 class AccountAdmin(admin.ModelAdmin):
@@ -13,6 +17,7 @@ class AccountAdmin(admin.ModelAdmin):
                      'phone', 'address', 'country')
     # inlines = [OrderInline, ]
     readonly_fields = ('user', )
+    actions = ('csv_export', )
 
     # Allow superuser to edit readonly fields
     def get_readonly_fields(self, request, obj=None):
@@ -20,6 +25,17 @@ class AccountAdmin(admin.ModelAdmin):
             return ()
         else:
             return self.readonly_fields
+
+    def csv_export(self, request, queryset):
+        filename = 'account_export_' + date.today().strftime('%Y%m%d')
+
+        # response = HttpResponse()
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = \
+            "attachment; filename=%s.csv" % filename
+
+        generate_csv(queryset, response)
+        return response
 
 admin.site.register(Account, AccountAdmin)
 

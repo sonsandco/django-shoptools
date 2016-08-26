@@ -11,7 +11,7 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.admin.views.decorators import staff_member_required
 
-from cart.cart import get_cart, get_shipping_module
+from cart.cart import get_cart
 # from dps.transactions import make_payment
 # from paypal.transactions import make_payment
 from accounts.models import Account
@@ -37,6 +37,7 @@ def checkout_view(wrapped_view):
     @never_cache
     def view_func(request, secret=None):
         cart = get_cart(request)
+
         # TODO simplify this by just passing through one "order obj", which may
         # be an order or a cart, rather than both. This should be possible
         # since they share an interface. Will require some view rearranging
@@ -45,6 +46,14 @@ def checkout_view(wrapped_view):
             order = get_object_or_404(Order, secret=secret)
         else:
             order = None
+
+        # Prevent going past the cart page if shipping is not valid, unless
+        # this an order that has already been paid
+        if not order or order.status < order.STATUS_PAID:
+            if not cart.has_valid_shipping:
+                cart_url = reverse('checkout_cart')
+                if request.path_info != cart_url:
+                    return redirect(cart_url)
 
         if order and order.user and order.user != request.user and \
            not request.user.is_staff:
@@ -101,7 +110,7 @@ def checkout(request, cart, order):
             cart.clear()
         return {
             "template": "success",
-            "order": order,
+            "order": order
         }
 
     if request.user.is_authenticated():
@@ -127,10 +136,7 @@ def checkout(request, cart, order):
         if account.pk and not initial:
             initial.update(account.as_dict())
 
-        shipping_module = get_shipping_module()
-        if shipping_module:
-            initial.update(shipping_module.get_session(request))
-
+        initial.update(cart.get_shipping())
         initial.update(request.session.get(CHECKOUT_SESSION_KEY, {}))
 
         get_form = partial(OrderForm, initial=initial)
@@ -139,7 +145,7 @@ def checkout(request, cart, order):
         new_order = True
 
     # Verify the order (stock levels etc should be picked up here)
-    cart_errors = cart.get_errors()
+    cart_errors = (order or cart).get_errors()
 
     if request.method == 'POST':
         form = get_form(request.POST, sanity_check=sanity_check())
@@ -154,7 +160,7 @@ def checkout(request, cart, order):
             user_form_valid = True
 
         gift_form = get_gift_form(request.POST)
-        is_gift = request.POST.get('is_gift')
+        is_gift = request.POST.get('is-gift')
         gift_form_valid = gift_form.is_valid() if is_gift else True
 
         if form.is_valid() and (order or not cart.empty()) and \
@@ -207,6 +213,21 @@ def checkout(request, cart, order):
         gift_form = get_gift_form()
         user_form = get_user_form()
 
+    if order:
+        shipping = order.get_shipping()
+    else:
+        shipping = cart.get_shipping()
+    selected_country = None
+    valid_countries = None
+    region = shipping.get('region', None)
+    if region:
+        # if we found a region then this can't be basic shipping
+        from shipping.models import Region
+        selected_country = shipping.get('country', None)
+        region = Region.objects.get(id=region)
+        valid_countries = \
+            [(c.code, c.name) for c in region.countries.all()]
+
     return {
         'form': form,
         'gift_form': gift_form,
@@ -215,6 +236,8 @@ def checkout(request, cart, order):
         'order': order,
         'account': account,
         'cart_errors': cart_errors,
+        'valid_countries': valid_countries,
+        'selected_country': selected_country
     }
 
 
@@ -236,7 +259,7 @@ def preview_emails(request, cart, order):
     # send_email('notification', [t[1] for t in settings.CHECKOUT_MANAGERS],
     #            order=order)
     emails = []
-    for t in ('receipt', 'notification'):
+    for t in ('receipt', 'notification', 'dispatch'):
         emails.append(email_content(t, order=order))
 
     return {

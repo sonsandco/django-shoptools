@@ -6,5 +6,3 @@ Order details:
 
 View order details:
 http://{{ site.domain }}{{ url('admin:checkout_order_change', order.pk) }}
-
-{% include 'checkout/emails/snippets/signature.txt' %}

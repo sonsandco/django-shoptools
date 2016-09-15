@@ -203,7 +203,7 @@ class ICartLine(object):
 
     def get_errors(self):
         """Validate this line's item. Return a list of error strings"""
-        return self.item.cart_errors(self)
+        return self.item.cart_errors(self) if self.item else []
 
     @property
     def ctype(self):
@@ -222,7 +222,7 @@ class ICartLine(object):
             'description': self.description,
             'quantity': self.quantity,
             'total': float(self.total),
-            'unique_identifier': self.unique_identifier
+            'unique_identifier': self.unique_identifier if self.item else None,
         }
 
 

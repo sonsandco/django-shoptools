@@ -138,12 +138,16 @@ class ICart(object):
         raise NotImplementedError()
 
     def get_lines(self):
+        """Return all valid lines (i.e. exclude those where the item is
+           not valid or deleted) """
         raise NotImplementedError()
 
     def count(self):
+        """Sum the quantities of all valid lines. """
         raise NotImplementedError()
 
     def clear(self):
+        """Delete all cart lines. """
         raise NotImplementedError()
 
     # TODO tidy up discount stuff - does it belong here?
@@ -292,13 +296,15 @@ class BaseOrder(models.Model, ICart):
             return None
 
     def get_lines(self):
-        return self.get_line_cls().objects.filter(parent_object=self)
+        for line in self.get_line_cls().objects.filter(parent_object=self):
+            if line.item:
+                yield line
 
     def empty(self):
-        return not self.get_lines().count()
+        return not self.count()
 
     def count(self):
-        return self.get_lines().aggregate(c=models.Sum('quantity'))['c'] or 0
+        return sum(line.quantity for line in self.get_lines())
 
     def clear(self):
         # this doesn't have to delete the Order, it could hang around and

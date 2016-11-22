@@ -166,9 +166,6 @@ class Order(BasePerson, BaseOrder):
 
         return self.get_absolute_url()
 
-    def get_lines(self):
-        return self.lines.all()
-
     def get_gift_recipient(self, create=True):
         try:
             return GiftRecipient.objects.get(order=self)

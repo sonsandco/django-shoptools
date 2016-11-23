@@ -287,8 +287,9 @@ class BaseOrder(models.Model, ICart):
 
     def get_line(self, ctype, pk):
         app_label, model = ctype.split('.')
+        lines = self.get_line_cls().objects.filter(parent_object=self)
         try:
-            return self.get_lines().get(
+            return lines.get(
                 item_content_type__app_label=app_label,
                 item_content_type__model=model,
                 item_object_id=pk)

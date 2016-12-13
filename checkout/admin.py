@@ -76,6 +76,7 @@ class OrderAdmin(admin.ModelAdmin):
         GiftRecipientInline,
         OrderLineInline,
         AddOrderLineInline,
+        # TODO pull in transactions as an inline from the payment module
     ] + voucher_inlines
     save_on_top = True
     actions = ('csv_export', 'resend_dispatch_email')

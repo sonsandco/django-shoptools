@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from smtplib import SMTPRecipientsRefused
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -59,4 +60,8 @@ def send_email(email_type, recipients, cc=[], bcc=[], **context_dict):
         message.attach_alternative(html, "text/html")
     # TODO should we be failing silently here? If not will need some way to
     # tell the user the address didn't work
-    return message.send()
+
+    try:
+        return message.send()
+    except SMTPRecipientsRefused:
+        return False

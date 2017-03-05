@@ -150,6 +150,16 @@ class ICart(object):
         """Delete all cart lines. """
         raise NotImplementedError()
 
+    def get_errors(self):
+        """Validate each cart line item. Subclasses may override this method
+           to perform whole-cart validation. Return a list of error strings
+        """
+
+        errors = []
+        for line in self.get_lines():
+            errors += line.get_errors()
+        return errors
+
     # TODO tidy up discount stuff - does it belong here?
     def calculate_discounts(self, invalid=False, include_shipping=True):
         voucher_module = get_voucher_module()
@@ -228,6 +238,10 @@ class ICartLine(object):
             'total': float(self.total),
             'unique_identifier': self.unique_identifier if self.item else None,
         }
+
+    def get_errors(self):
+        """Validate this line's item. Return a list of error strings"""
+        return self.item.cart_errors(self) if self.item else []
 
 
 class BaseOrder(models.Model, ICart):

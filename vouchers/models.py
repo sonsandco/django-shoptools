@@ -3,6 +3,7 @@ import uuid
 import decimal
 
 from django.db import models
+from django.db.models import Q
 from django.template.defaultfilters import floatformat
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
@@ -13,7 +14,10 @@ from checkout.models import Order
 
 
 def get_vouchers(codes):
-    return BaseVoucher.objects.select_subclasses().filter(code__in=codes)
+    qs = BaseVoucher.objects.select_subclasses()
+    if not len(codes):
+        return qs.none()
+    return qs.filter(reduce(Q.__or__, [Q(code__iexact=c) for c in codes]))
 
 
 def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
@@ -26,7 +30,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
 
     assert isinstance(obj, ICart)
 
-    codes = set(codes)  # remove duplicates
+    codes = set([c.upper() for c in codes])  # normalise and remove duplicates
     vouchers = get_vouchers(codes)
 
     discounts = []
@@ -117,11 +121,10 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
 
     if invalid:
         # identify bad codes and add to the list
-        valid_codes = [d.voucher.code for d in discounts]
+        valid_codes = [d.voucher.code.upper() for d in discounts]
         invalid_codes = [c for c in codes if
                          (c not in valid_codes and
                           c not in [v.code for v in invalid_spend])]
-
         return discounts, invalid_codes, invalid_spend
 
     return discounts

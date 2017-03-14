@@ -8,7 +8,6 @@ from django.utils.deprecation import MiddlewareMixin
 from .models import Region
 
 
-REGION_COOKIE = getattr(settings, 'REGION_COOKIE', 'region')
 LOCATION_SESSION_KEY = getattr(settings, 'LOCATION_SESSION_KEY',
                                'location_info')
 
@@ -18,11 +17,7 @@ def get_ip(request):
         'HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', None)))
 
 
-def get_region_id(request, country_code):
-    from_cookie = request.COOKIES.get(REGION_COOKIE)
-    if from_cookie:
-        return from_cookie
-
+def get_region_id(country_code):
     if country_code:
         try:
             region = Region.objects.get(countries__country=country_code)
@@ -44,6 +39,12 @@ def get_country_code(request):
     return country['country_code']
 
 
+def get_session(request):
+    if LOCATION_SESSION_KEY not in request.session:
+        request.session[LOCATION_SESSION_KEY] = {}
+    return request.session[LOCATION_SESSION_KEY]
+
+
 class RegionMiddleware(MiddlewareMixin):
     def process_request(self, request):
         """Examine the request to determine (and save) country_code and
@@ -52,15 +53,12 @@ class RegionMiddleware(MiddlewareMixin):
            db unless necessary) because we don't assume that all requests
            require this information. """
 
-        if LOCATION_SESSION_KEY not in request.session:
-            request.session[LOCATION_SESSION_KEY] = {}
-        info = request.session[LOCATION_SESSION_KEY]
+        info = get_session(request)
 
         if not info.get('country_code'):
             info['country_code'] = get_country_code(request)
             request.session.modified = True
 
         if not info.get('region_id'):
-            info['region_id'] = get_region_id(
-                request, info.get('country_code'))
+            info['region_id'] = get_region_id(info.get('country_code'))
             request.session.modified = True

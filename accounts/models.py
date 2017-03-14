@@ -3,7 +3,7 @@ import uuid
 from django.db import models
 from django.contrib.auth.models import User
 
-from countries import COUNTRY_CHOICES
+from django_countries.fields import CountryField
 
 
 class AccountManager(models.Manager):
@@ -23,8 +23,7 @@ class Account(models.Model):
     postcode = models.CharField(max_length=10, blank=True, default='')
     city = models.CharField(max_length=255, blank=True, default='')
     state = models.CharField(max_length=255, blank=True, default='')
-    country = models.CharField(max_length=2, choices=COUNTRY_CHOICES,
-                               blank=True, default='')
+    country = CountryField(blank=True, default='')
     phone = models.CharField(max_length=50, default='', blank=True)
 
     objects = AccountManager()

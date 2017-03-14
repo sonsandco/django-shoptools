@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-import math
-from decimal import Decimal
 
 from django.db import models
 
-from countries import COUNTRY_CHOICES
+from django_countries.fields import CountryField
 
 
 class Region(models.Model):
@@ -30,7 +28,7 @@ class Region(models.Model):
 
 class Country(models.Model):
     region = models.ForeignKey(Region, related_name='countries')
-    code = models.CharField(max_length=2, choices=COUNTRY_CHOICES, unique=True)
+    country = CountryField(unique=True)
     name = models.CharField(max_length=100, unique=True, editable=False)
     is_default_for_region = models.BooleanField(default=False)
 

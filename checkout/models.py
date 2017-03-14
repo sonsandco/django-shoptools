@@ -9,7 +9,7 @@ from cart.cart import BaseOrderLine, BaseOrder, make_uuid
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
-from countries import COUNTRY_CHOICES
+from django_countries.fields import CountryField
 from .emails import send_email_receipt, send_dispatch_email
 
 
@@ -22,8 +22,7 @@ class BasePerson(models.Model):
     postcode = models.CharField(max_length=100)
     city = models.CharField("Town / City", max_length=255)
     state = models.CharField(max_length=255, blank=True, default='')
-    country = models.CharField(max_length=2, default='New Zealand',
-                               choices=COUNTRY_CHOICES)
+    country = CountryField()
     email = models.EmailField()
     phone = models.CharField(max_length=50, default='')
 

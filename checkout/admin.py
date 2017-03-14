@@ -2,7 +2,7 @@ from datetime import date
 from django.contrib import admin
 from django.http import HttpResponse
 from django.conf.urls import url
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django import forms
 
 from cart.cart import get_voucher_module

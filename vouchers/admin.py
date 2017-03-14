@@ -3,7 +3,7 @@
 from datetime import date
 
 from django.contrib import admin
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.http import HttpResponse
 
 from utilities.admin_shortcuts import get_readonly_fields, \
@@ -14,14 +14,13 @@ from .models import PercentageVoucher, FixedVoucher, Discount, \
 from .export import generate_csv
 
 
+@admin.register(Discount)
 class DiscountAdmin(admin.ModelAdmin):
     readonly_fields = get_readonly_fields(Discount)
     list_display = ('order', 'voucher', 'amount')
 
     def has_add_permission(self, request):
         return False
-
-admin.site.register(Discount, DiscountAdmin)
 
 
 DiscountInline = readonly_inline_factory(Discount)
@@ -35,10 +34,12 @@ class VoucherAdmin(admin.ModelAdmin):
     def limit_(self, obj):
         return obj.limit or ''
 
+
 admin.site.register(PercentageVoucher, VoucherAdmin)
 admin.site.register(FreeShippingVoucher, VoucherAdmin)
 
 
+@admin.register(FixedVoucher)
 class FixedVoucherAdmin(VoucherAdmin):
     list_display = VoucherAdmin.list_display + (
         'order', 'amount_redeemed', 'amount_remaining', )
@@ -67,4 +68,3 @@ class FixedVoucherAdmin(VoucherAdmin):
 
         generate_csv(queryset, response)
         return response
-admin.site.register(FixedVoucher, FixedVoucherAdmin)

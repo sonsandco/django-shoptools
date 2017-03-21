@@ -8,22 +8,11 @@ from django.http import HttpResponse
 
 from utilities.render import render
 
-try:
-    from wishlist.models import get_wishlist
-except ImportError:
-    get_wishlist = None
-
 from checkout.models import Order
-from cart.cart import get_cart
+# from cart.cart import get_cart
 
 from .models import Account
 from .forms import AccountForm, UserForm, CreateUserForm
-
-
-class JsonResponse(HttpResponse):
-    def __init__(self, data):
-        super(JsonResponse, self).__init__(json.dumps(data),
-                                           content_type="application/json")
 
 
 @login_required
@@ -69,8 +58,8 @@ def details(request):
 def create(request):
     initial = {}
 
-    cart = get_cart(request)
-    initial.update(cart.get_shipping())
+    # cart = get_cart(request)
+    # initial.update(cart.get_shipping())
 
     if request.method == 'POST':
         account_form = AccountForm(request.POST, initial=initial)
@@ -96,21 +85,12 @@ def create(request):
 
 
 def account_data(request):
-    data = {}
-
-    data['cart'] = get_cart(request).as_dict()
+    data = None
 
     if request.user.is_authenticated():
-        data['account'] = {
+        data = {
             'first_name': request.user.first_name,
             'last_name': request.user.last_name,
         }
 
-    if get_wishlist:
-        data['wishlist'] = get_wishlist(request).as_dict()
-
     return data
-
-
-def account_data_view(request):
-    return JsonResponse(account_data(request))

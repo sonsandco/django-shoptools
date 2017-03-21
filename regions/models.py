@@ -31,6 +31,12 @@ class Region(models.Model):
     class Meta:
         ordering = ('name', )
 
+    def as_dict(self):
+        return {
+            'name': self.name,
+            'currency': self.currency,
+        }
+
 
 class Country(models.Model):
     region = models.ForeignKey(Region, related_name='countries',
@@ -44,3 +50,9 @@ class Country(models.Model):
     class Meta:
         verbose_name_plural = 'countries'
         ordering = ('country', )
+
+    def as_dict(self):
+        return {
+            'name': self.get_country_display(),
+            'code': self.country,
+        }

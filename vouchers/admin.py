@@ -5,6 +5,7 @@ from datetime import date
 from django.contrib import admin
 from django.urls import reverse
 from django.http import HttpResponse
+from django.utils.text import mark_safe
 
 from utilities.admin_shortcuts import get_readonly_fields, \
     readonly_inline_factory
@@ -52,11 +53,10 @@ class FixedVoucherAdmin(VoucherAdmin):
     def order(self, obj):
         if obj.order_line:
             order = obj.order_line.parent_object
-            return '<a href="%s">%s</a>' % (
+            return mark_safe('<a href="%s">%s</a>' % (
                 reverse('admin:checkout_order_change', args=(order.pk, )),
-                order)
+                order))
         return ''
-    order.allow_tags = True
 
     def csv_export(self, request, queryset):
         filename = 'Vouchers_' + date.today().strftime('%Y%m%d')

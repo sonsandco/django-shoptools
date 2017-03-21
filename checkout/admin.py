@@ -1,9 +1,8 @@
 from datetime import date
 from django.contrib import admin
 from django.http import HttpResponse
-from django.conf.urls import url
-from django.urls import reverse
 from django import forms
+from django.utils.text import mark_safe
 
 from cart.cart import get_voucher_module
 
@@ -68,6 +67,7 @@ class AddOrderLineInline(admin.TabularInline):
         return OrderLine.objects.none()
 
 
+@admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('name', 'user', 'email', 'status',
                     'amount_paid', 'created', 'links')
@@ -76,7 +76,7 @@ class OrderAdmin(admin.ModelAdmin):
         GiftRecipientInline,
         OrderLineInline,
         AddOrderLineInline,
-        # TODO pull in transactions as an inline from the payment module - see TPM
+        # TODO grab transactions as an inline from the payment module - see TPM
     ] + voucher_inlines
     save_on_top = True
     actions = ('csv_export', 'resend_dispatch_email')
@@ -115,7 +115,5 @@ class OrderAdmin(admin.ModelAdmin):
         return Order.objects.all().order_by('-created')
 
     def links(self, obj):
-        return '<a href="%s">View order</a>' % obj.get_absolute_url()
-    links.allow_tags = True
-
-admin.site.register(Order, OrderAdmin)
+        return mark_safe(
+            '<a href="%s">View order</a>' % obj.get_absolute_url())

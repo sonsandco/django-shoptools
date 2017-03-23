@@ -10,6 +10,7 @@ from django.views.decorators.cache import never_cache
 from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib import messages
 
 from cart.cart import get_cart
 # from dps.transactions import make_payment
@@ -46,14 +47,6 @@ def checkout_view(wrapped_view):
             order = get_object_or_404(Order, secret=secret)
         else:
             order = None
-
-        # Prevent going past the cart page if shipping is not valid, unless
-        # this an order that has already been paid
-        if not order or order.status < order.STATUS_PAID:
-            if not cart.has_valid_shipping:
-                cart_url = reverse('checkout_cart')
-                if request.path_info != cart_url:
-                    return redirect(cart_url)
 
         if order and order.user and order.user != request.user and \
            not request.user.is_staff:
@@ -99,6 +92,12 @@ def checkout(request, cart, order):
     """Handle checkout process - if the order is completed, show the success
        page, otherwise show the checkout form.
     """
+
+    # Send back to cart page if shipping is not valid
+    if not cart.has_valid_shipping:
+        messages.add_message(request, messages.ERROR,
+                             'Please choose a shipping option')
+        return redirect('checkout_cart')
 
     # if the cart is already linked with an (incomplete) order, show that order
     if not order and cart.order_obj and \

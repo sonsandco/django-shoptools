@@ -7,7 +7,6 @@
   {{ super() }}
   {% if ecommerce %}
     <script type="text/javascript">
-      console.log(window.ga);
       if (typeof window.ga !== 'undefined' && window.ga !== null) {
         ga('require', 'ecommerce');
         ga('ecommerce:addTransaction', {

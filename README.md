@@ -31,3 +31,25 @@ available shipping options. Example output:
     {'postage': ['courier', 'standard'], }
 
 See shipping.py for more information
+
+
+Regions
+=======
+
+TODO
+
+
+Vouchers API
+============
+
+TODO
+
+
+Custom Cart implementations
+===========================
+
+TODO
+
+- See wishlist
+- Document common interface for SessionCart, SavedCart, Order, Wishlist
+

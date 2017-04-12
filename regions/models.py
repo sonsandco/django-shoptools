@@ -13,6 +13,7 @@ class Region(models.Model):
     name = models.CharField(max_length=100, unique=True)
     currency = models.CharField(
         max_length=3, blank=True, default='NZD', help_text=u'3-letter code')
+    symbol = models.CharField(max_length=1, blank=True, default='$')
     is_default = models.BooleanField(default=False)
     sort_order = models.PositiveSmallIntegerField(default=0)
 
@@ -33,8 +34,10 @@ class Region(models.Model):
 
     def as_dict(self):
         return {
+            'id': self.id,
             'name': self.name,
             'currency': self.currency,
+            'symbol': self.symbol,
         }
 
 
@@ -54,5 +57,5 @@ class Country(models.Model):
     def as_dict(self):
         return {
             'name': self.get_country_display(),
-            'code': self.country,
+            'code': self.country.code,
         }

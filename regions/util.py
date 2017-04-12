@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import socket
 
 from django.contrib.gis.geoip2 import GeoIP2
 from geoip2.errors import AddressNotFoundError
@@ -33,7 +34,7 @@ def get_region_id(country_code=None):
 def get_country_code(request):
     try:
         country = GeoIP2().country(get_ip(request))
-    except AddressNotFoundError:
+    except (AddressNotFoundError, socket.gaierror):
         return None
     return country['country_code']
 
@@ -69,21 +70,41 @@ def get_int(val):
         return None
 
 
-def regions_data(request):
-    """Get region info from the session, as a dict. Assumes session values
-       are valid, because they should be validated before they're set"""
-
-    data = {}
+def get_region(request):
+    """Get region instance from the session region id. """
     info = get_session(request)
-
     region_id = get_int(info.get('region_id'))
     if region_id:
-        region = Region.objects.get(pk=region_id)
-        data['region'] = region.as_dict()
+        try:
+            return Region.objects.get(pk=region_id)
+        except Region.DoesNotExist:
+            pass
+    return Region.get_default()
 
+
+def get_country(request):
+    """Get country instance from the session country code. """
+    info = get_session(request)
     country_code = info.get('country_code')
     if country_code:
-        country = Country.objects.get(country=country_code)
-        data['region'] = country.as_dict()
+        try:
+            return Country.objects.get(country=country_code)
+        except Country.DoesNotExist:
+            pass
+    return None
+
+
+def regions_data(request):
+    """Get region and country info from the session, as a dict for json
+       serialization. """
+
+    data = {}
+
+    region = get_region(request)
+    data['region'] = region.as_dict()
+
+    country = get_country(request)
+    if country:
+        data['country'] = country.as_dict()
 
     return data

@@ -69,7 +69,7 @@ class ICartItem(object):
         raise NotImplementedError()
 
     def cart_line_total(self, line):
-        """Returns the total price for qty of this item. """
+        """Returns the total price for quantity of this item. """
 
         # currently must return a float/int, not decimal, due to django's
         # serialization limitations - see
@@ -123,7 +123,7 @@ class ICart(object):
 
        Subclasses should implement the following:
 
-           update_quantity(self, ctype, pk, qty)
+           update_quantity(self, ctype, pk, quantity)
            clear(self)
            count(self)
            get_lines(self)
@@ -138,8 +138,8 @@ class ICart(object):
 
        """
 
-    def add(self, ctype, pk, qty=1, options={}):
-        return self.update_quantity(ctype, pk, qty, add=True, options=options)
+    def add(self, ctype, pk, quantity=1, options={}):
+        return self.update_quantity(ctype, pk, quantity, add=True, options=options)
 
     def remove(self, ctype, pk, options={}):
         return self.update_quantity(ctype, pk, 0, options=options)
@@ -184,7 +184,7 @@ class ICart(object):
 
         return data
 
-    def update_quantity(self, ctype, pk, qty, options={}):
+    def update_quantity(self, ctype, pk, quantity, options={}):
         raise NotImplementedError()
 
     def get_lines(self):
@@ -328,13 +328,13 @@ class BaseOrder(models.Model, ICart):
     class Meta:
         abstract = True
 
-    def update_quantity(self, ctype, pk, qty=1, add=False, options={}):
+    def update_quantity(self, ctype, pk, quantity=1, add=False, options={}):
         # TODO should validation happen here? Should probably be a separate
         # layer, and this function should assume valid input (ref django's
         # Model.save and Model.clean)
 
         # TODO purge 'add' argument
-        if qty == 0 and add:
+        if quantity == 0 and add:
             return (False, 'No quantity specified')
 
         if not self.pk:
@@ -343,11 +343,11 @@ class BaseOrder(models.Model, ICart):
 
         line = self.get_line(ctype, pk, options, create=True)
 
-        # qty may be an addition or a straight update
+        # quantity may be an addition or a straight update
         if add:
-            line.quantity = (line.quantity or 0) + qty
+            line.quantity = (line.quantity or 0) + quantity
         else:
-            line.quantity = qty
+            line.quantity = quantity
 
         # purge if quantity is zero after the update
         if not line.quantity:
@@ -518,7 +518,7 @@ class SessionCartLine(dict, ICartLine):
 
     def __init__(self, **kwargs):
         assert sorted(kwargs.keys()) == ['key', 'options', 'parent_object',
-                                         'qty']
+                                         'quantity']
         return super(SessionCartLine, self).__init__(**kwargs)
 
     def __setitem__(self, *args):
@@ -530,7 +530,7 @@ class SessionCartLine(dict, ICartLine):
         return get_instance(ctype, pk)
 
     options = property(lambda s: s['options'])
-    quantity = property(lambda s: s['qty'])
+    quantity = property(lambda s: s['quantity'])
     total = property(lambda s: s.item.cart_line_total(s))
     description = property(lambda s: s.item.cart_description())
     parent_object = property(lambda s: s['parent_object'])
@@ -589,18 +589,18 @@ class SessionCart(ICart, IShippable):
     #     # TODO
     #     # return self.shipping_cost is not None
 
-    def update_quantity(self, ctype, pk, qty=1, add=False, options={}):
-        assert isinstance(qty, int)
+    def update_quantity(self, ctype, pk, quantity=1, add=False, options={}):
+        assert isinstance(quantity, int)
         options = validate_options(ctype, pk, options)
         index = self._line_index(ctype, pk, options)
 
         # quantity may be additive or a straight update
         # TODO kill the add argument. cart.add should do this extra calculation
         if add and index is not None:
-            qty += self._data["lines"][index]['qty']
+            quantity += self._data["lines"][index]['quantity']
 
         # purge if quantity is zero
-        if qty < 1:
+        if quantity < 1:
             if index is None:
                 # fail silently
                 return (True, None)
@@ -610,8 +610,11 @@ class SessionCart(ICart, IShippable):
 
         if index is None:
             # Add to cart if not in there already
-            data = {'key': create_key(ctype, pk, options), 'qty': qty,
-                    'options': options}
+            data = {
+                'key': create_key(ctype, pk, options),
+                'quantity': quantity,
+                'options': options
+            }
             line = self.make_line_obj(data)
             errors = line.get_errors()
             if errors:
@@ -623,7 +626,7 @@ class SessionCart(ICart, IShippable):
         else:
             # Already in the cart, so update the existing line
             data = self._data["lines"][index]
-            data['qty'] = qty
+            data['quantity'] = quantity
             line = self.make_line_obj(data)
             errors = line.get_errors()
             if errors:
@@ -660,7 +663,7 @@ class SessionCart(ICart, IShippable):
     def count(self):
         if self._data is None:
             return 0
-        return sum(r['qty'] for r in self._data["lines"])
+        return sum(r['quantity'] for r in self._data["lines"])
 
     @property
     def subtotal(self):

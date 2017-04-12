@@ -87,7 +87,7 @@ def create(request):
 def account_data(request):
     data = None
 
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         data = {
             'first_name': request.user.first_name,
             'last_name': request.user.last_name,

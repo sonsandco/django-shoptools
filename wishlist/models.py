@@ -12,7 +12,7 @@ WISHLIST_SESSION_KEY = getattr(settings, 'WISHLIST_SESSION_KEY', 'wishlist')
 def get_wishlist(request):
     session_wishlist = SessionCart(request, WISHLIST_SESSION_KEY)
 
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         try:
             wishlist = Wishlist.objects.get(user=request.user)
         except Wishlist.DoesNotExist:

@@ -559,7 +559,11 @@ class SessionCart(ICart, IShippable):
             return []
         return self._data.get('vouchers', [])
 
-    def update_vouchers(self, codes):
+    def set_voucher_codes(self, codes):
+        """Saves the provided voucher codes to this SessionCart. Assumes the
+           codes have already been validated, if necessary.
+        """
+
         self._init_session_cart()
         self._data["vouchers"] = list(codes)
         self.request.session.modified = True

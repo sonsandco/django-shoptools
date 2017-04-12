@@ -1,6 +1,5 @@
 from datetime import datetime
 import json
-import decimal
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -68,7 +67,7 @@ class SavedCart(BaseOrder, IShippable):
     def get_voucher_codes(self):
         return filter(bool, self._voucher_codes.split(','))
 
-    def update_vouchers(self, codes):
+    def set_voucher_codes(self, codes):
         self._voucher_codes = ','.join(codes)
         self.save()
         return True

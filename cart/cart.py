@@ -12,6 +12,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.postgres.fields import JSONField
 
+from .util import get_cart_html
+
+
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
@@ -155,6 +158,9 @@ class ICart(object):
         return errors
 
     def as_dict(self):
+        """Return dict of data for this cart instance, for json serialization.
+           subclasses should override this method. """
+
         data = {
             'count': self.count(),
             'lines': [line.as_dict() for line in self.get_lines()],
@@ -167,6 +173,11 @@ class ICart(object):
             if hasattr(self, f):
                 attr = getattr(self, f)
                 data[f] = float(attr) if attr is not None else None
+
+        # TODO add discounts?
+
+        data['html_snippet'] = get_cart_html(self)
+
         return data
 
     def update_quantity(self, ctype, pk, qty, options={}):
@@ -552,7 +563,6 @@ class SessionCart(ICart, IShippable):
         self._init_session_cart()
         self._data["vouchers"] = list(codes)
         self.request.session.modified = True
-        return (True, None)
 
     def set_shipping_options(self, options):
         """Saves the provided options to this SessionCart. Assumes the
@@ -586,13 +596,15 @@ class SessionCart(ICart, IShippable):
         index = self._line_index(ctype, pk, options)
 
         # quantity may be additive or a straight update
+        # TODO kill the add argument. cart.add should do this extra calculation
         if add and index is not None:
             qty += self._data["lines"][index]['qty']
 
         # purge if quantity is zero
         if qty < 1:
             if index is None:
-                return False
+                # fail silently
+                return (True, None)
             del self._data["lines"][index]
             self.request.session.modified = True
             return (True, None)

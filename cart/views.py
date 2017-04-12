@@ -1,45 +1,34 @@
 import json
 
 from django.http import HttpResponseRedirect, HttpResponse, \
-    HttpResponseBadRequest, HttpResponseNotAllowed
-from django.template.loader import get_template, TemplateDoesNotExist
+    HttpResponseNotAllowed, HttpResponseBadRequest
 
 from .cart import get_cart as default_get_cart
 from . import actions
-
-
-def get_cart_html(request, cart, template_name):
-    try:
-        template = get_template(template_name)
-    except TemplateDoesNotExist:
-        return None
-    else:
-        return template.render({'cart': cart}, request=request)
+from .util import get_cart_html
 
 
 def cart_view(action=None):
-    '''Decorator supplies request and current cart as arguments to the action
+    """Decorator supplies request and current cart as arguments to the action
        function. Returns appropriate errors if the request method is not POST,
        or if any required params are missing.
        Successful return value is either cart data as json, or a redirect, for
-       ajax and non-ajax requests, respectively.'''
+       ajax and non-ajax requests, respectively. """
 
-    def view_func(request, next_url=None, data=None, get_cart=default_get_cart,
-                  ajax_template='checkout/cart_ajax.html'):
-        if not data:
-            data = request.POST
+    def view_func(request, next_url=None, get_cart=default_get_cart,
+                  ajax_template=None):
 
-        if action and not data:
+        if action and not request.POST:
             return HttpResponseNotAllowed(['POST'])
 
         cart = get_cart(request)
         success = True
         if action:
-            # success is a nulleable boolean, None = InvalidRequest,
-            # False = failure, True = success
-            success = action(data, cart)
+            # don't allow multiple values for each get param
+            success, errors = action(request.POST.dict(), cart)
+
             if success is None:
-                return HttpResponseBadRequest('Invalid request')
+                return HttpResponseBadRequest()
 
             # TODO remove this, since shipping validation happens in
             # cart.get_errors
@@ -52,18 +41,20 @@ def cart_view(action=None):
         if request.is_ajax():
             data = {
                 'success': success,
-                'cart': cart.as_dict()
+                'errors': errors,
+                'cart': cart.as_dict(),
             }
             if ajax_template:
-                data['html_snippet'] = get_cart_html(request, cart,
-                                                     ajax_template)
+                data['html_snippet'] = get_cart_html(cart, ajax_template)
+
             return HttpResponse(json.dumps(data),
                                 content_type='application/json')
 
+        # TODO hook into messages framework here
         if success:
             if not next_url:
-                next_url = data.get('next',
-                                    request.META.get('HTTP_REFERER', '/'))
+                next_url = request.POST.get(
+                    'next', request.META.get('HTTP_REFERER', '/'))
             return HttpResponseRedirect(next_url)
         else:
             return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

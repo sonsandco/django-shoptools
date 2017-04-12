@@ -3,8 +3,11 @@
 {% from 'vouchers/snippets/cart_voucher_form.html' import cart_voucher_form with context %}
 
 
-{% if not cart.empty() %}
-
+{% if cart.empty() %}
+  <p class="checkout-empty">
+    No products in your cart.
+  </p>
+{% else %}
   {% for error in cart.get_errors() %}
     <p class="error">{{ error }}</p>
   {% endfor %}
@@ -37,8 +40,4 @@
       </a>
     {% endif %}
   </div>
-{% else %}
-  <p class="checkout-empty">
-    No products in your cart.
-  </p>
 {% endif %}

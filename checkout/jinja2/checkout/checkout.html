@@ -5,7 +5,7 @@
 {% block content %}
   <article class="checkout-checkout">
     <section class="user">
-      {% if request.user.is_authenticated() %}
+      {% if request.user.is_authenticated %}
         <h6>Logged in as {{ request.user.first_name }}</h6>
       {% else %}
         {% include 'checkout/snippets/side_login.html' %}
@@ -59,12 +59,12 @@
         {% endfor %}
 
         {% if not account.pk %}
-          <div class="form-field save-details">
-            <input type="checkbox" name="save-details" value="1"
-                   id="save_details"
-                   {% if request.POST.get('save-details') %}
+          <div class="form-field save_details">
+            <input type="checkbox" name="save_details" value="1"
+                   id="id_save_details"
+                   {% if request.POST.get('save_details') %}
                     checked{% endif %}>
-            <label for="save_details">
+            <label for="id_save_details">
               Would you like to save these details?
               {% if user_form %}
                 <span>Create a login</span>
@@ -86,13 +86,13 @@
           {% endif %}
         {% endif %}
 
-        {% set is_gift = request.POST.get('is-gift') or gift_form.instance.pk %}
+        {% set is_gift = request.POST.get('is_gift') or gift_form.instance.pk %}
           <section class="gift-wrap {% if is_gift %}active{% endif %}">
-            <div class="form-field is-gift">
-              <input type="checkbox" name="is-gift" value="1" id="is-gift"
+            <div class="form-field is_gift">
+              <input type="checkbox" name="is_gift" value="1" id="id_is_gift"
                      {% if is_gift %}checked{% endif %}>
               {#- -#}
-              <label for="is-gift">Is this a gift?</label>
+              <label for="id_is_gift">Is this a gift?</label>
             </div>
             <div class="gift-form">
               {% for field in gift_form.hidden_fields() %}

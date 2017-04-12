@@ -74,7 +74,7 @@ class Order(BasePerson, BaseOrder):
     receive_email = models.BooleanField("Receive our email news and offers",
                                         default=False)
 
-    ecommerce_submitted = models.BooleanField(default=False, editable=False)
+    tracking_displayed = models.BooleanField(default=False, editable=False)
 
     def save(self, *args, **kwargs):
         super(Order, self).save(*args, **kwargs)

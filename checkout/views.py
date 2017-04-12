@@ -108,9 +108,9 @@ def checkout(request, cart, order):
         ecommerce = False
         if cart.order_obj == order:
             cart.clear()
-        if not order.ecommerce_submitted:
+        if not order.tracking_displayed:
             ecommerce = True
-            order.ecommerce_submitted = True
+            order.tracking_displayed = True
             order.save()
         return {
             "template": "success",

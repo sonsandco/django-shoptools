@@ -25,10 +25,10 @@ def cart_action(required=[]):
     return inner
 
 
-@cart_action(required=['ctype', 'pk', 'qty'])
+@cart_action(required=['ctype', 'pk', 'quantity'])
 def quantity(data, cart):
     try:
-        qty = int(data['qty'])
+        quantity = int(data['quantity'])
     except ValueError:
         return False
     # TODO separate validation - cart methods to assume valid data
@@ -37,16 +37,16 @@ def quantity(data, cart):
     options = dict(data)
     del options['ctype']
     del options['pk']
-    del options['qty']
+    del options['quantity']
 
-    return cart.update_quantity(data['ctype'], data['pk'], qty,
-                                options=options)
+    return cart.update_quantity(
+        data['ctype'], data['pk'], quantity, options=options)
 
 
 @cart_action(required=['ctype', 'pk'])
 def add(data, cart):
     try:
-        qty = int(data.get("qty", 1))
+        quantity = int(data.get("quantity", 1))
     except ValueError:
         return (False, 'Invalid quantity')
     # TODO separate validation - cart methods to assume valid data
@@ -60,7 +60,7 @@ def add(data, cart):
     del options['ctype']
     del options['pk']
 
-    return cart.add(data["ctype"], data["pk"], qty, options=options)
+    return cart.add(data["ctype"], data["pk"], quantity, options=options)
 
 
 @cart_action(required=['confirm'])

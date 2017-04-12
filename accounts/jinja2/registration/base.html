@@ -1,11 +1,7 @@
-{% extends "base.html" %}
+{% extends 'accounts/base.html' %}
 
-{% block title %}{{ registration_title }}{% endblock %}
+{% set page_title = registration_title %}
 
-{% block content %}
-  <article class="registration">
-    <h3>{{ registration_title }}</h3>
-
-    {% block registration_content %}{% endblock %}
-  </article>
+{% block accounts_content %}
+  {% block registration_content %}{% endblock %}
 {% endblock %}

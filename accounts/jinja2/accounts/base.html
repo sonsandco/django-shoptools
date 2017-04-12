@@ -3,30 +3,15 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-  <article class="accounts">
-    {% set messages = get_messages(request) %}
-    {% if messages %}
-    <ul class="messages">
-      {% for message in messages %}
-      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>
-        {{ message }}</li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-
-    <h3>{{ page_title }}</h3>
-
-    <nav class="accounts-nav">
-      <a href="{{ url('checkout_cart') }}" class="cart">
-        Your cart</a>
-      {# <a href="{{ url('wishlist_wishlist') }}" class="wishlist">
-        Wishlist</a> #}
-      {% if request.user.is_authenticated() %}
-        <a href="{{ url('accounts_orders') }}">Orders</a>
-        <a href="{{ url('accounts_details') }}"><span>Your</span> details</a>
-      {% endif %}
-    </nav>
-
-    {% block accounts_content %}{% endblock %}
+  <article class="accounts-page">
+    <header>
+      <div class="inner">
+        <h1>{{ page_title }}</h1>
+      </div>
+    </header>
+    {#- -#}
+    <div class="content">
+      {% include 'snippets/messages.html' %}
+      {% block accounts_content %}{% endblock %}
   </article>
 {% endblock %}

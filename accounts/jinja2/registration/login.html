@@ -1,4 +1,5 @@
 {% extends "registration/base.html" %}
+{% from 'snippets/form.html' import render_form with context %}
 
 {% set registration_title = 'Log in' %}
 
@@ -6,11 +7,9 @@
 
 <form action="." method="post" class="registration-form">
   <input type="hidden" name="next"
-         value="{{ request.GET.get('next') or
-                   request.POST.get('next') or
-                   '/' }}">
+         value="{{ request.GET.get('next') or request.POST.get('next') or '/' }}">
 
-  {% include 'snippets/form.html' %}
+  {{ render_form(form) }}
 
   <input type="submit" value="Log in">
 </form>

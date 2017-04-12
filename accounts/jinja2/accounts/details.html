@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% from 'snippets/form.html' import render_form with context %}
 
 {% set page_title = 'Your details' %}
 
@@ -9,11 +10,8 @@
   <form action="{{ request.path_info }}" method="post"
         class="accounts-form">
 
-    {% set form = user_form %}
-    {% include 'snippets/form.html' %}
-
-    {% set form = account_form %}
-    {% include 'snippets/form.html' %}
+    {{ render_form(user_form) }}
+    {{ render_form(account_form) }}
 
     <input type="submit" name="confirm" value="Save details">
   </form>

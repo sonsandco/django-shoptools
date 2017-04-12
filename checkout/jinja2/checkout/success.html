@@ -9,6 +9,7 @@
     <script type="text/javascript">
       if (typeof window.ga !== 'undefined' && window.ga !== null) {
         ga('require', 'ecommerce');
+        ga('ecommerce:clear');
         ga('ecommerce:addTransaction', {
           'id': '{{ order.invoice_number }}',
           {% if order.currency %}'currency': '{{ order.currency }}',{% endif %}

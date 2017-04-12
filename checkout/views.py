@@ -105,16 +105,18 @@ def checkout(request, cart, order):
         return redirect(cart.order_obj)
 
     if order and order.status >= Order.STATUS_PAID:
-        ecommerce = False
         if cart.order_obj == order:
             cart.clear()
+
+        display_tracking = False
         if not order.tracking_displayed:
-            ecommerce = True
+            display_tracking = True
             order.tracking_displayed = True
             order.save()
+
         return {
             "template": "success",
-            "ecommerce": ecommerce,
+            "display_tracking": display_tracking,
             "order": order
         }
 

@@ -5,7 +5,7 @@
 
 {% block analytics %}
   {{ super() }}
-  {% if ecommerce %}
+  {% if display_tracking %}
     <script type="text/javascript">
       if (typeof window.ga !== 'undefined' && window.ga !== null) {
         ga('require', 'ecommerce');

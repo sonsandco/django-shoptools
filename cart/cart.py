@@ -68,7 +68,7 @@ class ICartItem(object):
            deleted or changed down the track. """
         raise NotImplementedError()
 
-    def cart_line_total(self, qty, order_obj):
+    def cart_line_total(self, line):
         """Returns the total price for qty of this item. """
 
         # currently must return a float/int, not decimal, due to django's
@@ -110,11 +110,11 @@ class ICartItem(object):
         return '%s.%s' % (self._meta.app_label,
                           self._meta.model_name)
 
-    @property
-    def unique_identifier(self):
-        # unique across all models, intended for use as an id or class
-        # attribute where the ability to get a specific item is required
-        return self.ctype.replace('.', '-') + '-%d' % self.id
+    # @property
+    # def unique_identifier(self):
+    #     # unique across all models, intended for use as an id or class
+    #     # attribute where the ability to get a specific item is required
+    #     return self.ctype.replace('.', '-') + '-%d' % self.id
 
 
 class ICart(object):
@@ -157,6 +157,10 @@ class ICart(object):
 
         return errors
 
+    @property
+    def is_valid(self):
+        return self.count() and not self.get_errors()
+
     def as_dict(self):
         """Return dict of data for this cart instance, for json serialization.
            subclasses should override this method. """
@@ -196,10 +200,6 @@ class ICart(object):
         """Delete all cart lines. """
         raise NotImplementedError()
 
-    def get_errors(self):
-        """Validate each cart line item. Subclasses may override this method
-           to perform whole-cart validation. Return a list of error strings
-        """
     # def set_shipping_options(self, options):
     #     """Save the provided options
     #
@@ -213,10 +213,6 @@ class ICart(object):
     #
     #     raise NotImplementedError()
 
-        errors = []
-        for line in self.get_lines():
-            errors += line.get_errors()
-        return errors
     @property
     def shipping_cost(self):
         shipping_module = get_shipping_module()
@@ -231,18 +227,17 @@ class ICart(object):
         return []
 
     # TODO tidy up discount stuff - does it belong here?
-    def calculate_discounts(self, invalid=False, include_shipping=True):
+    def calculate_discounts(self, include_shipping=True):
         voucher_module = get_voucher_module()
         if voucher_module:
             return voucher_module.calculate_discounts(
-                self, self.get_voucher_codes(), invalid=invalid,
-                include_shipping=include_shipping and
-                self.shipping_cost is not None)
-        return []
+                self, self.get_voucher_codes(),
+                include_shipping=include_shipping)
 
     @property
     def total_discount(self):
-        return sum(d.amount for d in self.calculate_discounts())
+        discounts, invalid = self.calculate_discounts()
+        return sum(d.amount for d in discounts)
 
     def save_to(self, obj):
         assert isinstance(obj, BaseOrder)
@@ -252,6 +247,7 @@ class ICart(object):
             line = obj.get_line_cls()()
             line.parent_object = obj
             line.item = cart_line.item
+            line.options = cart_line.options
             line.quantity = cart_line.quantity
             line.currency = self.currency
             line.save()
@@ -300,11 +296,15 @@ class ICartLine(object):
         return '%s.%s' % (self.item._meta.app_label,
                           self.item._meta.model_name)
 
-    @property
-    def unique_identifier(self):
-        # unique across all models, intended for use as an id or class
-        # attribute where the ability to get a specific item is required
-        return self.ctype.replace('.', '-') + '-%d' % self.item.id
+    # @property
+    # def item_id(self):
+    #     return self.item.pk
+
+    # @property
+    # def unique_identifier(self):
+    #     # unique across all models, intended for use as an id or class
+    #     # attribute where the ability to get a specific item is required
+    #     return self.ctype.replace('.', '-') + '-%d' % self.item.id
 
     def options_text(self):
         # TODO handle the case where options is blank i.e. ''
@@ -316,12 +316,8 @@ class ICartLine(object):
             'options': self.options,
             'quantity': self.quantity,
             'total': float(self.total),
-            'unique_identifier': self.unique_identifier if self.item else None,
+            # 'unique_identifier': self.unique_identifier if self.item else None,
         }
-
-    def get_errors(self):
-        """Validate this line's item. Return a list of error strings"""
-        return self.item.cart_errors(self) if self.item else []
 
 
 class BaseOrder(models.Model, ICart):
@@ -535,8 +531,7 @@ class SessionCartLine(dict, ICartLine):
 
     options = property(lambda s: s['options'])
     quantity = property(lambda s: s['qty'])
-    total = property(lambda s: s.item.cart_line_total(s['qty'],
-                                                      s['parent_object']))
+    total = property(lambda s: s.item.cart_line_total(s))
     description = property(lambda s: s.item.cart_description())
     parent_object = property(lambda s: s['parent_object'])
 
@@ -746,7 +741,7 @@ def get_cart(request):
 
     session_cart = SessionCart(request)
 
-    if apps.is_installed('cart') and request.user.is_authenticated():
+    if apps.is_installed('cart') and request.user.is_authenticated:
 
         # django doesn't like this to be imported at compile-time if the app is
         # not installed

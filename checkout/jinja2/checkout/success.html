@@ -3,6 +3,34 @@
 
 {% block title %}Order Completed{% endblock %}
 
+{% block analytics %}
+  {{ super() }}
+  {% if ecommerce %}
+    <script type="text/javascript">
+      if (typeof window.ga !== 'undefined' && window.ga !== null) {
+        ga('require', 'ecommerce');
+        ga('ecommerce:clear');
+        ga('ecommerce:addTransaction', {
+          'id': '{{ order.invoice_number }}',
+          {% if order.currency %}'currency': '{{ order.currency }}',{% endif %}
+          {% if order.shipping_cost %}'shipping': '{{ order.shipping_cost }}',{% endif %}
+          'revenue': '{{ order.total }}'
+        });
+        {% for line in order.lines.all() %}
+          ga('ecommerce:addItem', {
+            'id': '{{ order.invoice_number }}',
+            'name': '{{ line.item }}',
+            {% if line.item.sku %}'sku': '{{ line.item.sku }}',{% endif %}
+            'price': '{{ line.total / line.quantity }}',
+            'quantity': '{{ line.quantity }}'
+          });
+        {% endfor %}
+        ga('ecommerce:send');
+      }
+    </script>
+  {% endif %}
+{% endblock %}
+
 {% block content %}
   <article class="checkout-success">
     <section class="checkout-order-status">

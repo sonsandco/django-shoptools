@@ -1,10 +1,7 @@
-import json
-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
-from django.http import HttpResponse
 
 from utilities.render import render
 
@@ -26,6 +23,7 @@ def orders(request):
                       .order_by('-created')
 
     return {
+        'orders': orders,
         'current': current,
         'completed': completed,
     }

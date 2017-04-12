@@ -1,14 +1,20 @@
-from .cart import unpack_key
 
 
 def cart_action(required=[]):
-    '''If any required params are missing, return False, otherwise perform
-       action and return True.'''
+    """Check for required params and perform action if valid.
+       Return in the format
+
+           (success, errors)
+
+       where success is True if the action was performed successfully, False
+       if there were errors (i.e. an item is sold out), or None if the request
+       is invalid, (i.e. missing a required parameter)
+    """
 
     def inner(wrapped_func):
         def action_func(data, cart):
             if not all(data.get(p) for p in required):
-                return False
+                return (None, 'Missing required info')
 
             return wrapped_func(data, cart)
 
@@ -19,36 +25,22 @@ def cart_action(required=[]):
     return inner
 
 
-@cart_action()
-def update_cart(data, cart):
-    # TODO blow this away? Use line-level endpoints instead
-
-    # remove things if a remove button was clicked
-    key_to_remove = data.get('remove', None)
-    if key_to_remove:
-        cart.remove(*unpack_key(key_to_remove))
-    else:
-        # otherwise, update quantities
-        prefix = "qty:"
-        for (name, val) in data.items():
-            if name.startswith(prefix):
-                key = name[len(prefix):]
-                try:
-                    qty = int(val)
-                except ValueError:
-                    pass
-                else:
-                    cart.update_quantity(*unpack_key(key), qty=qty)
-    return True
-
-
 @cart_action(required=['ctype', 'pk', 'qty'])
 def quantity(data, cart):
     try:
-        qty = int(data["qty"])
+        qty = int(data['qty'])
     except ValueError:
         return False
-    return cart.update_quantity(data["ctype"], data["pk"], qty)
+    # TODO separate validation - cart methods to assume valid data
+
+    # TODO fix
+    options = dict(data)
+    del options['ctype']
+    del options['pk']
+    del options['qty']
+
+    return cart.update_quantity(data['ctype'], data['pk'], qty,
+                                options=options)
 
 
 @cart_action(required=['ctype', 'pk'])
@@ -56,15 +48,28 @@ def add(data, cart):
     try:
         qty = int(data.get("qty", 1))
     except ValueError:
-        return False
-    return cart.add(data["ctype"], data["pk"], qty)
+        return (False, 'Invalid quantity')
+    # TODO separate validation - cart methods to assume valid data
+    # cart.add should take an instance, not ctype and pk
+    # a separate layer should validate and convert these to an instance,
+    # and grab relevant options. For now just pass the whole POST as options,
+    # it'll ignore anything invalid
+
+    # TODO fix
+    options = dict(data)
+    del options['ctype']
+    del options['pk']
+
+    return cart.add(data["ctype"], data["pk"], qty, options=options)
 
 
 @cart_action(required=['confirm'])
 def clear(data, cart):
     confirm = data.get('confirm', None)
     if confirm:
-        return cart.clear()
+        cart.clear()
+    return (True, None)
+
 
 @cart_action()
 def set_shipping_options(data, cart):
@@ -75,6 +80,7 @@ def set_shipping_options(data, cart):
 
 
 @cart_action()
-def update_vouchers(data, cart):
+def set_voucher_codes(data, cart):
     codes = map(str.strip, data.get('codes', '').split(','))
-    return cart.update_vouchers([c for c in codes if c])
+    cart.set_voucher_codes([c for c in codes if c])
+    return (True, None)

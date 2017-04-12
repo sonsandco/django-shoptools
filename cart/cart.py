@@ -10,6 +10,7 @@ from django.db import models
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.postgres.fields import JSONField
 
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
@@ -72,6 +73,34 @@ class ICartItem(object):
         # https://docs.djangoproject.com/en/1.8/topics/http/sessions/#session-serialization
         raise NotImplementedError()
 
+    def available_options(self):
+        """Available purchase options for the product - product variants
+           should generally be preferred over this system. Use options where
+           it doesn't make sense for the different option to be represented
+           by a different instance, i.e. "Add monogramming", or need to be
+           ad-hoc, i.e. specific to the product instance rather than
+           the model.
+
+           NOTE values must be strings because that's what gets posted through
+           from forms. TODO fix this. Do we enforce json payloads from the
+           frontend?
+
+           Example:
+
+           {
+               'color': ['red', 'black'],
+               'size': ['S', 'M', 'L'],
+           }
+        """
+
+        return {}
+
+    def default_options(self):
+        """Return a dict of defaults, by default this just takes the first
+           option from each. """
+
+        return dict((key, opts[0]) for key, opts in self.available_options())
+
     @property
     def ctype(self):
         # app.model, compatible with the ctype argument to Cart.add etc
@@ -106,11 +135,11 @@ class ICart(object):
 
        """
 
-    def add(self, ctype, pk, qty=1):
-        return self.update_quantity(ctype, pk, qty, add=True)
+    def add(self, ctype, pk, qty=1, options={}):
+        return self.update_quantity(ctype, pk, qty, add=True, options=options)
 
-    def remove(self, ctype, pk):
-        return self.update_quantity(ctype, pk, 0)
+    def remove(self, ctype, pk, options={}):
+        return self.update_quantity(ctype, pk, 0, options=options)
 
     def get_errors(self):
         """Validate each cart line item. Subclasses may override this method
@@ -140,7 +169,7 @@ class ICart(object):
                 data[f] = float(attr) if attr is not None else None
         return data
 
-    def update_quantity(self, ctype, pk, qty):
+    def update_quantity(self, ctype, pk, qty, options={}):
         raise NotImplementedError()
 
     def get_lines(self):
@@ -266,9 +295,14 @@ class ICartLine(object):
         # attribute where the ability to get a specific item is required
         return self.ctype.replace('.', '-') + '-%d' % self.item.id
 
+    def options_text(self):
+        # TODO handle the case where options is blank i.e. ''
+        return ', '.join('%s: %s' % opt for opt in self.options.items())
+
     def as_dict(self):
         return {
             'description': self.description,
+            'options': self.options,
             'quantity': self.quantity,
             'total': float(self.total),
             'unique_identifier': self.unique_identifier if self.item else None,
@@ -287,33 +321,20 @@ class BaseOrder(models.Model, ICart):
     class Meta:
         abstract = True
 
-    def update_quantity(self, ctype, pk, qty=1, add=False):
+    def update_quantity(self, ctype, pk, qty=1, add=False, options={}):
+        # TODO should validation happen here? Should probably be a separate
+        # layer, and this function should assume valid input (ref django's
+        # Model.save and Model.clean)
+
+        # TODO purge 'add' argument
         if qty == 0 and add:
-            return
+            return (False, 'No quantity specified')
 
         if not self.pk:
             # must be an unsaved instance; assume that it's ready to be saved
             self.save()
 
-        app_label, model = ctype.split('.')
-        try:
-            ctype_obj = ContentType.objects.get(app_label=app_label,
-                                                model=model)
-        except ContentType.DoesNotExist:
-            return (False, ['Invalid item'])
-
-        values = {
-            'parent_object': self,
-            'item_content_type': ctype_obj,
-            'item_object_id': pk,
-        }
-        line_cls = self.get_line_cls()
-
-        # get the line from the db, or a new one if it doesn't exist
-        try:
-            line = line_cls.objects.get(**values)
-        except line_cls.DoesNotExist:
-            line = line_cls(**values)
+        line = self.get_line(ctype, pk, options, create=True)
 
         # qty may be an addition or a straight update
         if add:
@@ -323,7 +344,9 @@ class BaseOrder(models.Model, ICart):
 
         # purge if quantity is zero after the update
         if not line.quantity:
-            line.delete()
+            # may have been created on the fly if it didn't exist
+            if line.pk:
+                line.delete()
             return (True, None)
 
         # verify the order line object before saving
@@ -334,20 +357,45 @@ class BaseOrder(models.Model, ICart):
         line.save()
         return (True, None)
 
-    def get_line(self, ctype, pk):
+    def get_line(self, ctype, pk, options, create=False):
+        """This method should always be used to get a line, rather than
+           directly via orm. """
+
         app_label, model = ctype.split('.')
+        ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
         lines = self.get_line_cls().objects.filter(parent_object=self)
+        options = validate_options(ctype, pk, options)
+        lookup = {
+            'parent_object': self,
+            # 'item_content_type__app_label': app_label,
+            # 'item_content_type__model': model,
+            'item_content_type': ctype_obj,
+            'item_object_id': pk,
+            'options': options,
+        }
         try:
-            return lines.get(
-                item_content_type__app_label=app_label,
-                item_content_type__model=model,
-                item_object_id=pk)
+            line = lines.get(**lookup)
+            # TODO think of a better way to solve this problem - saved orders
+            # need to be decoupled from the request somehow. Save region etc
+            # to the db in a json field?
+            line.parent_object = self
+            return line
         except self.get_line_cls().DoesNotExist:
+            if create:
+                return self.get_line_cls()(**lookup)
             return None
 
     def get_lines(self):
-        for line in self.get_line_cls().objects.filter(parent_object=self):
+        """This method should always be used to get lines, rather than
+           directly via orm. """
+
+        lines = self.get_line_cls().objects.filter(parent_object=self) \
+            .order_by('pk')
+        for line in lines:
             if line.item:
+                # parent_object may have been instantiated with a request,
+                # so attach it to the line
+                line.parent_object = self
                 yield line
 
     def empty(self):
@@ -389,6 +437,8 @@ class BaseOrderLine(models.Model, ICartLine):
 
     created = models.DateTimeField(default=datetime.now)
     quantity = models.IntegerField()
+    options = JSONField(default=dict, blank=True)
+
     # currency = models.CharField(max_length=3, editable=False,
     #    default=DEFAULT_CURRENCY)
     # total = models.DecimalField(max_digits=8, decimal_places=2)
@@ -396,15 +446,16 @@ class BaseOrderLine(models.Model, ICartLine):
 
     class Meta:
         abstract = True
+        # NOTE I'm relying on the jsonfield ordering its keys consistently
         unique_together = ('item_content_type', 'item_object_id',
-                           'parent_object')
+                           'parent_object', 'options')
 
     @property
     def total(self):
         if not self.item:
             return decimal.Decimal(0)
         return decimal.Decimal(
-            self.item.cart_line_total(self.quantity, self.parent_object))
+            self.item.cart_line_total(self))
 
     @property
     def description(self):
@@ -417,17 +468,17 @@ class BaseOrderLine(models.Model, ICartLine):
                                    self.total)
 
 
-def create_key(ctype, pk):
-    return '|'.join((ctype, str(pk)))
+def create_key(ctype, pk, options):
+    options = validate_options(ctype, pk, options)
+    return '|'.join((ctype, str(pk), json.dumps(options)))
 
 
 def unpack_key(key):
-    (ctype, pk) = key.split('|')
-    return (ctype, pk)
+    (ctype, pk, options) = key.split('|')
+    return (ctype, pk, json.loads(options))
 
 
-def get_item_from_key(key):
-    ctype, pk = unpack_key(key)
+def get_instance(ctype, pk):
     content_type = ContentType.objects \
         .get_by_natural_key(*ctype.split("."))
     try:
@@ -436,19 +487,42 @@ def get_item_from_key(key):
         return None
 
 
+def validate_options(ctype, pk, options):
+    """Strip invalid options from an options dict. """
+
+    # TODO this will eventually take an instance, not a ctype/pk
+
+    content_type = ContentType.objects \
+        .get_by_natural_key(*ctype.split("."))
+    obj = content_type.get_object_for_this_type(pk=pk)
+    available = obj.available_options()
+    filtered = {k: v for k, v in options.items()
+                if k in available and v in available[k]}
+
+    # print (options, available, filtered)
+
+    return filtered
+
+
 class SessionCartLine(dict, ICartLine):
     '''Thin wrapper around dict providing some convenience methods for
        accessing computed information about the line, according to ICartLine.
     '''
 
     def __init__(self, **kwargs):
-        assert sorted(kwargs.keys()) == ['key', 'parent_object', 'qty']
+        assert sorted(kwargs.keys()) == ['key', 'options', 'parent_object',
+                                         'qty']
         return super(SessionCartLine, self).__init__(**kwargs)
 
     def __setitem__(self, *args):
         raise Exception("Sorry, SessionCartLine instances are immutable.")
 
-    item = property(lambda s: get_item_from_key(s['key']))
+    @property
+    def item(self):
+        ctype, pk, options = unpack_key(self['key'])
+        return get_instance(ctype, pk)
+
+    options = property(lambda s: s['options'])
     quantity = property(lambda s: s['qty'])
     total = property(lambda s: s.item.cart_line_total(s['qty'],
                                                       s['parent_object']))
@@ -506,9 +580,10 @@ class SessionCart(ICart, IShippable):
     #     # TODO
     #     # return self.shipping_cost is not None
 
-    def update_quantity(self, ctype, pk, qty=1, add=False):
+    def update_quantity(self, ctype, pk, qty=1, add=False, options={}):
         assert isinstance(qty, int)
-        index = self._line_index(ctype, pk)
+        options = validate_options(ctype, pk, options)
+        index = self._line_index(ctype, pk, options)
 
         # quantity may be additive or a straight update
         if add and index is not None:
@@ -524,7 +599,8 @@ class SessionCart(ICart, IShippable):
 
         if index is None:
             # Add to cart if not in there already
-            data = {'key': create_key(ctype, pk), 'qty': qty}
+            data = {'key': create_key(ctype, pk, options), 'qty': qty,
+                    'options': options}
             line = self.make_line_obj(data)
             errors = line.get_errors()
             if errors:
@@ -556,8 +632,8 @@ class SessionCart(ICart, IShippable):
     def make_line_obj(self, data):
         return self.get_line_cls()(parent_object=self, **data)
 
-    def get_line(self, ctype, pk):
-        index = self._line_index(ctype, pk)
+    def get_line(self, ctype, pk, options={}):
+        index = self._line_index(ctype, pk, options)
         if index is None:
             return None
         return self.make_line_obj(self._data["lines"][index])
@@ -594,8 +670,11 @@ class SessionCart(ICart, IShippable):
         if self._data is None:
             return None
 
-        key = self._data.get('order_obj')
-        return get_item_from_key(key) if key else None
+        order_key = self._data.get('order_obj')
+        if order_key:
+            return get_instance(*order_key.split('|'))
+
+        return None
 
     order_obj = property(get_order_obj, set_order_obj)
 
@@ -619,9 +698,9 @@ class SessionCart(ICart, IShippable):
             data = {'lines': []}
             self._data = self.request.session[self.session_key] = data
 
-    def _line_index(self, ctype, pk):
-        """Returns the line index for a given ctype/pk, if it's already in the
-           cart, or None otherwise."""
+    def _line_index(self, ctype, pk, options):
+        """Returns the line index for a given ctype/pk/options, if it's
+           already in the cart, or None otherwise."""
 
         app_label, model = ctype.split('.')
         assert issubclass(
@@ -631,7 +710,8 @@ class SessionCart(ICart, IShippable):
 
         if self._data is not None:
             for i in range(len(self._data["lines"])):
-                if self._data["lines"][i]["key"] == create_key(ctype, pk):
+                if self._data["lines"][i]["key"] == create_key(
+                        ctype, pk, options):
                     return i
         return None
 

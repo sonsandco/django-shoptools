@@ -66,10 +66,12 @@ def clear(data, cart):
     if confirm:
         return cart.clear()
 
+@cart_action()
+def set_shipping_options(data, cart):
+    # TODO validate POSTed shipping options
 
-# @cart_action()
-# def update_shipping(data, cart):
-#     return cart.update_shipping(data.dict())
+    cart.set_shipping_options(data.dict())
+    return (True, None)
 
 
 @cart_action()

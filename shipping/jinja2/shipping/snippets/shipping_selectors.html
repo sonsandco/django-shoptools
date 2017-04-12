@@ -46,7 +46,7 @@
 {%- endmacro %}
 
 {% macro cart_shipping_selectors(cart, show_currency=False) -%}
-  {% set shipping = cart.get_shipping() -%}
+  {% set shipping = cart.get_shipping_options() -%}
   <div class='shipping'>
     {% if shipping.get('country', None) -%}
       <div class='label-wrap region'>

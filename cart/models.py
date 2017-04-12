@@ -6,18 +6,23 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 
-from .cart import make_uuid, BaseOrder, BaseOrderLine, DEFAULT_CURRENCY
+from .cart import make_uuid, BaseOrder, BaseOrderLine, DEFAULT_CURRENCY, \
+  IShippable
 
 
-class SavedCart(BaseOrder):
+class SavedCart(BaseOrder, IShippable):
     """A db-saved cart class, which can be used interchangeably with Cart. """
 
     created = models.DateTimeField(default=datetime.now)
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
+
+    # TODO make this a JSONField()
     _shipping_options = models.TextField(
         blank=True, default='', editable=False, db_column='shipping_options',
         verbose_name='shipping options')
+
+    # TODO maybe this should be a JSONField() too? Has to be a list though
     _voucher_codes = models.TextField(
         blank=True, default='', editable=False, db_column='voucher_codes',
         verbose_name='voucher codes')
@@ -36,31 +41,29 @@ class SavedCart(BaseOrder):
         # needs to be called before get_shipping
         self.request = request
 
-    def set_shipping(self, options):
-        '''
-            Saves the provided options to this SavedCart. Assumes the
-            options have already been validated, if necessary.
-        '''
+    def set_shipping_options(self, options):
+        """Saves the provided options to this SavedCart. Assumes the
+        options have already been validated, if necessary. """
+
         self._shipping_options = json.dumps(options)
         self.save()
 
-    def get_shipping(self):
-        '''
-            Get shipping options for this cart, if any, falling back to the
-            shipping options saved against the session.
-        '''
+    def get_shipping_options(self):
+        """Get shipping options for this cart, if any, falling back to the
+        shipping options saved against the session. """
+
         if self._shipping_options:
             return json.loads(self._shipping_options)
 
         return {}
 
-    @property
-    def shipping_cost(self):
-        return self.get_shipping().get('cost', None)
+    # @property
+    # def shipping_cost(self):
+    #     return self.get_shipping_options().get('cost', None)
 
-    @property
-    def has_valid_shipping(self):
-        return self.shipping_cost is not None
+    # @property
+    # def validate(self):
+    #     return self.shipping_cost is not None
 
     def get_voucher_codes(self):
         return filter(bool, self._voucher_codes.split(','))
@@ -83,11 +86,7 @@ class SavedCart(BaseOrder):
 
     @property
     def total(self):
-        if self.has_valid_shipping:
-            return self.subtotal + decimal.Decimal(self.shipping_cost) \
-                - self.total_discount
-        else:
-            return self.subtotal - self.total_discount
+        return self.subtotal + self.shipping_cost - self.total_discount
 
     # BaseOrder integration
     def get_line_cls(self):

@@ -220,22 +220,21 @@ def checkout(request, cart, order):
         gift_form = get_gift_form()
         user_form = get_user_form()
 
-    if order:
-        shipping = order.get_shipping()
-    else:
-        shipping = cart.get_shipping()
-    selected_country = None
-    valid_countries = None
-    region = shipping.get('region', None)
-    if region:
-        # if we found a region then this can't be basic shipping
-        from shipping.models import Region
-        selected_country = shipping.get('country', None)
-        region = Region.objects.get(id=region)
-        valid_countries = \
-            [(c.code, c.name) for c in region.countries.all()]
-
-    return {
+    # TODO restrict country choices, but not here
+    # if order:
+    #     shipping = order.get_shipping_options()
+    # else:
+    #     shipping = cart.get_shipping_options()
+    # selected_country = None
+    # valid_countries = None
+    # region = shipping.get('region', None)
+    # if region:
+    #     # if we found a region then this can't be basic shipping
+    #     from shipping.models import Region
+    #     selected_country = shipping.get('country', None)
+    #     region = Region.objects.get(id=region)
+    #     valid_countries = \
+    #         [(c.code, c.name) for c in region.countries.all()]
         'form': form,
         'gift_form': gift_form,
         'user_form': user_form,
@@ -243,9 +242,9 @@ def checkout(request, cart, order):
         'order': order,
         'account': account,
         'cart_errors': cart_errors,
-        'valid_countries': valid_countries,
-        'selected_country': selected_country
     }
+        # 'valid_countries': valid_countries,
+        # 'selected_country': selected_country
 
 
 @checkout_view

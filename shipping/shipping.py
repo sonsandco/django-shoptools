@@ -80,7 +80,7 @@ class Shipping(dict):
             'currency': currency
         }
 
-        obj.set_shipping(validated_options)
+        obj.set_shipping_options(validated_options)
         return validated_options
 
     def get_country(self, obj):

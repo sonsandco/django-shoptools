@@ -100,7 +100,8 @@ class ICart(object):
 
            subtotal
            total
-           shipping_cost
+           get_shipping_options
+           set_shipping_options
            get_voucher_codes
 
        """
@@ -119,15 +120,20 @@ class ICart(object):
         errors = []
         for line in self.get_lines():
             errors += line.get_errors()
+
+        errors += self.shipping_errors()
+
         return errors
 
     def as_dict(self):
         data = {
             'count': self.count(),
             'lines': [line.as_dict() for line in self.get_lines()],
-            'shipping': self.get_shipping()
-            # TODO add discounts?
         }
+
+        if hasattr(self, 'get_shipping_options'):
+            data['shipping_options'] = self.get_shipping_options()
+
         for f in ('subtotal', 'total'):
             if hasattr(self, f):
                 attr = getattr(self, f)
@@ -154,11 +160,35 @@ class ICart(object):
         """Validate each cart line item. Subclasses may override this method
            to perform whole-cart validation. Return a list of error strings
         """
+    # def set_shipping_options(self, options):
+    #     """Save the provided options
+    #
+    #     Assume the options have already been validated, if necessary.
+    #     """
+    #
+    #     raise NotImplementedError()
+    #
+    # def get_shipping_options(self):
+    #     """Get shipping options, if any. """
+    #
+    #     raise NotImplementedError()
 
         errors = []
         for line in self.get_lines():
             errors += line.get_errors()
         return errors
+    @property
+    def shipping_cost(self):
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            return shipping_module.calculate(self)
+        return 0
+
+    def shipping_errors(self):
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            return shipping_module.get_errors(self)
+        return []
 
     # TODO tidy up discount stuff - does it belong here?
     def calculate_discounts(self, invalid=False, include_shipping=True):
@@ -187,10 +217,10 @@ class ICart(object):
             line.save()
 
         # save shipping info - cost calculated automatically
-        if hasattr(obj, 'set_shipping'):
+        if hasattr(obj, 'set_shipping_options'):
             # No need to validate options here, as was done when they were
             # saved to self.
-            obj.set_shipping(self.get_shipping())
+            obj.set_shipping_options(self.get_shipping_options())
 
         # save valid discounts - TODO should this go here?
         # Do we need to subclass Cart as DiscountCart?
@@ -201,6 +231,11 @@ class ICart(object):
             if vouchers:
                 [d.delete() for d in obj.discount_set.all()]
                 voucher_module.save_discounts(obj, vouchers)
+
+
+class IShippable(object):
+    # TODO - maybe move shipping stuff in here?
+    pass
 
 
 class ICartLine(object):
@@ -421,7 +456,7 @@ class SessionCartLine(dict, ICartLine):
     parent_object = property(lambda s: s['parent_object'])
 
 
-class SessionCart(ICart):
+class SessionCart(ICart, IShippable):
     """Default session-saved cart class. To implement multiple "carts" in one
        site using this class, pass a distinct session_key to the constructor
        for each. """
@@ -445,31 +480,31 @@ class SessionCart(ICart):
         self.request.session.modified = True
         return (True, None)
 
-    def set_shipping(self, options):
-        '''
-            Saves the provided options to this SessionCart. Assumes the
-            options have already been validated, if necessary.
-        '''
+    def set_shipping_options(self, options):
+        """Saves the provided options to this SessionCart. Assumes the
+           options have already been validated, if necessary.
+        """
+
         self._init_session_cart()
         self._data['shipping'] = json.dumps(options)
         self.request.session.modified = True
 
-    def get_shipping(self):
-        '''
-            Get shipping options for this cart, if any, falling back to the
-            shipping options saved against the session.
-        '''
+    def get_shipping_options(self):
+        """Get shipping options for this cart, if any, falling back to the
+           shipping options saved against the session.
+        """
+
         if self._data is None:
             return {}
         return json.loads(self._data.get('shipping', '{}'))
 
-    @property
-    def shipping_cost(self):
-        return self.get_shipping().get('cost', None)
+    # @property
+    # def shipping_cost(self):
+    #     return self.get_shipping_options().get('cost', None)
 
-    @property
-    def has_valid_shipping(self):
-        return self.shipping_cost is not None
+    # def validate_shipping(self):
+    #     # TODO
+    #     # return self.shipping_cost is not None
 
     def update_quantity(self, ctype, pk, qty=1, add=False):
         assert isinstance(qty, int)
@@ -548,11 +583,7 @@ class SessionCart(ICart):
 
     @property
     def total(self):
-        if self.shipping_cost is not None:
-            return self.subtotal + decimal.Decimal(self.shipping_cost) \
-                - self.total_discount
-        else:
-            return self.subtotal - self.total_discount
+        return self.subtotal + self.shipping_cost - self.total_discount
 
     def set_order_obj(self, obj):
         self._data['order_obj'] = '%s.%s|%s' % (

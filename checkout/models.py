@@ -5,7 +5,7 @@ import decimal
 from django.db import models
 from django.conf import settings
 
-from cart.cart import BaseOrderLine, BaseOrder, make_uuid
+from cart.cart import BaseOrderLine, BaseOrder, make_uuid, get_shipping_module
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
@@ -85,25 +85,27 @@ class Order(BasePerson, BaseOrder):
                             .update(dispatched=datetime.now()):
                 send_dispatch_email(self)
 
-    def set_shipping(self, options, validate=True):
-        '''
-            Saves the provided options to this SavedCart. Assumes the
-            options have already been validated, if necessary.
-        '''
+    def set_shipping_options(self, options, validate=True):
+        """Saves the provided options to this SavedCart. Assumes the
+           options have already been validated, if necessary.
+        """
+
         self._shipping_options = json.dumps(options)
-        self._shipping_cost = options.get('cost', 0)
+        shipping_module = get_shipping_module()
+        if shipping_module:
+            self._shipping_cost = shipping_module.calculate(self)
         self.save()
 
-    def get_shipping(self):
+    def get_shipping_options(self):
         return json.loads(self._shipping_options or '{}')
 
     @property
     def shipping_cost(self):
         return self._shipping_cost
 
-    @property
-    def has_valid_shipping(self):
-        return self._shipping_cost is not None
+    # @property
+    # def has_valid_shipping(self):
+    #     return self._shipping_cost is not None
 
     @models.permalink
     def get_absolute_url(self):
@@ -118,11 +120,8 @@ class Order(BasePerson, BaseOrder):
 
     @property
     def total(self):
-        if self.has_valid_shipping:
-            return self.subtotal + decimal.Decimal(self.shipping_cost) \
-                - self.total_discount
-        else:
-            return self.subtotal - self.total_discount
+        return self.subtotal + decimal.Decimal(self.shipping_cost) \
+            - self.total_discount
 
     def get_line_cls(self):
         return OrderLine

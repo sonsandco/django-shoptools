@@ -4,7 +4,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
     HttpResponseBadRequest, HttpResponseNotAllowed
 from django.template.loader import get_template, TemplateDoesNotExist
 
-from .cart import get_cart as default_get_cart, get_shipping_module
+from .cart import get_cart as default_get_cart
 from . import actions
 
 
@@ -41,11 +41,13 @@ def cart_view(action=None):
             if success is None:
                 return HttpResponseBadRequest('Invalid request')
 
-            if success:
-                # Update shipping since country, quantity etc may have changed
-                shipping_module = get_shipping_module()
-                if shipping_module:
-                    shipping_module.save_to_cart(cart, **cart.get_shipping())
+            # TODO remove this, since shipping validation happens in
+            # cart.get_errors
+            # if success:
+            #     # Update shipping since country, quantity etc may have changed
+            #     shipping_module = get_shipping_module()
+            #     if shipping_module:
+            #         shipping_module.save_to_cart(cart, **cart.get_shipping_options())
 
         if request.is_ajax():
             data = {
@@ -75,8 +77,7 @@ def cart_view(action=None):
 # TODO rename - confusing
 get_cart = cart_view()
 
-all_actions = ('update_cart', 'add', 'quantity', 'clear',
-               # 'update_shipping',
-               'update_vouchers')
+all_actions = ('add', 'quantity', 'clear',
+               'set_shipping_options', )
 for action in all_actions:
     locals()[action] = cart_view(getattr(actions, action))

@@ -7,5 +7,5 @@ def save_to_cart(cart, **kwargs):
     shipping = {
         'cost': float(cost) if (cost or cost == 0) else None
     }
-    cart.set_shipping(shipping)
+    cart.set_shipping_options(shipping)
     return shipping

@@ -20,7 +20,7 @@ class CountryMiddleware(object):
 
         cart = get_cart(request)
 
-        if not cart.get_shipping().get('country', None):
+        if not cart.get_shipping_options().get('country', None):
             code = request.COOKIES.get(COUNTRY_COOKIE_NAME)
 
             if not code:

@@ -2,7 +2,17 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
+from cart.cart import get_shipping_module
 from .models import Order, GiftRecipient
+
+
+def available_countries(cart):
+    shipping_module = get_shipping_module()
+    if shipping_module:
+        countries = shipping_module.available_countries(cart)
+        if countries is not None:
+            return countries
+    return None
 
 
 class OrderForm(forms.ModelForm):
@@ -29,6 +39,9 @@ class OrderForm(forms.ModelForm):
         self.sanity_check = kwargs.pop('sanity_check', None)
         super(OrderForm, self).__init__(*args, **kwargs)
         self.initial['sanity_check'] = self.sanity_check
+        countries = available_countries(self.cart)
+        if countries is not None:
+            self.fields['country'].choices = countries
 
     class Meta:
         model = Order

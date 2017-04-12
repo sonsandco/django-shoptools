@@ -1,10 +1,8 @@
-from json import dumps
 from functools import partial
 import importlib
 
-from django.shortcuts import redirect, get_object_or_404
-from django.template.loader import get_template
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.shortcuts import redirect, get_object_or_404, render
+from django.http import Http404
 from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from django.conf import settings
@@ -13,13 +11,12 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 
 from cart.cart import get_cart
-# from dps.transactions import make_payment
-# from paypal.transactions import make_payment
 from accounts.models import Account
 
 from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm
 from .models import Order
 from .emails import email_content
+
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
 PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
@@ -29,11 +26,28 @@ def get_payment_module():
     return importlib.import_module(PAYMENT_MODULE) if PAYMENT_MODULE else None
 
 
-def checkout_view(wrapped_view):
-    '''Supplies request and current cart to wrapped view function, and returns
-       partial html response for ajax requests. Assumes template filename
-       corresponds to the view function name, unless template is provided
-       by the view.'''
+def with_order(wrapped_view):
+    """Supplies order object to wrapped view function based on secret. """
+
+    @never_cache
+    def view_func(request, secret, **kwargs):
+        order = get_object_or_404(Order, secret=secret)
+
+        # prevent non-staff from viewing other people's orders
+        if order.user and not request.user.is_staff and order and \
+                order.user != request.user:
+            return redirect(reverse('login') + '?next=' + request.path_info)
+
+        return wrapped_view(request, order=order, **kwargs)
+
+    view_func.__name__ = wrapped_view.__name__
+    view_func.__doc__ = wrapped_view.__doc__
+    return view_func
+
+
+def checkout_view(view):
+    """Supplies current cart and optional order (if a secret is passed) to
+       wrapped view function. """
 
     @never_cache
     def view_func(request, secret=None):
@@ -44,66 +58,39 @@ def checkout_view(wrapped_view):
         # since they share an interface. Will require some view rearranging
         # though
         if secret:
-            order = get_object_or_404(Order, secret=secret)
+            # wrap in with_order so the secret will be converted to an order
+            wrapped_view = partial(with_order(view), secret=secret)
         else:
-            order = None
+            wrapped_view = view
 
-        if order and order.user and order.user != request.user and \
-           not request.user.is_staff:
-            return redirect(reverse('login') + '?next=' + request.path_info)
+        return wrapped_view(request, cart=cart)
 
-        ctx = {'request': request, 'cart': cart}
-        result = wrapped_view(request, cart, order)
-
-        if isinstance(result, HttpResponseRedirect):
-            if request.is_ajax() and (result.url.startswith('http://') or
-                                      result.url.startswith('https://')):
-                return HttpResponse(dumps({'url': result.url}),
-                                    content_type="application/json")
-            else:
-                return result
-        elif isinstance(result, HttpResponse):
-            return result
-        elif isinstance(result, dict):
-            # TODO make this an else, we should assume it's a dict
-            ctx.update(result)
-
-        template = result.get('template', wrapped_view.__name__)
-        if request.is_ajax():
-            template_name = 'checkout/%s_ajax.html' % template
-        else:
-            template_name = 'checkout/%s.html' % template
-
-        content = get_template(template_name).render(ctx, request=request)
-        return HttpResponse(content)
-
-    view_func.__name__ = wrapped_view.__name__
-    view_func.__doc__ = wrapped_view.__doc__
+    view_func.__name__ = view.__name__
+    view_func.__doc__ = view.__doc__
     return view_func
 
 
 @checkout_view
-def cart(request, cart, order):
-    return {}
+def cart(request, cart, order=None):
+    for error in cart.get_errors():
+        messages.add_message(request, messages.ERROR, error)
+    return render(request, 'checkout/cart.html', {
+        'cart': cart,
+    })
 
 
 @checkout_view
-def checkout(request, cart, order):
+def checkout(request, cart, order=None):
     """Handle checkout process - if the order is completed, show the success
        page, otherwise show the checkout form.
     """
-
-    # Send back to cart page if shipping is not valid
-    if not cart.has_valid_shipping:
-        messages.add_message(request, messages.ERROR,
-                             'Please choose a shipping option')
-        return redirect('checkout_cart')
 
     # if the cart is already linked with an (incomplete) order, show that order
     if not order and cart.order_obj and \
        cart.order_obj.status < Order.STATUS_PAID:
         return redirect(cart.order_obj)
 
+    # paid orders can't be edited, obvs
     if order and order.status >= Order.STATUS_PAID:
         if cart.order_obj == order:
             cart.clear()
@@ -120,20 +107,40 @@ def checkout(request, cart, order):
             "order": order
         }
 
-    if request.user.is_authenticated():
+        return render(request, 'checkout/success.html', {
+            'order': order,
+        })
+
+    # TODO review this. If there's any errors, we need to send back to the
+    # cart, but if it's a saved order the cart may not
+    # match. Possibly in this edge case we overwrite the cart with the order's
+    # lines first?
+
+    # TODO should the checkout view only ever work with an Order, which may
+    # be unsaved (created on the fly from the cart contents)
+
+    # Send back to cart page if cart isn't valid. The cart view will show an
+    # appropriate error message
+    valid = (order or cart).is_valid
+    if not valid:
+        return redirect('checkout_cart')
+
+    # if the user is anon, show CheckoutUserForm so they can create an account
+    if request.user.is_authenticated:
         account = Account.objects.for_user(request.user)
-        get_user_form = lambda *a: None
+
+        def get_user_form(*args):
+            return None
     else:
         account = Account()
         get_user_form = partial(CheckoutUserForm)
 
     if order:
-        get_form = partial(OrderForm, instance=order)
+        get_form = partial(OrderForm, instance=order, cart=cart,
+                           # TODO review - do we need a sanity check here?
+                           sanity_check=order.subtotal)
         get_gift_form = partial(GiftRecipientForm, prefix='gift',
                                 instance=order.get_gift_recipient())
-
-        def sanity_check():
-            return 0
 
         new_order = False
     else:
@@ -143,35 +150,34 @@ def checkout(request, cart, order):
         if account.pk and not initial:
             initial.update(account.as_dict())
 
-        initial.update(cart.get_shipping())
+        initial.update(cart.get_shipping_options())
         initial.update(request.session.get(CHECKOUT_SESSION_KEY, {}))
 
-        get_form = partial(OrderForm, initial=initial)
+        get_form = partial(OrderForm, initial=initial, cart=cart,
+                           sanity_check=cart.subtotal)
         get_gift_form = partial(GiftRecipientForm, prefix='gift')
-        sanity_check = lambda: cart.subtotal
+
         new_order = True
 
-    # Verify the order (stock levels etc should be picked up here)
-    cart_errors = (order or cart).get_errors()
-
     if request.method == 'POST':
-        form = get_form(request.POST, sanity_check=sanity_check())
+        form = get_form(request.POST)
 
+        # get_user_form may returns None if the user is logged in
         user_form = get_user_form(request.POST)
-        save_details = not account.pk and request.POST.get('save-details')
+        save_details = request.POST.get('save_details')
         if save_details and user_form:
-            # if creating a new user, the email needs to be unused
+            # if saving details, the email needs to be unused
             form.require_unique_email = True
             user_form_valid = user_form.is_valid()
         else:
             user_form_valid = True
 
         gift_form = get_gift_form(request.POST)
-        is_gift = request.POST.get('is-gift')
+        is_gift = request.POST.get('is_gift')
         gift_form_valid = gift_form.is_valid() if is_gift else True
 
         if form.is_valid() and (order or not cart.empty()) and \
-           user_form_valid and gift_form_valid and not len(cart_errors):
+                user_form_valid and gift_form_valid:
             # save the order obj to the db...
             order = form.save(commit=False)
             order.currency = cart.currency
@@ -188,8 +194,8 @@ def checkout(request, cart, order):
                     login(request, auth_user)
                 account.save()
 
-            if account.pk:
-                order.user = account.user
+            if request.user.is_authenticated:
+                order.user = request.user
 
             order.save()
 
@@ -216,7 +222,7 @@ def checkout(request, cart, order):
             request.session[CHECKOUT_SESSION_KEY] = request.POST.dict()
             request.session.modified = True
     else:
-        form = get_form(sanity_check=sanity_check())
+        form = get_form()
         gift_form = get_gift_form()
         user_form = get_user_form()
 
@@ -235,32 +241,33 @@ def checkout(request, cart, order):
     #     region = Region.objects.get(id=region)
     #     valid_countries = \
     #         [(c.code, c.name) for c in region.countries.all()]
+
+    return render(request, 'checkout/checkout.html', {
         'form': form,
         'gift_form': gift_form,
         'user_form': user_form,
         'cart': cart,
         'order': order,
         'account': account,
-        'cart_errors': cart_errors,
-    }
+        # 'cart_errors': cart_errors,
         # 'valid_countries': valid_countries,
         # 'selected_country': selected_country
+    })
 
 
-@checkout_view
-def invoice(request, cart, order):
+@with_order
+def invoice(request, order):
     if order.status < order.STATUS_PAID:
         raise Http404
 
-    content = get_template('checkout/invoice.html').render({
+    return render(request, 'checkout/invoice.html', {
         'order': order,
-    }, request=request)
-    return HttpResponse(content)
+    })
 
 
 @staff_member_required
-@checkout_view
-def preview_emails(request, cart, order):
+@with_order
+def preview_emails(request, order):
     # send_email('receipt', [order.email], order=order)
     # send_email('notification', [t[1] for t in settings.CHECKOUT_MANAGERS],
     #            order=order)
@@ -268,6 +275,6 @@ def preview_emails(request, cart, order):
     for t in ('receipt', 'notification', 'dispatch'):
         emails.append(email_content(t, order=order))
 
-    return {
+    return render(request, 'checkout/preview_emails.html', {
         'emails': emails,
-    }
+    })

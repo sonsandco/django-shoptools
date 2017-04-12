@@ -12,7 +12,8 @@ from cart.cart import BaseOrderLine, BaseOrder, make_uuid, get_shipping_module
 from django_countries.fields import CountryField
 from .emails import send_email_receipt, send_dispatch_email
 
-
+# TODO make this configurable
+EMAIL_RECEIPT = False
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
 
@@ -42,8 +43,8 @@ class Order(BasePerson, BaseOrder):
 
     STATUS_CHOICES = [
         (STATUS_NEW, "New"),
-        (STATUS_PAID, "Processing"),
         (STATUS_PAYMENT_FAILED, "Payment Failed"),
+        (STATUS_PAID, "Paid"),
         (STATUS_SHIPPED, "Shipped"),
     ]
 
@@ -112,6 +113,10 @@ class Order(BasePerson, BaseOrder):
         return ('checkout_checkout', (self.secret, ))
 
     @property
+    def description(self):
+        return '%s items' % self.count()
+
+    @property
     def invoice_number(self):
         return str(self.pk).zfill(5)
 
@@ -126,44 +131,46 @@ class Order(BasePerson, BaseOrder):
     def get_line_cls(self):
         return OrderLine
 
-    # django-dps integration:
-    def get_amount(self):
-        return max(0, self.total - self.amount_paid)
-
     # voucher integration
     def calculate_discounts(self):
         # Return actual saved discounts, rather than calculating afresh. This
         # means the discounts are set and won't change if the voucher is
         # removed or modified
         if hasattr(self, 'discount_set'):
-            return self.discount_set.all()
-        return []
+            return self.discount_set.all(), None
+        return ([], None)
 
     def is_recurring(self):
         return False
 
-    def transaction_succeeded(self, transaction=None, interactive=False,
-                              status_updated=True):
-        if status_updated:
-            self.amount_paid = \
-                self.amount_paid + (transaction.amount if transaction else 0)
-            self.status = self.STATUS_PAID
-            self.save()
+    # payment integration:
+
+    def get_amount(self):
+        return max(0, self.total - self.amount_paid)
+
+    def transaction_succeeded(self, amount):
+        """Assume this will only be called once per payment. """
+        self.amount_paid = models.F('amount_paid') + amount
+        # TODO verify that it's fully paid for
+        self.status = self.STATUS_PAID
+        self.save()
+
+        if EMAIL_RECEIPT:
             send_email_receipt(self)
 
-            for line in self.get_lines():
-                item = line.item
-                if hasattr(item, 'purchase'):
-                    item.purchase(line)
+        for line in self.get_lines():
+            item = line.item
+            if hasattr(item, 'purchase'):
+                item.purchase(line)
 
+    def transaction_failed(self):
+        self.status = self.STATUS_PAYMENT_FAILED
+        self.save()
+
+    def transaction_success_url(self, transaction):
         return self.get_absolute_url()
 
-    def transaction_failed(self, transaction=None, interactive=False,
-                           status_updated=True):
-        if status_updated:
-            self.status = self.STATUS_PAYMENT_FAILED
-            self.save()
-
+    def transaction_failure_url(self, transaction):
         return self.get_absolute_url()
 
     def get_gift_recipient(self, create=True):
@@ -191,8 +198,7 @@ class OrderLine(BaseOrderLine):
 
     def save(self, *args, **kwargs):
         if self.pk is None:
-            self.total = self.item.cart_line_total(
-                self.quantity, self.parent_object)
+            self.total = self.item.cart_line_total(self)
 
             self.description = self.item.cart_description()
 

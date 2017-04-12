@@ -13,6 +13,11 @@ from cart.cart import ICart
 from checkout.models import Order
 
 
+if 'reduce' not in locals():
+    # reduce is no longer a built-in in python 3
+    from functools import reduce
+
+
 def get_vouchers(codes):
     qs = BaseVoucher.objects.select_subclasses()
     if not len(codes):
@@ -20,13 +25,17 @@ def get_vouchers(codes):
     return qs.filter(reduce(Q.__or__, [Q(code__iexact=c) for c in codes]))
 
 
-def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
+def calculate_discounts(obj, codes, include_shipping=True):
     """Calculate the total discount for an ICart instance, for the given
-       vouchers. Return a list of Discount instances (unsaved)
+       voucher codes. Collect a list of Discount instances (unsaved)
        - Multiple percentage vouchers, just take the biggest
        - Multiple fixed vouchers are combined
        - Percentage discounts are applied first, then fixed.
+
+       return (discounts, invalid_codes)
     """
+
+    # TODO is the include_shipping argument really needed?
 
     assert isinstance(obj, ICart)
 
@@ -49,7 +58,7 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
     vouchers = [v for v in vouchers if v.available(exclude=defaults)]
 
     # filter out any under their minimum_spend value
-    invalid_spend = [v for v in vouchers if obj.subtotal < v.minimum_spend]
+    # invalid_spend = [v for v in vouchers if obj.subtotal < v.minimum_spend]
     vouchers = [v for v in vouchers if obj.subtotal >= v.minimum_spend]
 
     if include_shipping:
@@ -119,21 +128,17 @@ def calculate_discounts(obj, codes, invalid=False, include_shipping=True):
         discounts.append(
             Discount(voucher=p_voucher, amount=amount, **defaults))
 
-    if invalid:
-        # identify bad codes and add to the list
-        valid_codes = [d.voucher.code.upper() for d in discounts]
-        invalid_codes = [c for c in codes if
-                         (c not in valid_codes and
-                          c not in [v.code for v in invalid_spend])]
-        return discounts, invalid_codes, invalid_spend
-
-    return discounts
+    # identify bad codes and add to the list
+    valid_codes = [d.voucher.code.upper() for d in discounts]
+    invalid_codes = [c for c in codes if c not in valid_codes]
+    return discounts, invalid_codes
 
 
 def save_discounts(obj, codes):
     assert isinstance(obj, Order)
 
-    for discount in calculate_discounts(obj, codes):
+    discounts, invalid = calculate_discounts(obj, codes)
+    for discount in discounts:
         discount.save()
 
 
@@ -194,9 +199,12 @@ class BaseVoucher(models.Model):
 
 
 class FixedVoucher(BaseVoucher):
+    # need to declare explicitly so it doesn't inherit BaseVoucher's manager
+    objects = models.Manager()
+
     amount = models.DecimalField(max_digits=6, decimal_places=2)
     order_line = models.ForeignKey('checkout.OrderLine', null=True,
-                                   editable=False)
+                                   editable=False, on_delete=models.SET_NULL)
 
     @property
     def discount_text(self):
@@ -204,6 +212,9 @@ class FixedVoucher(BaseVoucher):
 
 
 class PercentageVoucher(BaseVoucher):
+    # need to declare explicitly so it doesn't inherit BaseVoucher's manager
+    objects = models.Manager()
+
     amount = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(0), MaxValueValidator(100)])
 
@@ -213,14 +224,17 @@ class PercentageVoucher(BaseVoucher):
 
 
 class FreeShippingVoucher(BaseVoucher):
+    # need to declare explicitly so it doesn't inherit BaseVoucher's manager
+    objects = models.Manager()
+
     @property
     def discount_text(self):
         return 'free shipping'
 
 
 class Discount(models.Model):
-    order = models.ForeignKey(Order)
-    base_voucher = models.ForeignKey(BaseVoucher)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    base_voucher = models.ForeignKey(BaseVoucher, on_delete=models.PROTECT)
     amount = models.DecimalField(max_digits=6, decimal_places=2)
 
     def __init__(self, *args, **kwargs):

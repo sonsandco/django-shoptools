@@ -1,68 +1,31 @@
 # -*- coding: utf-8 -*-
 import json
+from django.http import HttpResponse, HttpResponseRedirect
 
-from django.http import HttpResponseBadRequest, HttpResponseRedirect, \
-    HttpResponseNotAllowed, HttpResponse
-
-from cart.cart import get_cart
-from cart.views import get_cart_html
-from . import actions
+from .util import get_session, shipping_data
+from .models import ShippingOption
 
 
-def shipping_view(action=None):
-    '''Decorator supplies request and current cart as arguments to the action
-       function. Returns appropriate errors if the request method is not POST,
-       or if any required params are missing.
-       Successful return value is either cart data as json, or a redirect, for
-       ajax and non-ajax requests, respectively.'''
+def change_shipping_option(request):
+    info = get_session(request)
 
-    def view_func(request, next_url=None, data=None, get_cart=get_cart,
-                  ajax_template='checkout/cart_ajax.html'):
-        if not data:
-            data = request.POST
+    # just modify the session (not a cookie) since django sessions are
+    # persistent by default
+    shipping_option_id = request.POST.get('shipping_option_id')
 
-        if action and not data:
-            return HttpResponseNotAllowed(['POST'])
+    if shipping_option_id and \
+       ShippingOption.objects.filter(pk=shipping_option_id):
+        info['shipping_option_id'] = shipping_option_id
+        request.session.modified = True
+        success = True
+    else:
+        success = False
 
-        cart = get_cart(request)
-        cookie = None
-
-        if action:
-            # An empty dict signifies a failure to complete the update. None
-            # signifies a bad request.
-            new_dict, cookie = action(data, cart)
-            if new_dict is None:
-                return HttpResponseBadRequest("Invalid request")
-
-        if request.is_ajax():
-            data = {
-                'success': bool(new_dict),
-                'cart': cart.as_dict(),
-            }
-            if ajax_template:
-                data['html_snippet'] = get_cart_html(request, cart,
-                                                     ajax_template)
-            response = HttpResponse(json.dumps(data),
-                                    content_type="application/json")
-            if cookie:
-                cookie_name, cookie_value = cookie
-                response.set_cookie(cookie_name, cookie_value)
-            return response
-
-        if not next_url:
-            next_url = data.get('next', request.META.get('HTTP_REFERER', '/'))
-        response = HttpResponseRedirect(next_url)
-        if cookie:
-            cookie_name, cookie_value = cookie
-            response.set_cookie(cookie_name, cookie_value)
-        return response
-
-    if action:
-        view_func.__name__ = action.__name__
-        view_func.__doc__ = action.__doc__
-    return view_func
-
-
-all_actions = ('change_country', 'change_region', 'change_option')
-for action in all_actions:
-    locals()[action] = shipping_view(getattr(actions, action))
+    if request.is_ajax():
+        return HttpResponse(json.dumps({
+            'success': success,
+            'shipping': shipping_data(request),
+        }), content_type="application/json")
+    else:
+        next_url = request.POST.get('next')
+        return HttpResponseRedirect(next_url or '/')

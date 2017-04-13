@@ -30,7 +30,11 @@ available shipping options. Example output:
 
     {'postage': ['courier', 'standard'], }
 
-See shipping.py for more information
+To restrict shipping to a subset of countries, define 
+`available_countries(cart)`. This function should return an iterable of 
+`(code, name)` tuples.
+
+See shipping.py for a minimal example
 
 
 Regions

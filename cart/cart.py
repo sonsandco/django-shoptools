@@ -17,7 +17,7 @@ from .util import get_cart_html
 
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
-CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
+# CURRENCY_COOKIE_NAME = getattr(settings, 'CURRENCY_COOKIE_NAME', None)
 SHIPPING_MODULE = getattr(settings, 'CART_SHIPPING_MODULE', None)
 VOUCHER_MODULE = getattr(settings, 'CART_VOUCHER_MODULE', None)
 
@@ -249,7 +249,7 @@ class ICart(object):
             line.item = cart_line.item
             line.options = cart_line.options
             line.quantity = cart_line.quantity
-            line.currency = self.currency
+            # line.currency = self.currency
             line.save()
 
         # save shipping info - cost calculated automatically
@@ -545,8 +545,8 @@ class SessionCart(ICart, IShippable):
         self.request = request
         self.session_key = session_key or DEFAULT_SESSION_KEY
         self._shipping_options = {}
-        self.currency = request.COOKIES.get(CURRENCY_COOKIE_NAME,
-                                            DEFAULT_CURRENCY)
+        # self.currency = request.COOKIES.get(CURRENCY_COOKIE_NAME,
+        #                                     DEFAULT_CURRENCY)
         self._data = self.request.session.get(self.session_key, None)
 
     def get_voucher_codes(self):

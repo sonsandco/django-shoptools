@@ -175,7 +175,14 @@ def checkout(request, cart, order=None):
                 user_form_valid and gift_form_valid:
             # save the order obj to the db...
             order = form.save(commit=False)
-            order.currency = cart.currency
+            # order.currency = cart.currency
+
+            # TODO make this configurable - don't rely on the region app being
+            # present. Also need to determine currency at cart level, and
+            # use it to calculate prices
+            from regions.util import get_region
+            region = get_region(request)
+            order.currency = region.currency
 
             # save details to account if requested
             if save_details:

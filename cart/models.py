@@ -29,8 +29,8 @@ class SavedCart(BaseOrder, IShippable):
         ContentType, null=True, on_delete=models.SET_NULL)
     order_obj_id = models.PositiveIntegerField(null=True)
     order_obj = GenericForeignKey('order_obj_content_type', 'order_obj_id')
-    currency = models.CharField(max_length=3, editable=False,
-                                default=DEFAULT_CURRENCY)
+    # currency = models.CharField(max_length=3, editable=False,
+    #                             default=DEFAULT_CURRENCY)
 
     # This wasn't getting updated for some reason, so just use the session
     # shipping options instead - this means shipping options aren't saved with

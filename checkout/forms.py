@@ -39,7 +39,7 @@ class OrderForm(forms.ModelForm):
         self.sanity_check = kwargs.pop('sanity_check')
         super(OrderForm, self).__init__(*args, **kwargs)
         self.initial['sanity_check'] = self.sanity_check
-        countries = available_countries(self.cart)
+        countries = list(available_countries(self.cart))
         if countries is not None:
             self.fields['country'].choices = countries
 

@@ -101,14 +101,9 @@ def checkout(request, cart, order=None):
             order.tracking_displayed = True
             order.save()
 
-        return {
-            "template": "success",
-            "display_tracking": display_tracking,
-            "order": order
-        }
-
         return render(request, 'checkout/success.html', {
             'order': order,
+            "display_tracking": display_tracking,
         })
 
     # TODO review this. If there's any errors, we need to send back to the

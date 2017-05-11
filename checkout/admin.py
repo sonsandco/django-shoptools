@@ -79,7 +79,7 @@ class OrderAdmin(admin.ModelAdmin):
         # TODO grab transactions as an inline from the payment module - see TPM
     ] + voucher_inlines
     save_on_top = True
-    search_fields = ('name', 'email', )
+    search_fields = ('name', 'email', 'id', 'phone', 'address', 'city', 'state', 'postcode', )
     actions = ('csv_export', 'resend_dispatch_email')
     readonly_fields = ('_shipping_cost', 'id', 'amount_paid')
 

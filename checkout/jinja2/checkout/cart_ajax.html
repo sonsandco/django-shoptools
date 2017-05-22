@@ -32,7 +32,9 @@
 
   <div class="checkout-buttons proceed-to-checkout">
     {% if cart.is_valid %}
-      <a href="{{ url('wines_index') }}" class="back">Continue shopping</a>
+      {# <a href="{{ url('shop_index') }}" class="back">
+        Continue shopping
+      </a> #}
       {#- spaceless -#}
       <a class="checkout"
          href="{{ url('checkout_checkout') }}">

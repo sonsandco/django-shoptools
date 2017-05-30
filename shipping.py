@@ -34,12 +34,9 @@ def available_countries(cart):
     return ((c.country.code, c.country.name) for c in region.countries.all())
 
 
-def options():
-    """Return the available shipping options. Example output:
+def available_options(cart):
+    """Return iterable of shipping option choices applicable to this cart.
+       Choices should be of the form (shipping_option_id, shipping_option_name)
+       Return None if there's no options. """
 
-        {'postage': ['courier', 'standard'], }
-    """
-
-    # TODO should this take the cart as an argument?
-
-    return {}
+    return None

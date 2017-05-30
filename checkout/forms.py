@@ -15,6 +15,16 @@ def available_countries(cart):
     return None
 
 
+def available_shipping_options(cart):
+    shipping_module = get_shipping_module()
+    if shipping_module and hasattr(shipping_module,
+                                   'available_options'):
+        shipping_options = shipping_module.available_options(cart)
+        if shipping_options is not None:
+            return shipping_options
+    return None
+
+
 class OrderForm(forms.ModelForm):
     require_unique_email = False
 
@@ -39,9 +49,13 @@ class OrderForm(forms.ModelForm):
         self.sanity_check = kwargs.pop('sanity_check')
         super(OrderForm, self).__init__(*args, **kwargs)
         self.initial['sanity_check'] = self.sanity_check
-        countries = list(available_countries(self.cart))
+        countries = available_countries(self.cart)
+        shipping_options = available_shipping_options(self.cart)
         if countries is not None:
             self.fields['country'].choices = countries
+        if shipping_options is not None:
+            self.fields['shipping_options'] = \
+                forms.ChoiceField(choices=shipping_options)
 
     class Meta:
         model = Order

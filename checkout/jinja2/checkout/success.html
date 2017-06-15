@@ -68,16 +68,27 @@
     </p>
 
     <div class="checkout-order-detail">
-      <h5>Order details</h5>
+      <h5>Shipping Address</h5>
+      {% set shipping_address = order.get_shipping_address() %}
       <p>
-        {{ order.name }}<br>
-        {{ order.address }}<br>
-        {{ order.city }} {{ order.postcode }}<br>
-        {{ order.state }}<br>
-        {{ order.get_country_display() }}<br>
-        {{ order.created|date('d F Y') }}<br>
-        Email: {{ order.email }}<br>
-        Phone: {{ order.phone }}<br>
+        {{ shipping_address.name }}<br>
+        {{ shipping_address.address }}<br>
+        {{ shipping_address.city }} {{ shipping_address.postcode }}<br>
+        {{ shipping_address.state }}<br>
+        {{ shipping_address.get_country_display() }}<br>
+        Email: {{ shipping_address.email }}<br>
+        Phone: {{ shipping_address.phone }}<br>
+      </p>
+      {% set billing_address = order.get_billing_address() %}
+      <h5>Billing Address</h5>
+      <p>
+        {{ billing_address.name }}<br>
+        {{ billing_address.address }}<br>
+        {{ billing_address.city }} {{ billing_address.postcode }}<br>
+        {{ billing_address.state }}<br>
+        {{ billing_address.get_country_display() }}<br>
+        Email: {{ billing_address.email }}<br>
+        Phone: {{ billing_address.phone }}<br>
       </p>
     </div>
   </article>

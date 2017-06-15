@@ -1,1 +1,1 @@
-Order dispatched for {{ order.name }}
+Order dispatched to {{ order.get_shipping_address().name }}

@@ -131,50 +131,67 @@ def checkout(request, cart, order=None):
         get_user_form = partial(CheckoutUserForm)
 
     if order:
-        get_form = partial(OrderForm, instance=order, cart=cart,
-                           # TODO review - do we need a sanity check here?
-                           sanity_check=order.subtotal)
-        get_gift_form = partial(GiftRecipientForm, prefix='gift',
-                                instance=order.get_gift_recipient())
+        get_order_form = partial(OrderForm, instance=order, cart=cart,
+                                 # TODO review - do we need a sanity check
+                                 # here?
+                                 sanity_check=order.subtotal)
+        get_shipping_form = partial(ShippingAddressForm, prefix='shipping',
+                                    instance=order.get_shipping_address(True),
+                                    cart=cart)
+        get_billing_form = partial(BillingAddressForm, prefix='billing',
+                                   instance=order.get_billing_address(True))
 
         new_order = False
     else:
         # set initial data from the user's account, the shipping
         # options, and any saved session data
-        initial = {}
-        if account.pk and not initial:
-            initial.update(account.as_dict())
+        address_initial = {}
+        if account.pk and not address_initial:
+            address_initial.update(account.as_dict())
 
-        initial.update(cart.get_shipping_options())
-        initial.update(request.session.get(CHECKOUT_SESSION_KEY, {}))
+        order_initial = {}
+        order_initial.update(cart.get_shipping_options())
+        order_initial.update(request.session.get(CHECKOUT_SESSION_KEY, {}))
 
-        get_form = partial(OrderForm, initial=initial, cart=cart,
-                           sanity_check=cart.subtotal)
-        get_gift_form = partial(GiftRecipientForm, prefix='gift')
+        get_order_form = partial(OrderForm, initial=order_initial, cart=cart,
+                                 sanity_check=cart.subtotal)
+        get_shipping_form = partial(ShippingAddressForm, prefix='shipping',
+                                    initial=address_initial, cart=cart)
+        get_billing_form = partial(BillingAddressForm, prefix='billing')
 
         new_order = True
 
+    use_shipping_address = True
     if request.method == 'POST':
-        form = get_form(request.POST)
+        is_gift = request.POST.get('is_gift', False)
+
+        order_form = get_order_form(request.POST)
 
         # get_user_form may returns None if the user is logged in
         user_form = get_user_form(request.POST)
         save_details = request.POST.get('save_details')
         if save_details and user_form:
             # if saving details, the email needs to be unused
-            form.require_unique_email = True
+            order_form.require_unique_email = True
             user_form_valid = user_form.is_valid()
         else:
             user_form_valid = True
 
-        gift_form = get_gift_form(request.POST)
-        is_gift = request.POST.get('is_gift')
-        gift_form_valid = gift_form.is_valid() if is_gift else True
+        shipping_form = get_shipping_form(request.POST)
+        use_shipping_address = request.POST.get('use_shipping_address', False)
+        if use_shipping_address:
+            billing_form = get_billing_form()
+            billing_form_valid = True
+        else:
+            billing_form = get_billing_form(request.POST)
+            billing_form_valid = billing_form.is_valid()
 
-        if form.is_valid() and (order or not cart.empty()) and \
-                user_form_valid and gift_form_valid:
+        shipping_form_valid = shipping_form.is_valid()
+
+        if order_form.is_valid() and (order or not cart.empty()) and \
+                user_form_valid and shipping_form_valid and billing_form_valid:
             # save the order obj to the db...
-            order = form.save(commit=False)
+            order = order_form.save(commit=False)
             # order.currency = cart.currency
 
             # TODO make this configurable - don't rely on the region app being
@@ -188,7 +205,9 @@ def checkout(request, cart, order=None):
             if save_details:
                 account.from_obj(order)
                 if user_form:
-                    user = user_form.save(email=order.email, name=order.name)
+                    user = user_form.save(
+                        email=order.get_billing_address().email,
+                        name=order.get_billing_address().name)
                     account.user = user
                     auth_user = authenticate(
                         username=user.email,
@@ -201,12 +220,16 @@ def checkout(request, cart, order=None):
 
             order.save()
 
-            if is_gift:
-                recipient = gift_form.save(commit=False)
-                recipient.order = order
-                recipient.save()
-            elif gift_form.instance and gift_form.instance.pk:
-                gift_form.instance.delete()
+            shipping_address = shipping_form.save(commit=False)
+            shipping_address.order = order
+            shipping_address.save()
+
+            if use_shipping_address:
+                billing_address = BillingAddress(**shipping_address.to_dict())
+            else:
+                billing_address = billing_form.save(commit=False)
+            billing_address.order = order
+            billing_address.save()
 
             # save any cart lines to the order, overwriting existing lines, but
             # only if the order is either new, or matches the cart
@@ -224,37 +247,24 @@ def checkout(request, cart, order=None):
             request.session[CHECKOUT_SESSION_KEY] = request.POST.dict()
             request.session.modified = True
     else:
-        form = get_form()
-        gift_form = get_gift_form()
+        is_gift = request.POST.get('is_gift', False)
+        order_form = get_order_form()
+        shipping_form = get_shipping_form()
+        billing_form = get_billing_form()
         user_form = get_user_form()
 
-    # TODO restrict country choices, but not here
-    # if order:
-    #     shipping = order.get_shipping_options()
-    # else:
-    #     shipping = cart.get_shipping_options()
-    # selected_country = None
-    # valid_countries = None
-    # region = shipping.get('region', None)
-    # if region:
-    #     # if we found a region then this can't be basic shipping
-    #     from shipping.models import Region
-    #     selected_country = shipping.get('country', None)
-    #     region = Region.objects.get(id=region)
-    #     valid_countries = \
-    #         [(c.code, c.name) for c in region.countries.all()]
-
     return render(request, 'checkout/checkout.html', {
-        'form': form,
-        'gift_form': gift_form,
+        'template': 'checkout/checkout.html',
+        'order_form': order_form,
+        'shipping_form': shipping_form,
+        'billing_form': billing_form,
         'user_form': user_form,
         'cart': cart,
         'order': order,
         'account': account,
-        # 'cart_errors': cart_errors,
-        # 'valid_countries': valid_countries,
-        # 'selected_country': selected_country
-    })
+        'use_shipping_address': use_shipping_address,
+        'is_gift': is_gift
+    }
 
 
 @with_order

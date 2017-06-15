@@ -1,1 +1,1 @@
-Order received for {{ order.name }}
+Order received for {{ order.get_billing_address().name }}

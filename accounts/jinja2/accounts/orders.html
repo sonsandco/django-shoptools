@@ -12,7 +12,7 @@
     {% endfor %}
     <div class="text">
       <h6><a href="{{ order.get_absolute_url() }}">
-        {{ order.name }}<br>
+        {{ order.get_billing_address().name }}<br>
         {{ order.created|date('d F y') }}<br>
         {{ order.lines.count() }} item{{ order.lines.count()|pluralize }}<br>
         ${{ order.total|floatformat(2) }} {{ order.currency }}

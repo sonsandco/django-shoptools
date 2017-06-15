@@ -1,8 +1,9 @@
-{{ order.name }}
-{{ order.address }}
-{{ order.city }} {{ order.postcode }}
-{{ order.state }}
-{{ order.get_country_display() }}
+{% set billing_address = order.get_billing_address() %}
+{{ billing_address.name }}
+{{ billing_address.address }}
+{{ billing_address.billing_address }} {{ order.postcode }}
+{{ billing_address.state }}
+{{ billing_address.get_country_display() }}
 {{ order.created|date('d F y') }}
-Email: {{ order.email }}
-Phone: {{ order.phone }}
+Email: {{ billing_address.email }}
+Phone: {{ billing_address.phone }}

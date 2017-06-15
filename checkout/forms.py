@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 from cart.cart import get_shipping_module
-from .models import Order, GiftRecipient
+from .models import Order, ShippingAddress, BillingAddress
 
 
 def available_countries(cart):
@@ -50,10 +50,7 @@ class OrderForm(forms.ModelForm):
         self.sanity_check = kwargs.pop('sanity_check')
         super(OrderForm, self).__init__(*args, **kwargs)
         self.initial['sanity_check'] = self.sanity_check
-        countries = available_countries(self.cart)
         shipping_options = available_shipping_options(self.cart)
-        if countries is not None:
-            self.fields['country'].choices = countries
         if shipping_options is not None:
             self.fields['shipping_options'] = \
                 forms.ChoiceField(choices=shipping_options)
@@ -64,14 +61,23 @@ class OrderForm(forms.ModelForm):
                    'estimated_delivery', )
 
 
-class GiftRecipientForm(forms.ModelForm):
+class ShippingAddressForm(forms.ModelForm):
     class Meta:
-        model = GiftRecipient
+        model = ShippingAddress
         exclude = ['order', ]
 
     def __init__(self, *args, **kwargs):
-        super(GiftRecipientForm, self).__init__(*args, **kwargs)
-        self.fields['name'].label = 'Recipient name'
+        self.cart = kwargs.pop('cart')
+        super(ShippingAddressForm, self).__init__(*args, **kwargs)
+        countries = available_countries(self.cart)
+        if countries is not None:
+            self.fields['country'].choices = countries
+
+
+class BillingAddressForm(forms.ModelForm):
+    class Meta:
+        model = BillingAddress
+        exclude = ['order', ]
 
 
 class CheckoutUserForm(UserCreationForm):

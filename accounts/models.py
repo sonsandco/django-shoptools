@@ -30,7 +30,7 @@ class Account(models.Model):
 
     def from_obj(self, obj):
         for f in self.COMMON_FIELDS:
-            setattr(self, f, getattr(obj, f))
+            setattr(self, f, getattr(obj.get_billing_address(), f))
 
     def as_dict(self):
         details = [(f, getattr(self, f)) for f in self.COMMON_FIELDS]

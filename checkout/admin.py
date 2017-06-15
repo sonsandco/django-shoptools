@@ -6,7 +6,7 @@ from django.utils.text import mark_safe
 
 from cart.cart import get_voucher_module
 
-from .models import Order, OrderLine, GiftRecipient
+from .models import Order, OrderLine, ShippingAddress, BillingAddress
 from .export import generate_csv
 from .emails import send_dispatch_email
 
@@ -14,8 +14,13 @@ voucher_mod = get_voucher_module()
 voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
 
 
-class GiftRecipientInline(admin.StackedInline):
-    model = GiftRecipient
+class ShippingAddressInline(admin.StackedInline):
+    model = ShippingAddress
+    extra = 0
+
+
+class BillingAddressInline(admin.StackedInline):
+    model = BillingAddress
     extra = 0
 
 
@@ -69,19 +74,32 @@ class AddOrderLineInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('name', 'user', 'email', 'status',
+    list_display = ('billing_name', 'user', 'billing_email', 'status',
                     'amount_paid', 'created', 'links')
     list_filter = ('status', 'created')
     inlines = [
-        GiftRecipientInline,
+        ShippingAddressInline,
+        BillingAddressInline,
         OrderLineInline,
         AddOrderLineInline,
         # TODO grab transactions as an inline from the payment module - see TPM
     ] + voucher_inlines
     save_on_top = True
-    search_fields = ('name', 'email', 'id', 'phone', 'address', 'city', 'state', 'postcode', )
+    search_fields = ('id', 'billing_address__name', 'billing_address__email',
+                     'billing_address__phone', 'billing_address__address',
+                     'billing_address__city', 'billing_address__state',
+                     'billing_address__postcode', 'shipping_address__name',
+                     'shipping_address__email', 'shipping_address__phone',
+                     'shipping_address__address', 'shipping_address__city',
+                     'shipping_address__state', 'shipping_address__postcode',)
     actions = ('csv_export', 'resend_dispatch_email')
     readonly_fields = ('_shipping_cost', 'id', 'amount_paid', 'currency', )
+
+    def billing_name(self, obj):
+        return obj.billing_address.name
+
+    def billing_email(self, obj):
+        return obj.billing_address.email
 
     def resend_dispatch_email(self, request, queryset):
         for order in queryset:

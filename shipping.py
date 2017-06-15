@@ -31,7 +31,7 @@ def available_countries(cart):
        Return None if there's no restriction. """
 
     region = get_region(cart.request)
-    return ((c.country.code, c.country.name) for c in region.countries.all())
+    return [(c.country.code, c.country.name) for c in region.countries.all()]
 
 
 def available_options(cart):

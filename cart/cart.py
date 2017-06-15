@@ -233,6 +233,7 @@ class ICart(object):
             return voucher_module.calculate_discounts(
                 self, self.get_voucher_codes(),
                 include_shipping=include_shipping)
+        return ([], None)
 
     @property
     def total_discount(self):

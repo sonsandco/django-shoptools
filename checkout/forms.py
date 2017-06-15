@@ -8,7 +8,8 @@ from .models import Order, GiftRecipient
 
 def available_countries(cart):
     shipping_module = get_shipping_module()
-    if shipping_module:
+    if shipping_module and hasattr(shipping_module,
+                                   'available_countries'):
         countries = shipping_module.available_countries(cart)
         if countries is not None:
             return countries

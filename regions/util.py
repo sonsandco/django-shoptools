@@ -66,7 +66,7 @@ def update_session(request):
 def get_int(val):
     try:
         return int(val)
-    except ValueError:
+    except (TypeError, ValueError):
         return None
 
 

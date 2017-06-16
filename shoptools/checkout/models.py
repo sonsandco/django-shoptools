@@ -4,8 +4,10 @@ import decimal
 
 from django.db import models
 from django.conf import settings
+from django.urls import reverse
 
-from cart.cart import BaseOrderLine, BaseOrder, make_uuid, get_shipping_module
+from shoptools.cart.base import BaseOrderLine, BaseOrder
+from shoptools.cart.util import make_uuid, get_shipping_module
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
 
@@ -108,9 +110,8 @@ class Order(BasePerson, BaseOrder):
     # def has_valid_shipping(self):
     #     return self._shipping_cost is not None
 
-    @models.permalink
     def get_absolute_url(self):
-        return ('checkout_checkout', (self.secret, ))
+        return reverse('checkout_checkout', args=(self.secret, ))
 
     @property
     def description(self):

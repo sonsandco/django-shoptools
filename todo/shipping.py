@@ -6,7 +6,7 @@ countries within the current region.
 """
 
 
-from regions.util import get_region
+from shoptools.regions.util import get_region
 
 
 def get_errors(cart):

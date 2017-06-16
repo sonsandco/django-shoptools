@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Products:</h2>
+  <ul>
+    {% for product in products %}
+      <li>
+        {{ product.name }} —
+        ${{ product.price }}
+
+        <form method="post" action="{{ url('cart_add') }}">
+          {{ csrf_input }}
+          <input type="hidden" name="ctype" value="catalogue.product">
+          <input type="hidden" name="pk" value="{{ product.pk }}">
+          <input type="submit" value="Add to cart">
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}

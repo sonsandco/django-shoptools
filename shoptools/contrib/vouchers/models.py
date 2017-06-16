@@ -1,6 +1,7 @@
 # from datetime import datetime
 import uuid
 import decimal
+from functools import reduce
 
 from django.db import models
 from django.db.models import Q
@@ -9,13 +10,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from model_utils.managers import InheritanceManager
 
-from cart.cart import ICart
-from checkout.models import Order
-
-
-if 'reduce' not in locals():
-    # reduce is no longer a built-in in python 3
-    from functools import reduce
+from shoptools.cart.base import ICart
+from shoptools.checkout.models import Order
 
 
 def get_vouchers(codes):

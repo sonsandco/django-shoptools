@@ -3,7 +3,7 @@ import json
 from django.http import HttpResponseRedirect, HttpResponse, \
     HttpResponseNotAllowed, HttpResponseBadRequest
 
-from .cart import get_cart as default_get_cart
+from . import get_cart as default_get_cart
 from . import actions
 from .util import get_cart_html
 

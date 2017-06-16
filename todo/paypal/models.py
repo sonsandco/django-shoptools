@@ -4,7 +4,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 
-from cart.models import make_uuid
+from shoptools.cart.models import make_uuid
 
 
 class TransactionManager(models.Manager):

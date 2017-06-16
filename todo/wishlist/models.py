@@ -1,9 +1,9 @@
-from datetime import datetime
-
 from django.db import models
 from django.conf import settings
 
-from cart.cart import BaseOrder, BaseOrderLine, SessionCart, make_uuid
+from shoptools.cart.base import BaseOrder, BaseOrderLine
+from shoptools.cart.session import SessionCart
+from shoptools.cart.util import make_uuid
 
 
 WISHLIST_SESSION_KEY = getattr(settings, 'WISHLIST_SESSION_KEY', 'wishlist')
@@ -31,7 +31,7 @@ def get_wishlist(request):
 
 
 class Wishlist(BaseOrder):
-    """This model is used interchangeably with cart.cart.SessionCart, so it
+    """This model is used interchangeably with cart.session.SessionCart, so it
        implements many of the same methods. """
 
     created = models.DateTimeField(auto_now_add=True)

@@ -3,12 +3,20 @@
 from smtplib import SMTPRecipientsRefused
 from django.template.loader import render_to_string
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
 from django.template import TemplateDoesNotExist
+from django.apps import apps
 
 
 TEMPLATE_DIR = 'checkout/emails/'
+
+
+def get_current_site():
+    if not apps.is_installed('django.contrib.sites'):
+        return None
+
+    from django.contrib.sites.models import Site
+    return Site.objects.get_current()
 
 
 def send_email_receipt(order):
@@ -29,7 +37,7 @@ def email_content(email_type, **context):
     template_dir = context.pop('template_dir', TEMPLATE_DIR)
 
     context.update({
-        'site': Site.objects.get_current(),
+        'site': get_current_site(),
     })
     subject = render_to_string(template_dir + '%s_subject.txt' % email_type,
                                context)

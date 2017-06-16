@@ -5,8 +5,8 @@ from django.contrib.auth import authenticate, login
 
 from utilities.render import render
 
-from checkout.models import Order
-# from cart.cart import get_cart
+from shoptools.checkout.models import Order
+# from shoptools.cart import get_cart
 
 from .models import Account
 from .forms import AccountForm, UserForm, CreateUserForm

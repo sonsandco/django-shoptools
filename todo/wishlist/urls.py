@@ -1,6 +1,6 @@
 from django.conf.urls import url
 
-import cart.views
+import shoptools.cart.views
 from . import views
 from .models import get_wishlist
 

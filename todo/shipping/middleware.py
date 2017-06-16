@@ -2,7 +2,7 @@
 
 from django.contrib.gis.geoip2 import GeoIP2
 
-from cart.cart import get_cart
+from shoptools.cart import get_cart
 from .models import Region, Country
 from .settings import COUNTRY_COOKIE_NAME
 from .api import save_to_cart

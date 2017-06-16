@@ -3,8 +3,8 @@ from django.db import models
 
 from utilities.render import render
 
-# import cart.actions
-# from cart.views import cart_view
+# import shoptools.cart.actions
+# from shoptools.cart.views import cart_view
 from .models import Wishlist, get_wishlist
 
 

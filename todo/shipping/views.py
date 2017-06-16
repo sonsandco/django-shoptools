@@ -4,8 +4,8 @@ import json
 from django.http import HttpResponseBadRequest, HttpResponseRedirect, \
     HttpResponseNotAllowed, HttpResponse
 
-from cart.cart import get_cart
-from cart.views import get_cart_html
+from shoptools.cart import get_cart
+from shoptools.cart.views import get_cart_html
 from . import actions
 
 

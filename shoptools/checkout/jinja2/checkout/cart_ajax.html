@@ -1,6 +1,6 @@
 {% from 'checkout/snippets/order.html' import order_lines with context %}
-{% from 'shipping/snippets/shipping_selectors.html' import cart_shipping_selectors with context %}
-{% from 'vouchers/snippets/cart_voucher_form.html' import cart_voucher_form with context %}
+{# from 'shipping/snippets/shipping_selectors.html' import cart_shipping_selectors with context #}
+{# from 'vouchers/snippets/cart_voucher_form.html' import cart_voucher_form with context #}
 
 
 {% if cart.empty() %}
@@ -15,9 +15,9 @@
   {{ order_lines(cart, quantity_url=url('cart_quantity'),
                  show_quantity=True) }}
 
-  {{ cart_shipping_selectors(cart) }}
+  {# cart_shipping_selectors(cart) #}
 
-  {{ cart_voucher_form(cart) }}
+  {# cart_voucher_form(cart) #}
 
   <p class="checkout-totals">
     {% if cart.is_valid %}

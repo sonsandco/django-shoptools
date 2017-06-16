@@ -3,7 +3,7 @@ import json
 from django.http import HttpResponse
 from django.conf import settings
 
-from cart.cart import get_cart
+from shoptools.cart import get_cart
 
 # TODO need a smarter way to do this - apps should somehow register their
 # presence with the shoptools core
@@ -14,12 +14,12 @@ else:
     get_wishlist = None
 
 if 'regions' in settings.INSTALLED_APPS:
-    from regions.util import regions_data
+    from shoptools.regions.util import regions_data
 else:
     regions_data = None
 
 if 'accounts' in settings.INSTALLED_APPS:
-    from accounts.views import account_data
+    from shoptools.accounts.views import account_data
 else:
     account_data = None
 

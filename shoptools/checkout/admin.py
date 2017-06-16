@@ -4,13 +4,13 @@ from django.http import HttpResponse
 from django import forms
 from django.utils.text import mark_safe
 
-from cart.cart import get_voucher_module
+from shoptools.cart.util import get_vouchers_module
 
 from .models import Order, OrderLine, GiftRecipient
 from .export import generate_csv
 from .emails import send_dispatch_email
 
-voucher_mod = get_voucher_module()
+voucher_mod = get_vouchers_module()
 voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
 
 

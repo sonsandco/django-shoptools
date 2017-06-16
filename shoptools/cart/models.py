@@ -4,9 +4,10 @@ import json
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.urls import reverse
 
-from .cart import make_uuid, BaseOrder, BaseOrderLine, DEFAULT_CURRENCY, \
-  IShippable
+from .base import IShippable, BaseOrder, BaseOrderLine
+from .util import make_uuid
 
 
 class SavedCart(BaseOrder, IShippable):
@@ -29,8 +30,6 @@ class SavedCart(BaseOrder, IShippable):
         ContentType, null=True, on_delete=models.SET_NULL)
     order_obj_id = models.PositiveIntegerField(null=True)
     order_obj = GenericForeignKey('order_obj_content_type', 'order_obj_id')
-    # currency = models.CharField(max_length=3, editable=False,
-    #                             default=DEFAULT_CURRENCY)
 
     # This wasn't getting updated for some reason, so just use the session
     # shipping options instead - this means shipping options aren't saved with
@@ -72,9 +71,8 @@ class SavedCart(BaseOrder, IShippable):
         self.save()
         return True
 
-    @models.permalink
     def get_absolute_url(self):
-        return ('cart_cart', (self.secret, ))
+        return reverse('cart_cart', args=(self.secret, ))
 
     def __str__(self):
         if self.user:

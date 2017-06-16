@@ -1,4 +1,5 @@
 {% extends "checkout/base.html" %}
+{% from 'snippets/form.html' import form_hidden, form_field with context %}
 
 {% set page_title = 'Your details' %}
 
@@ -15,7 +16,7 @@
     {% if order or not cart.empty() %}
       <form action="{{ request.path_info }}#form" method="post"
             class="checkout-form">
-        {% include 'snippets/form_hidden.html' %}
+        {{ form_hidden(form) }}
 
         <h3>Your details</h3>
 
@@ -30,6 +31,7 @@
         {% for field in form.visible_fields() %}
           {% if field.name == 'country' %}
             {# TODO: Allow any country if there is a gift recipient #}
+            {# TODO: move this logic out of the template #}
             <div class="form-field {{ field.name -}}
                         {%- if field.errors %} error{% endif -%}
                         {%- if field.field.required %} required{% endif %}">
@@ -54,7 +56,7 @@
               {%- endif -%}
             </div>
           {% else %}
-            {% include 'snippets/form_field.html' %}
+            {{ form_field(field) }}
           {% endif %}
         {% endfor %}
 
@@ -80,7 +82,7 @@
               {{ user_form.non_field_errors()|safe }}
 
               {% for field in user_form.visible_fields() %}
-                {% include 'snippets/form_field.html' %}
+                {{ form_field(field) }}
               {% endfor %}
             </div>
           {% endif %}
@@ -127,7 +129,7 @@
                     {%- endif -%}
                   </div>
                 {% else %}
-                  {% include 'snippets/form_field.html' %}
+                  {{ form_field(field) }}
                 {% endif %}
               {% endfor %}
             </div>

@@ -10,8 +10,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 
-from cart.cart import get_cart
-from accounts.models import Account
+from shoptools.cart import get_cart
+from shoptools.cart.util import get_accounts_module
 
 from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm
 from .models import Order
@@ -120,15 +120,18 @@ def checkout(request, cart, order=None):
     if not valid:
         return redirect('checkout_cart')
 
-    # if the user is anon, show CheckoutUserForm so they can create an account
-    if request.user.is_authenticated:
-        account = Account.objects.for_user(request.user)
-
-        def get_user_form(*args):
-            return None
+    # if the user is anon, and accounts module is installed, show
+    # CheckoutUserForm so they can create an account
+    accounts_module = get_accounts_module()
+    if accounts_module and not request.user.is_authenticated:
+        user_form_cls = CheckoutUserForm
     else:
-        account = Account()
-        get_user_form = partial(CheckoutUserForm)
+        user_form_cls = None
+
+    if accounts_module:
+        account = accounts_module.get_account(request)
+    else:
+        account = None
 
     if order:
         get_form = partial(OrderForm, instance=order, cart=cart,
@@ -142,7 +145,7 @@ def checkout(request, cart, order=None):
         # set initial data from the user's account, the shipping
         # options, and any saved session data
         initial = {}
-        if account.pk and not initial:
+        if account and account.pk and not initial:
             initial.update(account.as_dict())
 
         initial.update(cart.get_shipping_options())
@@ -157,8 +160,7 @@ def checkout(request, cart, order=None):
     if request.method == 'POST':
         form = get_form(request.POST)
 
-        # get_user_form may returns None if the user is logged in
-        user_form = get_user_form(request.POST)
+        user_form = user_form_cls(request.POST) if user_form_cls else None
         save_details = request.POST.get('save_details')
         if save_details and user_form:
             # if saving details, the email needs to be unused
@@ -180,12 +182,12 @@ def checkout(request, cart, order=None):
             # TODO make this configurable - don't rely on the region app being
             # present. Also need to determine currency at cart level, and
             # use it to calculate prices
-            from regions.util import get_region
+            from shoptools.regions.util import get_region
             region = get_region(request)
             order.currency = region.currency
 
             # save details to account if requested
-            if save_details:
+            if account and save_details:
                 account.from_obj(order)
                 if user_form:
                     user = user_form.save(email=order.email, name=order.name)
@@ -226,7 +228,7 @@ def checkout(request, cart, order=None):
     else:
         form = get_form()
         gift_form = get_gift_form()
-        user_form = get_user_form()
+        user_form = user_form_cls() if user_form_cls else None
 
     # TODO restrict country choices, but not here
     # if order:

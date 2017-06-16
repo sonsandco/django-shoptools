@@ -1,0 +1,15 @@
+<!doctype html>
+<head>
+  <title>Example shop</title>
+</head>
+<body>
+  <header>
+    <h1>Example Shop</h1>
+
+    {% set cart = get_cart(request) %}
+    <a href="{{ url('checkout_cart') }}">{{ cart.count() }} products in cart</a>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>

@@ -17,22 +17,8 @@ EMAIL_RECEIPT = False
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
 
-class BasePerson(models.Model):
-    name = models.CharField(max_length=1023, default="")
-    address = models.CharField(max_length=1023)
-    postcode = models.CharField(max_length=100)
-    city = models.CharField("Town / City", max_length=255)
-    state = models.CharField(max_length=255, blank=True, default='')
-    country = CountryField()
-    email = models.EmailField()
-    phone = models.CharField(max_length=50, default='')
-
-    class Meta:
-        abstract = True
-
-
 # class Order(models.Model, FullTransactionProtocol):
-class Order(BasePerson, BaseOrder):
+class Order(BaseOrder):
 
     # values are integers so we can do numeric comparison, i.e.
     # > Order.objects.filter(status__gte=STATUS_PAID) etc
@@ -61,6 +47,13 @@ class Order(BasePerson, BaseOrder):
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 
+    delivery_notes = models.TextField(blank=True, default='')
+    is_gift = models.BooleanField('This is a gift', default=False)
+    gift_message = models.TextField(blank=True, default='')
+
+    receive_email = models.BooleanField('Receive our email news and offers',
+                                        default=False)
+
     user = models.ForeignKey('auth.User', null=True, blank=True,
                              on_delete=models.SET_NULL)
     _shipping_cost = models.DecimalField(
@@ -71,10 +64,6 @@ class Order(BasePerson, BaseOrder):
         verbose_name='shipping options')
     # payments = GenericRelation(Transaction)
     dispatched = models.DateTimeField(null=True, editable=False)
-    delivery_notes = models.TextField(blank=True, default='')
-    receive_email = models.BooleanField("Receive our email news and offers",
-                                        default=False)
-
     tracking_displayed = models.BooleanField(default=False, editable=False)
 
     def save(self, *args, **kwargs):
@@ -101,6 +90,14 @@ class Order(BasePerson, BaseOrder):
         return json.loads(self._shipping_options or '{}')
 
     @property
+    def name(self):
+        return self.billing_address.name
+
+    @property
+    def email(self):
+        return self.billing_address.email
+
+    @property
     def shipping_cost(self):
         return self._shipping_cost
 
@@ -121,7 +118,7 @@ class Order(BasePerson, BaseOrder):
         return str(self.pk).zfill(5)
 
     def __str__(self):
-        return "%s on %s" % (self.name, self.created)
+        return "%s on %s" % (self.get_billing_address().name, self.created)
 
     @property
     def total(self):
@@ -130,6 +127,18 @@ class Order(BasePerson, BaseOrder):
 
     def get_line_cls(self):
         return OrderLine
+
+    def get_shipping_address(self, create=False):
+        try:
+            return ShippingAddress.objects.get(order=self)
+        except ShippingAddress.DoesNotExist:
+            return ShippingAddress(order=self) if create else None
+
+    def get_billing_address(self, create=True):
+        try:
+            return BillingAddress.objects.get(order=self)
+        except BillingAddress.DoesNotExist:
+            return BillingAddress(order=self) if create else None
 
     # voucher integration
     def calculate_discounts(self):
@@ -140,10 +149,9 @@ class Order(BasePerson, BaseOrder):
             return self.discount_set.all(), None
         return ([], None)
 
+    # payment integration:
     def is_recurring(self):
         return False
-
-    # payment integration:
 
     def get_amount(self):
         return max(0, self.total - self.amount_paid)
@@ -173,12 +181,6 @@ class Order(BasePerson, BaseOrder):
     def transaction_failure_url(self, transaction):
         return self.get_absolute_url()
 
-    def get_gift_recipient(self, create=True):
-        try:
-            return GiftRecipient.objects.get(order=self)
-        except GiftRecipient.DoesNotExist:
-            return GiftRecipient(order=self) if create else None
-
 
 class OrderLine(BaseOrderLine):
     parent_object = models.ForeignKey(Order, related_name='lines',
@@ -205,10 +207,46 @@ class OrderLine(BaseOrderLine):
         return super(OrderLine, self).save(*args, **kwargs)
 
 
-class GiftRecipient(BasePerson):
-    order = models.OneToOneField(Order, on_delete=models.CASCADE)
-    delivery_notes = models.TextField(blank=True, default='')
-    message = models.TextField(blank=True, default='')
+class Address(models.Model):
+    name = models.CharField(max_length=1023, default='')
+    address = models.CharField(max_length=1023)
+    city = models.CharField('Town / City', max_length=255)
+    postcode = models.CharField(max_length=100)
+    state = models.CharField(max_length=255, blank=True, default='')
+    country = CountryField()
+    email = models.EmailField()
+    phone = models.CharField(max_length=50, default='')
+
+    class Meta:
+        verbose_name_plural = 'addresses'
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'address': self.address,
+            'city': self.city,
+            'postcode': self.postcode,
+            'state': self.state,
+            'country': self.country,
+            'email': self.email,
+            'phone': self.phone
+        }
 
     def __str__(self):
-        return "Gift to: %s" % (self.name)
+        return 'Address: %s' % (self.name)
+
+
+class ShippingAddress(Address):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE,
+                                 related_name='shipping_address')
+
+    def __str__(self):
+        return "Shipping to: %s" % (self.name)
+
+
+class BillingAddress(Address):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE,
+                                 related_name='billing_address')
+
+    def __str__(self):
+        return "Billing to: %s" % (self.name)

@@ -5,6 +5,9 @@ from django.conf import settings
 
 from cart.cart import get_cart
 
+# TODO need a smarter way to do this - apps should somehow register their
+# presence with the shoptools core
+
 if 'wishlist' in settings.INSTALLED_APPS:
     from wishlist.models import get_wishlist
 else:

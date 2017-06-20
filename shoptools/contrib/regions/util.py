@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 import socket
 
-from django.contrib.gis.geoip2 import GeoIP2
-from geoip2.errors import AddressNotFoundError
+try:
+    from django.contrib.gis.geoip2 import GeoIP2
+except ImportError:
+    GeoIP2 = None
+else:
+    from geoip2.errors import AddressNotFoundError
+
 from django.conf import settings
 
 from .models import Region, Country
@@ -32,6 +37,9 @@ def get_region_id(country_code=None):
 
 
 def get_country_code(request):
+    if not GeoIP2:
+        return None
+
     try:
         country = GeoIP2().country(get_ip(request))
     except (AddressNotFoundError, socket.gaierror):
@@ -64,6 +72,9 @@ def update_session(request):
 
 
 def get_int(val):
+    if val is None:
+        return None
+
     try:
         return int(val)
     except ValueError:

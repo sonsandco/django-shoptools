@@ -137,13 +137,10 @@ def checkout(request, cart, order=Order()):
     form_initial = request.session.get(CHECKOUT_SESSION_KEY, {})
 
     if order:
-        # TODO review - do we need a sanity check here?
-        get_order_form = partial(
-            OrderForm, instance=order, sanity_check=order.subtotal)
+        get_order_form = partial(OrderForm, instance=order)
         new_order = False
     else:
-        get_order_form = partial(OrderForm, initial=form_initial,
-                                 sanity_check=cart.subtotal)
+        get_order_form = partial(OrderForm, initial=form_initial)
         new_order = True
 
     shipping_address = order.get_address(Address.TYPE_SHIPPING, True)
@@ -197,7 +194,7 @@ def checkout(request, cart, order=Order()):
 
             # save details to account if requested
             if save_details:
-                account.from_obj(order)
+                account.from_obj(order.shipping_address)
                 if user_form:
                     user = user_form.save(
                         email=order.get_billing_address().email,

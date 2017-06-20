@@ -14,6 +14,9 @@
   <form action="{{ request.path_info }}" method="post">
     {{ csrf_input }}
 
+    <h3>Order details</h3>
+    {{ order_form.as_p() }}
+    
     <h3>Shipping address</h3>
     {{ shipping_form.as_p() }}
 
@@ -24,11 +27,8 @@
     </label>
     {{ billing_form.as_p() }}
 
-    <h3>Order details</h3>
-    {{ order_form.as_p() }}
-
     {% if accounts_enabled %}
-      <h3>Create account</h3>
+      <h3>Save details</h3>
       <p>
         <label>
           {{ meta_form.save_details }}
@@ -39,7 +39,9 @@
           {% endif %}
         </label>
       </p>
-      {{ user_form.as_p() }}
+      {% if user_form %}
+        {{ user_form.as_p() }}
+      {% endif %}
     {% endif %}
 
     <p>

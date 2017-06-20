@@ -231,7 +231,7 @@ class AbstractAddress(models.Model):
            only be used with subclasses. """
 
         assert isinstance(obj, AbstractAddress)
-        assert issubclass(self, AbstractAddress)
+        assert issubclass(self.__class__, AbstractAddress)
 
         fields = ('address',  'city', 'postcode', 'state', 'country',
                   'phone', )

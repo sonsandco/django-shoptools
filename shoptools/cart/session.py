@@ -94,14 +94,6 @@ class SessionCart(ICart, IShippable):
             return {}
         return json.loads(self._data.get('shipping', '{}'))
 
-    # @property
-    # def shipping_cost(self):
-    #     return self.get_shipping_options().get('cost', None)
-
-    # def validate_shipping(self):
-    #     # TODO
-    #     # return self.shipping_cost is not None
-
     def update_quantity(self, ctype, pk, quantity=1, add=False, options={}):
         assert isinstance(quantity, int)
         options = validate_options(ctype, pk, options)

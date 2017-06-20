@@ -8,26 +8,11 @@ from .models import Order, Address
 class OrderForm(forms.ModelForm):
     require_unique_email = False
 
-    sanity_check = forms.CharField(widget=forms.HiddenInput, required=False)
-
     def clean_email(self):
         email = self.cleaned_data['email']
         if self.require_unique_email and User.objects.filter(email=email):
             raise forms.ValidationError("That email is already in use")
         return email
-
-    def clean(self):
-        data = self.cleaned_data
-        if str(data['sanity_check']) != str(self.sanity_check):
-            err = "Your cart appears to have changed. Please check and " \
-                "confirm, then try again."
-            raise forms.ValidationError(err)
-        return data
-
-    def __init__(self, *args, **kwargs):
-        self.sanity_check = kwargs.pop('sanity_check')
-        super(OrderForm, self).__init__(*args, **kwargs)
-        self.initial['sanity_check'] = self.sanity_check
 
     class Meta:
         model = Order

@@ -7,9 +7,6 @@ from django.urls import reverse
 from django.http import HttpResponse
 from django.utils.text import mark_safe
 
-from utilities.admin_shortcuts import get_readonly_fields, \
-    readonly_inline_factory
-
 from .models import PercentageVoucher, FixedVoucher, Discount, \
     FreeShippingVoucher
 from .export import generate_csv
@@ -17,14 +14,19 @@ from .export import generate_csv
 
 @admin.register(Discount)
 class DiscountAdmin(admin.ModelAdmin):
-    readonly_fields = get_readonly_fields(Discount)
+    readonly_fields = ('order', 'base_voucher', 'amount', )
     list_display = ('order', 'voucher', 'amount')
 
     def has_add_permission(self, request):
         return False
 
 
-DiscountInline = readonly_inline_factory(Discount)
+class DiscountInline(admin.TabularInline):
+    model = Discount
+    extra = 0
+    max_num = 0
+    can_delete = False
+    readonly_fields = ('base_voucher', 'amount', )
 
 
 class VoucherAdmin(admin.ModelAdmin):

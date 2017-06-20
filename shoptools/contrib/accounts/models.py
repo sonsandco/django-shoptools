@@ -39,7 +39,7 @@ class Account(AbstractAddress):
     email.admin_order_field = 'user__email'
 
 
-@receiver(models.signals.pre_save)
+@receiver(models.signals.pre_save, sender=User)
 def random_username(sender, instance, **kwargs):
     """Generate a random username on user save, since we don't use it at all.
     """

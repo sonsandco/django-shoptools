@@ -1,0 +1,4 @@
+cd ./examples/basic
+./manage.py test
+cd ../full
+./manage.py test

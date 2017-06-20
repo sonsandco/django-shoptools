@@ -5,7 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 
 from .base import ICart, ICartItem, ICartLine, IShippable
-from .util import validate_options
+from .util import validate_options, get_regions_module
 from . import settings as cart_settings
 
 
@@ -62,8 +62,6 @@ class SessionCart(ICart, IShippable):
         self.request = request
         self.session_key = session_key or cart_settings.DEFAULT_SESSION_KEY
         self._shipping_options = {}
-        # self.currency = request.COOKIES.get(CURRENCY_COOKIE_NAME,
-        #                                     DEFAULT_CURRENCY)
         self._data = self.request.session.get(self.session_key, None)
 
     def get_voucher_codes(self):
@@ -90,9 +88,7 @@ class SessionCart(ICart, IShippable):
         self.request.session.modified = True
 
     def get_shipping_options(self):
-        """Get shipping options for this cart, if any, falling back to the
-           shipping options saved against the session.
-        """
+        """Get shipping options for this cart, if any. """
 
         if self._data is None:
             return {}
@@ -170,6 +166,7 @@ class SessionCart(ICart, IShippable):
         return self.make_line_obj(self._data["lines"][index])
 
     def get_lines(self):
+        # TODO consistent ordering
         if self._data is None:
             return
         for line in self._data["lines"]:
@@ -181,6 +178,13 @@ class SessionCart(ICart, IShippable):
         if self._data is None:
             return 0
         return sum(r['quantity'] for r in self._data["lines"])
+
+    @property
+    def currency(self):
+        regions_module = get_regions_module()
+        if regions_module:
+            return regions_module.get_region(self.request).currency
+        return cart_settings.DEFAULT_CURRENCY
 
     @property
     def subtotal(self):

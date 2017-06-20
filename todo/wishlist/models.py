@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-from shoptools.cart.base import BaseOrder, BaseOrderLine
+from shoptools.cart.base import AbstractOrder, AbstractOrderLine
 from shoptools.cart.session import SessionCart
 from shoptools.cart.util import make_uuid
 
@@ -30,7 +30,7 @@ def get_wishlist(request):
         return session_wishlist
 
 
-class Wishlist(BaseOrder):
+class Wishlist(AbstractOrder):
     """This model is used interchangeably with cart.session.SessionCart, so it
        implements many of the same methods. """
 
@@ -45,10 +45,10 @@ class Wishlist(BaseOrder):
     def __str__(self):
         return "Wishlist by %s" % self.user.get_full_name()
 
-    # BaseOrder integration
+    # AbstractOrder integration
     def get_line_cls(self):
         return WishlistLine
 
 
-class WishlistLine(BaseOrderLine):
+class WishlistLine(AbstractOrderLine):
     parent_object = models.ForeignKey(Wishlist)

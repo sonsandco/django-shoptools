@@ -6,7 +6,7 @@ from django.db import models
 from django.conf import settings
 from django.urls import reverse
 
-from shoptools.cart.base import BaseOrderLine, BaseOrder
+from shoptools.cart.base import AbstractOrderLine, AbstractOrder
 from shoptools.cart.util import make_uuid, get_shipping_module
 # from dps.models import FullTransactionProtocol, Transaction
 # from paypal.models import FullTransactionProtocol, Transaction
@@ -19,22 +19,7 @@ EMAIL_RECEIPT = False
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
 
-class BasePerson(models.Model):
-    name = models.CharField(max_length=1023, default="")
-    address = models.CharField(max_length=1023)
-    postcode = models.CharField(max_length=100)
-    city = models.CharField("Town / City", max_length=255)
-    state = models.CharField(max_length=255, blank=True, default='')
-    country = CountryField()
-    email = models.EmailField()
-    phone = models.CharField(max_length=50, default='')
-
-    class Meta:
-        abstract = True
-
-
-# class Order(models.Model, FullTransactionProtocol):
-class Order(BasePerson, BaseOrder):
+class Order(AbstractOrder):
 
     # values are integers so we can do numeric comparison, i.e.
     # > Order.objects.filter(status__gte=STATUS_PAID) etc
@@ -63,6 +48,13 @@ class Order(BasePerson, BaseOrder):
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 
+    delivery_notes = models.TextField(blank=True, default='')
+    gift_message = models.TextField(blank=True, default='')
+
+    # TODO review this. It doesn't really belong here
+    receive_email = models.BooleanField('Receive our email news and offers',
+                                        default=False)
+
     user = models.ForeignKey('auth.User', null=True, blank=True,
                              on_delete=models.SET_NULL)
     _shipping_cost = models.DecimalField(
@@ -73,11 +65,7 @@ class Order(BasePerson, BaseOrder):
         verbose_name='shipping options')
     # payments = GenericRelation(Transaction)
     dispatched = models.DateTimeField(null=True, editable=False)
-    delivery_notes = models.TextField(blank=True, default='')
-    receive_email = models.BooleanField("Receive our email news and offers",
-                                        default=False)
-
-    tracking_displayed = models.BooleanField(default=False, editable=False)
+    success_page_viewed = models.BooleanField(default=False, editable=False)
 
     def save(self, *args, **kwargs):
         super(Order, self).save(*args, **kwargs)
@@ -89,7 +77,7 @@ class Order(BasePerson, BaseOrder):
                 send_dispatch_email(self)
 
     def set_shipping_options(self, options, validate=True):
-        """Saves the provided options to this SavedCart. Assumes the
+        """Saves the provided options to this order. Assumes the
            options have already been validated, if necessary.
         """
 
@@ -101,6 +89,14 @@ class Order(BasePerson, BaseOrder):
 
     def get_shipping_options(self):
         return json.loads(self._shipping_options or '{}')
+
+    @property
+    def name(self):
+        return self.shipping_address.name
+
+    @property
+    def email(self):
+        return self.shipping_address.email
 
     @property
     def shipping_cost(self):
@@ -122,7 +118,7 @@ class Order(BasePerson, BaseOrder):
         return str(self.pk).zfill(5)
 
     def __str__(self):
-        return "%s on %s" % (self.name, self.created)
+        return "Order #%s" % (self.pk)
 
     @property
     def total(self):
@@ -131,6 +127,26 @@ class Order(BasePerson, BaseOrder):
 
     def get_line_cls(self):
         return OrderLine
+
+    def get_address(self, address_type, create=False):
+        params = {
+            'address_type': address_type,
+            'order': self,
+        }
+        try:
+            return Address.objects.get(**params)
+        except Address.DoesNotExist:
+            if create:
+                return Address(**params)
+        return None
+
+    @property
+    def shipping_address(self):
+        return self.get_address(Address.TYPE_SHIPPING, True)
+
+    @property
+    def billing_address(self):
+        return self.get_address(Address.TYPE_BILLING)
 
     # voucher integration
     def calculate_discounts(self):
@@ -141,10 +157,9 @@ class Order(BasePerson, BaseOrder):
             return self.discount_set.all(), None
         return ([], None)
 
+    # payment integration:
     def is_recurring(self):
         return False
-
-    # payment integration:
 
     def get_amount(self):
         return max(0, self.total - self.amount_paid)
@@ -174,14 +189,8 @@ class Order(BasePerson, BaseOrder):
     def transaction_failure_url(self, transaction):
         return self.get_absolute_url()
 
-    def get_gift_recipient(self, create=True):
-        try:
-            return GiftRecipient.objects.get(order=self)
-        except GiftRecipient.DoesNotExist:
-            return GiftRecipient(order=self) if create else None
 
-
-class OrderLine(BaseOrderLine):
+class OrderLine(AbstractOrderLine):
     parent_object = models.ForeignKey(Order, related_name='lines',
                                       on_delete=models.CASCADE)
     _total = models.DecimalField(max_digits=8, decimal_places=2,
@@ -206,10 +215,62 @@ class OrderLine(BaseOrderLine):
         return super(OrderLine, self).save(*args, **kwargs)
 
 
-class GiftRecipient(BasePerson):
-    order = models.OneToOneField(Order, on_delete=models.CASCADE)
-    delivery_notes = models.TextField(blank=True, default='')
-    message = models.TextField(blank=True, default='')
+class AbstractAddress(models.Model):
+    """Provides standardized address fields. Also used for account addresses.
+    """
+
+    address = models.CharField(max_length=1023)
+    city = models.CharField('Town / City', max_length=255)
+    postcode = models.CharField(max_length=100)
+    state = models.CharField(max_length=255, blank=True, default='')
+    country = CountryField()
+    phone = models.CharField(max_length=50, default='', blank=True)
+
+    def from_obj(self, obj):
+        """Prefill an instance from another AbstractAddress instance. Should
+           only be used with subclasses. """
+
+        assert isinstance(obj, AbstractAddress)
+        assert issubclass(self, AbstractAddress)
+
+        fields = ('address',  'city', 'postcode', 'state', 'country',
+                  'phone', )
+        for f in fields:
+            setattr(self, f, getattr(obj, f))
+
+    def as_dict(self):
+        return {
+            'address': self.address,
+            'city': self.city,
+            'postcode': self.postcode,
+            'state': self.state,
+            'country': self.country,
+            'phone': self.phone
+        }
+
+    class Meta:
+        abstract = True
+
+
+class Address(AbstractAddress):
+    TYPE_SHIPPING = 'shipping'
+    TYPE_BILLING = 'billing'
+    TYPE_CHOICES = (
+        (TYPE_SHIPPING, 'Shipping'),
+        (TYPE_BILLING, 'Billing'),
+    )
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE,
+                              related_name='addresses')
+    address_type = models.CharField(choices=TYPE_CHOICES,
+                                    default=TYPE_SHIPPING, max_length=20)
+    name = models.CharField(max_length=1023, default='')
+    email = models.EmailField(blank=True, default='')
+
+    class Meta:
+        verbose_name_plural = 'addresses'
+        unique_together = ('order', 'address_type')
 
     def __str__(self):
-        return "Gift to: %s" % (self.name)
+        return '%s address for %s' % (
+            self.get_address_type_display(), self.order)

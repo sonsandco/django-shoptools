@@ -34,12 +34,15 @@ def available_countries(cart):
     return ((c.country.code, c.country.name) for c in region.countries.all())
 
 
-def options():
-    """Return the available shipping options. Example output:
+def options(cart):
+    """Return the shipping options as a list of two-tuples, suitable for use by
+       a django forms ChoiceField. Choices may be restricted by the given
+       cart. Return None if not used.
 
-        {'postage': ['courier', 'standard'], }
+        [
+            ('courier', 'Courier'),
+            ('standard', 'Standard'),
+        ]
     """
 
-    # TODO should this take the cart as an argument?
-
-    return {}
+    return None

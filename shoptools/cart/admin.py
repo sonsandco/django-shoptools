@@ -11,7 +11,7 @@ def orderline_inline_factory(model_cls):
             exclude = []
 
     class OrderLineInline(admin.TabularInline):
-        '''Base admin class for editing BaseOrderLine subclasses inline.'''
+        '''Base admin class for editing AbstractOrderLine subclasses inline.'''
 
         model = model_cls
         exclude = ('item_content_type', 'item_object_id', 'created')

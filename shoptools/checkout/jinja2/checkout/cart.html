@@ -1,8 +1,62 @@
-{% extends "checkout/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
-  <article class="checkout-cart">
-    <h3>Current order</h3>
-    {% include 'checkout/cart_ajax.html' %}
-  </article>
+  <h2>Current order</h2>
+
+  {% if cart.empty() %}
+    <p>
+      No products in your cart.
+    </p>
+  {% else %}
+    {% for error in cart.get_errors() %}
+      <p class="error">{{ error }}</p>
+    {% endfor %}
+
+    <ul>
+      {% for line in cart.get_lines() %}
+        <li>
+          <h6>{{ line.description }}</h6>
+
+          {# update quantity form #}
+          <form action="{{ url('cart_quantity') }}" method="post">
+            {{ csrf_input }}
+            <input type="hidden" name="ctype" value="{{ line.ctype }}">
+            <input type="hidden" name="pk" value="{{ line.item.pk }}">
+
+            <label>
+              Qty:
+              <input type="number" name="quantity" value="{{ line.quantity }}"
+                     min="0" step="1">
+            </label>
+
+            <input type="submit" value="Update">
+          </form>
+
+          {# remove button #}
+          <form action="{{ url('cart_quantity') }}" method="post" class="remove">
+            {{ csrf_input }}
+            <input type="hidden" name="quantity" value="0">
+            <input type="hidden" name="ctype" value="{{ line.ctype }}">
+            <input type="hidden" name="pk" value="{{ line.item.pk }}">
+            <input type="submit" name="Update" value="Remove">
+          </form>
+
+          <p>
+            ${{ line.total|floatformat(2) }}
+          </p>
+       </li>
+     {% endfor %}
+   </ul>
+
+    {% if cart.is_valid %}
+      <p>
+        Total ${{ cart.total|floatformat(2) }}
+      </p>
+      <p>
+        <a href="{{ url('checkout_checkout') }}">
+          Continue to Payment & Shipping
+        </a>
+      </p>
+    {% endif %}
+  {% endif %}
 {% endblock %}

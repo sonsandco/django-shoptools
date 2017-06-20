@@ -1,7 +1,7 @@
 from datetime import datetime
 import decimal
 
-from django.contrib.postgres.fields import JSONField
+# from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -146,8 +146,7 @@ class ICart(object):
         return sum(d.amount for d in discounts)
 
     def save_to(self, obj):
-        from .base import BaseOrder
-        assert isinstance(obj, BaseOrder)
+        assert isinstance(obj, AbstractOrder)
 
         [l.delete() for l in obj.get_lines()]
         for cart_line in self.get_lines():
@@ -156,7 +155,6 @@ class ICart(object):
             line.item = cart_line.item
             line.options = cart_line.options
             line.quantity = cart_line.quantity
-            # line.currency = self.currency
             line.save()
 
         # save shipping info - cost calculated automatically
@@ -300,7 +298,7 @@ class ICartItem(object):
 # Abstract models
 
 
-class BaseOrder(models.Model, ICart):
+class AbstractOrder(models.Model, ICart):
     """Base class for "Order" models, which are the db-saved version of a
        SessionCart. Theoretically, this model can be used interchangeably with
        the SessionCart, adding/removing items etc. """
@@ -406,7 +404,7 @@ class BaseOrder(models.Model, ICart):
         return decimal.Decimal(sum(line.total for line in self.get_lines()))
 
 
-class BaseOrderLine(models.Model, ICartLine):
+class AbstractOrderLine(models.Model, ICartLine):
     """An OrderLine is the db-persisted version of a Cart line, created by
     subclassing this model. It implements the same ICartLine interface as the
     cart lines, and is intended to be attached to an object you provide via
@@ -425,12 +423,8 @@ class BaseOrderLine(models.Model, ICartLine):
 
     created = models.DateTimeField(default=datetime.now)
     quantity = models.IntegerField()
-    options = JSONField(default=dict, blank=True)
-
-    # currency = models.CharField(max_length=3, editable=False,
-    #    default=DEFAULT_CURRENCY)
-    # total = models.DecimalField(max_digits=8, decimal_places=2)
-    # description = models.CharField(max_length=255, blank=True)
+    # options = JSONField(default=dict, blank=True)
+    options = models.TextField(default='')
 
     class Meta:
         abstract = True

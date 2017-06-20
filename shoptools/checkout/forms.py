@@ -2,17 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
-from shoptools.cart.util import get_shipping_module
-from .models import Order, GiftRecipient
-
-
-def available_countries(cart):
-    shipping_module = get_shipping_module()
-    if shipping_module:
-        countries = shipping_module.available_countries(cart)
-        if countries is not None:
-            return countries
-    return None
+from .models import Order, Address
 
 
 class OrderForm(forms.ModelForm):
@@ -35,13 +25,9 @@ class OrderForm(forms.ModelForm):
         return data
 
     def __init__(self, *args, **kwargs):
-        self.cart = kwargs.pop('cart')
         self.sanity_check = kwargs.pop('sanity_check')
         super(OrderForm, self).__init__(*args, **kwargs)
         self.initial['sanity_check'] = self.sanity_check
-        countries = available_countries(self.cart)
-        if countries is not None:
-            self.fields['country'].choices = list(countries)
 
     class Meta:
         model = Order
@@ -49,14 +35,24 @@ class OrderForm(forms.ModelForm):
                    'estimated_delivery', )
 
 
-class GiftRecipientForm(forms.ModelForm):
+class OrderMetaForm(forms.Form):
+    """Fields which determine how an order is processed, but don't correlate
+       to a model field. """
+
+    save_details = forms.BooleanField(initial=False, required=False)
+    billing_is_shipping = forms.BooleanField(initial=True, required=False)
+
+
+class AddressForm(forms.ModelForm):
     class Meta:
-        model = GiftRecipient
-        exclude = ['order', ]
+        model = Address
+        exclude = ['order', 'address_type']
 
     def __init__(self, *args, **kwargs):
-        super(GiftRecipientForm, self).__init__(*args, **kwargs)
-        self.fields['name'].label = 'Recipient name'
+        country_choices = kwargs.pop('country_choices', None)
+        super(AddressForm, self).__init__(*args, **kwargs)
+        if country_choices is not None:
+            self.fields['country'].choices = country_choices
 
 
 class CheckoutUserForm(UserCreationForm):

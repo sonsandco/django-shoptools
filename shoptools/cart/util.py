@@ -10,19 +10,15 @@ from django.contrib.contenttypes.models import ContentType
 from . import settings as cart_settings
 
 
-MODULES = ('SHIPPING', 'VOUCHERS', 'ACCOUNTS')
-
-
 def get_module(name):
-    assert name in MODULES
-
     module_name = getattr(cart_settings, '%s_MODULE' % name)
     return importlib.import_module(module_name) if module_name else None
 
 
-get_vouchers_module = partial(get_module, 'VOUCHERS')
 get_accounts_module = partial(get_module, 'ACCOUNTS')
+get_regions_module = partial(get_module, 'REGIONS')
 get_shipping_module = partial(get_module, 'SHIPPING')
+get_vouchers_module = partial(get_module, 'VOUCHERS')
 
 
 def make_uuid():

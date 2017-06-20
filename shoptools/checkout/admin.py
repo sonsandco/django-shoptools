@@ -6,7 +6,7 @@ from django.utils.text import mark_safe
 
 from shoptools.cart.util import get_vouchers_module
 
-from .models import Order, OrderLine, GiftRecipient
+from .models import Order, OrderLine, Address
 from .export import generate_csv
 from .emails import send_dispatch_email
 
@@ -14,8 +14,8 @@ voucher_mod = get_vouchers_module()
 voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
 
 
-class GiftRecipientInline(admin.StackedInline):
-    model = GiftRecipient
+class AddressInline(admin.StackedInline):
+    model = Address
     extra = 0
 
 
@@ -73,13 +73,14 @@ class OrderAdmin(admin.ModelAdmin):
                     'amount_paid', 'created', 'links')
     list_filter = ('status', 'created')
     inlines = [
-        GiftRecipientInline,
+        AddressInline,
         OrderLineInline,
         AddOrderLineInline,
         # TODO grab transactions as an inline from the payment module - see TPM
     ] + voucher_inlines
     save_on_top = True
-    search_fields = ('name', 'email', 'id', 'phone', 'address', 'city', 'state', 'postcode', )
+    search_fields = ('name', 'email', 'id', 'phone', 'address', 'city',
+                     'state', 'postcode', )
     actions = ('csv_export', 'resend_dispatch_email')
     readonly_fields = ('_shipping_cost', 'id', 'amount_paid', 'currency', )
 

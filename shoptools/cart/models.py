@@ -6,18 +6,18 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.urls import reverse
 
-from .base import IShippable, BaseOrder, BaseOrderLine
+from .base import IShippable, AbstractOrder, AbstractOrderLine
 from .util import make_uuid
 
 
-class SavedCart(BaseOrder, IShippable):
+class SavedCart(AbstractOrder, IShippable):
     """A db-saved cart class, which can be used interchangeably with Cart. """
 
     created = models.DateTimeField(default=datetime.now)
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
-    # TODO make this a JSONField()
+    # TODO make this a JSONField() - although that ties it to Postgres?
     _shipping_options = models.TextField(
         blank=True, default='', editable=False, db_column='shipping_options',
         verbose_name='shipping options')
@@ -85,7 +85,7 @@ class SavedCart(BaseOrder, IShippable):
     def total(self):
         return self.subtotal + self.shipping_cost - self.total_discount
 
-    # BaseOrder integration
+    # AbstractOrder integration
     def get_line_cls(self):
         return SavedCartLine
 
@@ -97,5 +97,5 @@ class SavedCart(BaseOrder, IShippable):
         self.save()
 
 
-class SavedCartLine(BaseOrderLine):
+class SavedCartLine(AbstractOrderLine):
     parent_object = models.ForeignKey(SavedCart, on_delete=models.CASCADE)

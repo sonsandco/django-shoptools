@@ -11,10 +11,10 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
 
 from shoptools.cart import get_cart
-from shoptools.cart.util import get_accounts_module
+from shoptools.cart.util import get_accounts_module, get_shipping_module
 
-from .forms import OrderForm, CheckoutUserForm, GiftRecipientForm
-from .models import Order
+from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
+from .models import Order, Address
 from .emails import email_content
 
 
@@ -24,6 +24,13 @@ PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
 
 def get_payment_module():
     return importlib.import_module(PAYMENT_MODULE) if PAYMENT_MODULE else None
+
+
+def available_countries(cart):
+    shipping_module = get_shipping_module()
+    if shipping_module:
+        return shipping_module.available_countries(cart)
+    return None
 
 
 def with_order(wrapped_view):
@@ -80,117 +87,121 @@ def cart(request, cart, order=None):
 
 
 @checkout_view
-def checkout(request, cart, order=None):
+def checkout(request, cart, order=Order()):
     """Handle checkout process - if the order is completed, show the success
        page, otherwise show the checkout form.
     """
 
+    # TODO should the checkout view only ever work with an Order, which may
+    # be unsaved (created on the fly from the cart contents)?
+
     # if the cart is already linked with an (incomplete) order, show that order
-    if not order and cart.order_obj and \
-       cart.order_obj.status < Order.STATUS_PAID:
+    if not order.pk and cart.order_obj and \
+            cart.order_obj.status < Order.STATUS_PAID:
         return redirect(cart.order_obj)
 
     # paid orders can't be edited, obvs
-    if order and order.status >= Order.STATUS_PAID:
+    # display the success page
+    if order.pk and order.status >= Order.STATUS_PAID:
         if cart.order_obj == order:
             cart.clear()
-
-        display_tracking = False
-        if not order.tracking_displayed:
-            display_tracking = True
-            order.tracking_displayed = True
-            order.save()
-
-        return render(request, 'checkout/success.html', {
-            'order': order,
-            "display_tracking": display_tracking,
-        })
-
-    # TODO review this. If there's any errors, we need to send back to the
-    # cart, but if it's a saved order the cart may not
-    # match. Possibly in this edge case we overwrite the cart with the order's
-    # lines first?
-
-    # TODO should the checkout view only ever work with an Order, which may
-    # be unsaved (created on the fly from the cart contents)
+        return order_success_response(request, order)
 
     # Send back to cart page if cart isn't valid. The cart view will show an
-    # appropriate error message
-    valid = (order or cart).is_valid
-    if not valid:
+    # appropriate error message.
+    # At this point we don't care about order.is_valid because its contents
+    # will be overridden by the cart's anyway.
+    if not order.pk and not cart.is_valid:
         return redirect('checkout_cart')
 
     # if the user is anon, and accounts module is installed, show
     # CheckoutUserForm so they can create an account
     accounts_module = get_accounts_module()
-    if accounts_module and not request.user.is_authenticated:
-        user_form_cls = CheckoutUserForm
+    accounts_enabled = bool(accounts_module)
+    if accounts_enabled and not request.user.is_authenticated:
+        get_user_form = partial(CheckoutUserForm, use_required_attribute=False)
     else:
-        user_form_cls = None
+        def get_user_form(*args, **kwargs):
+            return None
 
-    if accounts_module:
-        account = accounts_module.get_account(request)
+    if accounts_enabled and request.user.is_authenticated:
+        account = accounts_module.get_account(request.user)
     else:
         account = None
 
-    if order:
-        get_form = partial(OrderForm, instance=order, cart=cart,
-                           # TODO review - do we need a sanity check here?
-                           sanity_check=order.subtotal)
-        get_gift_form = partial(GiftRecipientForm, prefix='gift',
-                                instance=order.get_gift_recipient())
+    # available countries for shipping
+    shipping_countries = available_countries(cart)
 
+    # get initial form data from the session, this may have been saved by a
+    # previous form submission
+    form_initial = request.session.get(CHECKOUT_SESSION_KEY, {})
+
+    if order:
+        # TODO review - do we need a sanity check here?
+        get_order_form = partial(
+            OrderForm, instance=order, sanity_check=order.subtotal)
         new_order = False
     else:
-        # set initial data from the user's account, the shipping
-        # options, and any saved session data
-        initial = {}
-        if account and account.pk and not initial:
-            initial.update(account.as_dict())
-
-        initial.update(cart.get_shipping_options())
-        initial.update(request.session.get(CHECKOUT_SESSION_KEY, {}))
-
-        get_form = partial(OrderForm, initial=initial, cart=cart,
-                           sanity_check=cart.subtotal)
-        get_gift_form = partial(GiftRecipientForm, prefix='gift')
-
+        get_order_form = partial(OrderForm, initial=form_initial,
+                                 sanity_check=cart.subtotal)
         new_order = True
 
-    if request.method == 'POST':
-        form = get_form(request.POST)
+    shipping_address = order.get_address(Address.TYPE_SHIPPING, True)
+    billing_address = order.get_address(Address.TYPE_BILLING, True)
 
-        user_form = user_form_cls(request.POST) if user_form_cls else None
-        save_details = request.POST.get('save_details')
+    # prefill shipping address from account, if a new order for an account
+    if new_order and account and account.pk:
+        shipping_address.from_obj(account)
+        shipping_address.address_type = Address.TYPE_SHIPPING
+
+    get_shipping_form = partial(AddressForm, prefix='shipping',
+                                instance=shipping_address,
+                                initial=form_initial,
+                                country_choices=shipping_countries)
+    get_billing_form = partial(AddressForm, prefix='billing',
+                               initial=form_initial,
+                               use_required_attribute=False,
+                               instance=billing_address)
+
+    if request.method == 'POST':
+        meta_form = OrderMetaForm(request.POST)
+        # assume it's valid, because it's just BooleanFields
+        meta_form.full_clean()
+        save_details = meta_form.cleaned_data['save_details']
+        billing_is_shipping = meta_form.cleaned_data['billing_is_shipping']
+
+        order_form = get_order_form(request.POST)
+        user_form = get_user_form(request.POST)
+
         if save_details and user_form:
             # if saving details, the email needs to be unused
-            form.require_unique_email = True
+            order_form.require_unique_email = True
             user_form_valid = user_form.is_valid()
         else:
             user_form_valid = True
 
-        gift_form = get_gift_form(request.POST)
-        is_gift = request.POST.get('is_gift')
-        gift_form_valid = gift_form.is_valid() if is_gift else True
+        shipping_form = get_shipping_form(request.POST)
 
-        if form.is_valid() and (order or not cart.empty()) and \
-                user_form_valid and gift_form_valid:
+        if billing_is_shipping:
+            billing_form = get_billing_form()
+            billing_form_valid = True
+        else:
+            billing_form = get_billing_form(request.POST)
+            billing_form_valid = billing_form.is_valid()
+
+        if order_form.is_valid() and user_form_valid and \
+                shipping_form.is_valid() and billing_form_valid:
             # save the order obj to the db...
-            order = form.save(commit=False)
-            # order.currency = cart.currency
-
-            # TODO make this configurable - don't rely on the region app being
-            # present. Also need to determine currency at cart level, and
-            # use it to calculate prices
-            from shoptools.regions.util import get_region
-            region = get_region(request)
-            order.currency = region.currency
+            order = order_form.save(commit=False)
+            order.currency = cart.currency
 
             # save details to account if requested
-            if account and save_details:
+            if save_details:
                 account.from_obj(order)
                 if user_form:
-                    user = user_form.save(email=order.email, name=order.name)
+                    user = user_form.save(
+                        email=order.get_billing_address().email,
+                        name=order.get_billing_address().name)
                     account.user = user
                     auth_user = authenticate(
                         username=user.email,
@@ -203,59 +214,62 @@ def checkout(request, cart, order=None):
 
             order.save()
 
-            if is_gift:
-                recipient = gift_form.save(commit=False)
-                recipient.order = order
-                recipient.save()
-            elif gift_form.instance and gift_form.instance.pk:
-                gift_form.instance.delete()
+            shipping_form.instance.order = order
+            shipping_address = shipping_form.save()
 
-            # save any cart lines to the order, overwriting existing lines, but
-            # only if the order is either new, or matches the cart
-            if not cart.empty() and (new_order or cart.order_obj == order):
-                cart.save_to(order)
+            # only save the billing address if it's separate from shipping
+            if not billing_is_shipping:
+                billing_form.instance.order = order
+                billing_form.save()
+
+            if billing_is_shipping and order.billing_address:
+                # edge case where the order was already saved with a separate
+                # billing address - delete it
+                order.billing_address.delete()
+
+            # save any cart lines to the order, overwriting any existing lines
+            cart.save_to(order)
 
             # and off we go to pay, if necessary
             if order.total > 0:
-                return get_payment_module().make_payment(order, request)
+                payment_module = get_payment_module()
+                return payment_module.make_payment(order, request)
             else:
-                order.transaction_succeeded()
+                order.transaction_succeeded(0)
                 return redirect(order)
         else:
             # Save posted data so the user doesn't have to re-enter it
             request.session[CHECKOUT_SESSION_KEY] = request.POST.dict()
             request.session.modified = True
     else:
-        form = get_form()
-        gift_form = get_gift_form()
-        user_form = user_form_cls() if user_form_cls else None
-
-    # TODO restrict country choices, but not here
-    # if order:
-    #     shipping = order.get_shipping_options()
-    # else:
-    #     shipping = cart.get_shipping_options()
-    # selected_country = None
-    # valid_countries = None
-    # region = shipping.get('region', None)
-    # if region:
-    #     # if we found a region then this can't be basic shipping
-    #     from shipping.models import Region
-    #     selected_country = shipping.get('country', None)
-    #     region = Region.objects.get(id=region)
-    #     valid_countries = \
-    #         [(c.code, c.name) for c in region.countries.all()]
+        meta_form = OrderMetaForm()
+        order_form = get_order_form()
+        shipping_form = get_shipping_form()
+        billing_form = get_billing_form()
+        user_form = get_user_form()
 
     return render(request, 'checkout/checkout.html', {
-        'form': form,
-        'gift_form': gift_form,
+        'template': 'checkout/checkout.html',
+        'order_form': order_form,
+        'meta_form': meta_form,
+        'shipping_form': shipping_form,
+        'billing_form': billing_form,
         'user_form': user_form,
         'cart': cart,
         'order': order,
-        'account': account,
-        # 'cart_errors': cart_errors,
-        # 'valid_countries': valid_countries,
-        # 'selected_country': selected_country
+        'accounts_enabled': accounts_enabled,
+    })
+
+
+def order_success_response(request, order):
+    first_view = not order.success_page_viewed
+    if first_view:
+        order.success_page_viewed = True
+        order.save()
+
+    return render(request, 'checkout/success.html', {
+        'order': order,
+        'first_view': first_view,
     })
 
 

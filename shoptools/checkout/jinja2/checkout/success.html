@@ -1,84 +1,57 @@
-{% extends "checkout/base.html" %}
-{% from 'checkout/snippets/order.html' import order_lines with context %}
-
-{% block title %}Order Completed{% endblock %}
-
-{% block analytics %}
-  {{ super() }}
-  {% if display_tracking %}
-    <script type="text/javascript">
-      if (typeof window.ga !== 'undefined' && window.ga !== null) {
-        ga('require', 'ecommerce');
-        ga('ecommerce:clear');
-        ga('ecommerce:addTransaction', {
-          'id': '{{ order.invoice_number }}',
-          {% if order.currency %}'currency': '{{ order.currency }}',{% endif %}
-          {% if order.shipping_cost %}'shipping': '{{ order.shipping_cost }}',{% endif %}
-          'revenue': '{{ order.total }}'
-        });
-        {% for line in order.lines.all() %}
-          ga('ecommerce:addItem', {
-            'id': '{{ order.invoice_number }}',
-            'name': '{{ line.item }}',
-            {% if line.item.sku %}'sku': '{{ line.item.sku }}',{% endif %}
-            'price': '{{ line.total / line.quantity }}',
-            'quantity': '{{ line.quantity }}'
-          });
-        {% endfor %}
-        ga('ecommerce:send');
-      }
-    </script>
-  {% endif %}
-{% endblock %}
+{% extends "base.html" %}
 
 {% block content %}
-  <article class="checkout-success">
-    <section class="checkout-order-status">
-      <p class="order">
-        Order {{ order.invoice_number }}
-        {{ order.created|date('d F y') }}
-      </p>
-      <p class="status">Status: <span>{{ order.get_status_display() }}</span>
-      </p>
-    </section>
+  <h2>Your Order</h2>
 
-    {{ order_lines(order, show_quantity=True) }}
+  <p>
+    Order {{ order.invoice_number }} {{ order.created.strftime('%d/%m/%Y') }}<br>
+    Status: {{ order.get_status_display() }}
+  </p>
 
-    <div class='shipping'>
-      <strong>Shipping</strong>
-      <p class='shipping-cost'>
-        ${{ order.shipping_cost|floatformat(2) }}
-      </p>
-    </div>
+  <ul>
+    {% for line in order.get_lines() %}
+      <li>
+        {{ line.quantity }}x {{ line.description }}
+        ${{ line.total|floatformat(2) }}
+      </li>
+    {% endfor %}
+  </ul>
 
-    {% if order.total_discount -%}
-      <div class='discount'>
-        <strong>Discount</strong>
-        <p class='total-discount'>
-          -${{ order.total_discount|floatformat(2) }}
-        </p>
-      </div>
-    {% endif -%}
+  <p>
+    Shipping ${{ order.shipping_cost|floatformat(2) }}
+  </p>
 
-    <p class="checkout-totals">
-      <strong>Total</strong>
-      <span class="price">
-        $<span class="cart-total">{{ order.total|floatformat(2) }}</span>
-      </span>
+  {% if order.total_discount -%}
+    <p>
+      Discount: -${{ order.total_discount|floatformat(2) }}
     </p>
+  {% endif -%}
 
-    <div class="checkout-order-detail">
-      <h5>Order details</h5>
-      <p>
-        {{ order.name }}<br>
-        {{ order.address }}<br>
-        {{ order.city }} {{ order.postcode }}<br>
-        {{ order.state }}<br>
-        {{ order.get_country_display() }}<br>
-        {{ order.created|date('d F Y') }}<br>
-        Email: {{ order.email }}<br>
-        Phone: {{ order.phone }}<br>
-      </p>
-    </div>
-  </article>
+  <p>
+    Total: ${{ order.total|floatformat(2) }}
+  </p>
+
+  <h3>Delivery details</h3>
+  <p>
+    {{ order.shipping_address.name }}<br>
+    {{ order.shipping_address.address }}<br>
+    {{ order.shipping_address.city }} {{ order.shipping_address.postcode }}<br>
+    {{ order.shipping_address.state }}<br>
+    {{ order.shipping_address.get_country_display() }}<br>
+    {{ order.shipping_address.email }}<br>
+    {{ order.shipping_address.phone }}<br>
+  </p>
+
+  {% if order.billing_address %}
+    <h3>Billing details</h3>
+    <p>
+      {{ order.billing_address.name }}<br>
+      {{ order.billing_address.address }}<br>
+      {{ order.billing_address.city }} {{ order.billing_address.postcode }}<br>
+      {{ order.billing_address.state }}<br>
+      {{ order.billing_address.get_country_display() }}<br>
+      {{ order.billing_address.email }}<br>
+      {{ order.billing_address.phone }}<br>
+    </p>
+  {% endif %}
 {% endblock %}

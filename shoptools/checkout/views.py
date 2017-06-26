@@ -3,7 +3,10 @@ import importlib
 
 from django.shortcuts import redirect, get_object_or_404, render
 from django.http import Http404
-from django.urls import reverse
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 from django.views.decorators.cache import never_cache
 from django.conf import settings
 from django.contrib.auth import authenticate, login

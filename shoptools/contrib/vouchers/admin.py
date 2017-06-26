@@ -3,7 +3,10 @@
 from datetime import date
 
 from django.contrib import admin
-from django.urls import reverse
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.utils.text import mark_safe
 

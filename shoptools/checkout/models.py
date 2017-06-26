@@ -4,7 +4,10 @@ import decimal
 
 from django.db import models
 from django.conf import settings
-from django.urls import reverse
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 
 from shoptools.cart.base import AbstractOrderLine, AbstractOrder
 from shoptools.cart.util import make_uuid, get_shipping_module

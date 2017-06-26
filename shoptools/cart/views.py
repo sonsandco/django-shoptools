@@ -33,10 +33,12 @@ def cart_view(action=None):
             # TODO remove this, since shipping validation happens in
             # cart.get_errors
             # if success:
-            #     # Update shipping since country, quantity etc may have changed
+            #     # Update shipping since country, quantity etc may have
+            #     # changed
             #     shipping_module = get_shipping_module()
             #     if shipping_module:
-            #         shipping_module.save_to_cart(cart, **cart.get_shipping_options())
+            #         shipping_module.save_to_cart(
+            #             cart, **cart.get_shipping_options())
 
         if request.is_ajax():
             data = {

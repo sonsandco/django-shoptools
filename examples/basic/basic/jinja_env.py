@@ -1,4 +1,7 @@
-from django.urls import reverse
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 from django.template import defaultfilters
 from jinja2 import Environment
 

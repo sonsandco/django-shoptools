@@ -4,8 +4,10 @@ import json
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
-from django.urls import reverse
-
+try:
+    from django.urls import reverse
+except ImportError:
+    from django.core.urlresolvers import reverse
 from .base import IShippable, AbstractOrder, AbstractOrderLine
 from .util import make_uuid
 

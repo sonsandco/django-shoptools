@@ -37,6 +37,7 @@ class AccountAdmin(admin.ModelAdmin):
         generate_csv(queryset, response)
         return response
 
+
 admin.site.register(Account, AccountAdmin)
 
 

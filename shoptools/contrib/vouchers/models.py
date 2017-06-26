@@ -85,11 +85,13 @@ def calculate_discounts(obj, codes, include_shipping=True):
     #         line.total for line in obj.get_lines()
     #         if line.item == voucher.product]))
     #
-    #     amount = min(product_total, voucher.amount, voucher.amount_remaining())
+    #     amount = min(product_total, voucher.amount,
+    #                  voucher.amount_remaining())
     #     if amount == 0:
     #         continue
     #     total -= amount
-    #     discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
+    #     discounts.append(Discount(voucher=voucher, amount=amount,
+    #                      **defaults))
 
     # apply fixed vouchers, smallest remaining amount first
     fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]

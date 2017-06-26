@@ -15,13 +15,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'shoptools.cart',
     'shoptools.checkout',
-
-    'shoptools.contrib.accounts',
+    # 'shoptools.cart',
     'shoptools.contrib.catalogue',
-    'shoptools.contrib.regions',
-    'shoptools.contrib.vouchers',
 ]
 
 MIDDLEWARE = [
@@ -79,8 +75,3 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 CHECKOUT_PAYMENT_MODULE = 'payment_stub'
-
-SHOPTOOLS_ACCOUNTS_MODULE = 'shoptools.contrib.accounts'
-SHOPTOOLS_REGIONS_MODULE = 'shoptools.contrib.regions'
-SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.shipping.basic'
-SHOPTOOLS_VOUCHERS_MODULE = 'shoptools.contrib.vouchers'

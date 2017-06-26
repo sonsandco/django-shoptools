@@ -80,7 +80,7 @@ STATIC_URL = '/static/'
 
 CHECKOUT_PAYMENT_MODULE = 'payment_stub'
 
-CART_ACCOUNTS_MODULE = 'shoptools.contrib.accounts'
-CART_REGIONS_MODULE = 'shoptools.contrib.regions'
-CART_SHIPPING_MODULE = 'shoptools.contrib.shipping.basic'
-CART_VOUCHERS_MODULE = 'shoptools.contrib.vouchers'
+SHOPTOOLS_ACCOUNTS_MODULE = 'shoptools.contrib.accounts'
+SHOPTOOLS_REGIONS_MODULE = 'shoptools.contrib.regions'
+SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.shipping.basic'
+SHOPTOOLS_VOUCHERS_MODULE = 'shoptools.contrib.vouchers'

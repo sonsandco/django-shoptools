@@ -7,6 +7,5 @@ dependencies:
     - python ./setup.py install
 test:
   post:
-    - cd examples/full
-    - coverage run --source shoptools ./manage.py test
+    - coverage run --source shoptools ./examples/full/manage.py test
     - bash <(curl -s https://codecov.io/bash)

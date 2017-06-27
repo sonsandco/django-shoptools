@@ -4,7 +4,7 @@ from django.test import TestCase
 # from .models import MyCategory, MyModel
 
 
-class ShoptoolsTestCase(TestCase):
+class FullTestCase(TestCase):
     def setUp(self):
         pass
 

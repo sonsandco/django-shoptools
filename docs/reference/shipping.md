@@ -15,4 +15,4 @@ To restrict shipping to a subset of countries, define
 `available_countries(cart)`. This function should return an iterable of 
 `(code, name)` tuples.
 
-See shipping.py for a minimal example
+See a `shoptools/contrib/shipping/basic/__init__.py` for a minimal example

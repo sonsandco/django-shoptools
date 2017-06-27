@@ -11,9 +11,11 @@ App reference:
 
 1. [Cart](reference/cart.md)
 2. [Checkout](reference/cart.md)
-3. [Accounts](reference/accounts.md)
-4. [Regions](reference/regions.md)
-5. [Vouchers](reference/vouchers.md)
+3. [Shipping](reference/shipping.md)
+4. [Accounts](reference/accounts.md)
+5. [Regions](reference/regions.md)
+6. [Vouchers](reference/vouchers.md)
+7. [Payment](reference/payment.md)
 
 
 

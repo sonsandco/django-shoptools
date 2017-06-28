@@ -1,31 +1,35 @@
 import decimal
 import json
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.contrib.contenttypes.models import ContentType
-
 from .base import ICart, ICartItem, ICartLine, IShippable
-from .util import validate_options, get_regions_module
+from .util import validate_options, get_regions_module, create_instance_key, \
+    unpack_instance_key
 from . import settings as cart_settings
 
 
-def create_key(ctype, pk, options):
-    options = validate_options(ctype, pk, options)
-    return '|'.join((ctype, str(pk), json.dumps(options)))
+KEY_SEPARATOR = '|'
 
 
-def unpack_key(key):
-    (ctype, pk, options) = key.split('|')
-    return (ctype, pk, json.loads(options))
+def create_line_key(instance, options):
+    """Create a unique (string) key for a model instance and optional options
+       dict. """
+
+    instance_key = create_instance_key(instance)
+    options = json.dumps(validate_options(instance, options), sort_keys=True)
+
+    return KEY_SEPARATOR.join(map(str, instance_key + (options, )))
 
 
-def get_instance(ctype, pk):
-    content_type = ContentType.objects \
-        .get_by_natural_key(*ctype.split("."))
-    try:
-        return content_type.get_object_for_this_type(pk=pk)
-    except ObjectDoesNotExist:
-        return None
+def unpack_line_key(key):
+    """Retrieve a model instance and options dict from a unique key created by
+       create_line_key. """
+
+    bits = key.split(KEY_SEPARATOR)
+
+    instance = unpack_instance_key(bits[:-1])
+    options = json.loads(bits[-1])
+
+    return (instance, options)
 
 
 class SessionCartLine(dict, ICartLine):
@@ -43,8 +47,8 @@ class SessionCartLine(dict, ICartLine):
 
     @property
     def item(self):
-        ctype, pk, options = unpack_key(self['key'])
-        return get_instance(ctype, pk)
+        instance, options = unpack_line_key(self['key'])
+        return instance
 
     options = property(lambda s: s['options'])
     quantity = property(lambda s: s['quantity'])
@@ -94,10 +98,10 @@ class SessionCart(ICart, IShippable):
             return {}
         return json.loads(self._data.get('shipping', '{}'))
 
-    def update_quantity(self, ctype, pk, quantity=1, add=False, options={}):
+    def update_quantity(self, instance, quantity=1, add=False, options={}):
         assert isinstance(quantity, int)
-        options = validate_options(ctype, pk, options)
-        index = self._line_index(ctype, pk, options)
+        options = validate_options(instance, options)
+        index = self._line_index(instance, options)
 
         # quantity may be additive or a straight update
         # TODO kill the add argument. cart.add should do this extra calculation
@@ -116,7 +120,7 @@ class SessionCart(ICart, IShippable):
         if index is None:
             # Add to cart if not in there already
             data = {
-                'key': create_key(ctype, pk, options),
+                'key': create_line_key(instance, options),
                 'quantity': quantity,
                 'options': options
             }
@@ -151,8 +155,8 @@ class SessionCart(ICart, IShippable):
     def make_line_obj(self, data):
         return self.get_line_cls()(parent_object=self, **data)
 
-    def get_line(self, ctype, pk, options={}):
-        index = self._line_index(ctype, pk, options)
+    def get_line(self, instance, options={}):
+        index = self._line_index(instance, options)
         if index is None:
             return None
         return self.make_line_obj(self._data["lines"][index])
@@ -189,8 +193,7 @@ class SessionCart(ICart, IShippable):
         return self.subtotal + self.shipping_cost - self.total_discount
 
     def set_order_obj(self, obj):
-        self._data['order_obj'] = '%s.%s|%s' % (
-            obj._meta.app_label, obj._meta.model_name, obj.pk)
+        self._data['order_obj'] = create_instance_key(obj)
         self.request.session.modified = True
 
     def get_order_obj(self):
@@ -199,7 +202,7 @@ class SessionCart(ICart, IShippable):
 
         order_key = self._data.get('order_obj')
         if order_key:
-            return get_instance(*order_key.split('|'))
+            return unpack_instance_key(order_key)
 
         return None
 
@@ -225,19 +228,15 @@ class SessionCart(ICart, IShippable):
             data = {'lines': []}
             self._data = self.request.session[self.session_key] = data
 
-    def _line_index(self, ctype, pk, options):
+    def _line_index(self, instance, options):
         """Returns the line index for a given ctype/pk/options, if it's
            already in the cart, or None otherwise."""
 
-        app_label, model = ctype.split('.')
-        assert issubclass(
-            ContentType.objects.get(
-                app_label=app_label, model=model).model_class(),
-            ICartItem)
+        assert isinstance(instance, ICartItem)
 
         if self._data is not None:
             for i in range(len(self._data["lines"])):
-                if self._data["lines"][i]["key"] == create_key(
-                        ctype, pk, options):
+                key = create_line_key(instance, options)
+                if self._data["lines"][i]["key"] == key:
                     return i
         return None

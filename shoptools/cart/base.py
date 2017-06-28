@@ -27,7 +27,7 @@ class ICart(object):
 
        Subclasses should implement the following:
 
-           update_quantity(self, ctype, pk, quantity)
+           update_quantity(self, instance, quantity)
            clear(self)
            count(self)
            get_lines(self)
@@ -42,12 +42,12 @@ class ICart(object):
 
        """
 
-    def add(self, ctype, pk, quantity=1, options={}):
-        return self.update_quantity(ctype, pk, quantity, add=True,
+    def add(self, instance, quantity=1, options={}):
+        return self.update_quantity(instance, quantity, add=True,
                                     options=options)
 
-    def remove(self, ctype, pk, options={}):
-        return self.update_quantity(ctype, pk, 0, options=options)
+    def remove(self, instance, options={}):
+        return self.update_quantity(instance, 0, options=options)
 
     def get_errors(self):
         """Validate each cart line item. Subclasses may override this method
@@ -89,7 +89,7 @@ class ICart(object):
 
         return data
 
-    def update_quantity(self, ctype, pk, quantity, options={}):
+    def update_quantity(self, instance, quantity, options={}):
         raise NotImplementedError()
 
     def get_lines(self):
@@ -165,6 +165,8 @@ class ICart(object):
 
         # save valid discounts - TODO should this go here?
         # Do we need to subclass Cart as DiscountCart?
+        # TODO create an interface - IDiscountable or something, rather than
+        # tying it to checkout.Order
         from shoptools.checkout.models import Order
         if isinstance(obj, Order):
             voucher_module = get_vouchers_module()
@@ -195,11 +197,11 @@ class ICartLine(object):
         """Validate this line's item. Return a list of error strings"""
         return self.item.cart_errors(self) if self.item else []
 
-    @property
-    def ctype(self):
-        # app.model, compatible with the ctype argument to Cart.update etc
-        return '%s.%s' % (self.item._meta.app_label,
-                          self.item._meta.model_name)
+    # @property
+    # def ctype(self):
+    #     # app.model, compatible with the ctype argument to Cart.update etc
+    #     return '%s.%s' % (self.item._meta.app_label,
+    #                       self.item._meta.model_name)
 
     # @property
     # def item_id(self):
@@ -282,11 +284,11 @@ class ICartItem(object):
 
         return dict((key, opts[0]) for key, opts in self.available_options())
 
-    @property
-    def ctype(self):
-        # app.model, compatible with the ctype argument to Cart.add etc
-        return '%s.%s' % (self._meta.app_label,
-                          self._meta.model_name)
+    # @property
+    # def ctype(self):
+    #     # app.model, compatible with the ctype argument to Cart.add etc
+    #     return '%s.%s' % (self._meta.app_label,
+    #                       self._meta.model_name)
 
     # @property
     # def unique_identifier(self):
@@ -306,7 +308,7 @@ class AbstractOrder(models.Model, ICart):
     class Meta:
         abstract = True
 
-    def update_quantity(self, ctype, pk, quantity=1, add=False, options={}):
+    def update_quantity(self, instance, quantity=1, add=False, options={}):
         # TODO should validation happen here? Should probably be a separate
         # layer, and this function should assume valid input (ref django's
         # Model.save and Model.clean)
@@ -319,7 +321,7 @@ class AbstractOrder(models.Model, ICart):
             # must be an unsaved instance; assume that it's ready to be saved
             self.save()
 
-        line = self.get_line(ctype, pk, options, create=True)
+        line = self.get_line(instance, options, create=True)
 
         # quantity may be an addition or a straight update
         if add:
@@ -342,20 +344,20 @@ class AbstractOrder(models.Model, ICart):
         line.save()
         return (True, None)
 
-    def get_line(self, ctype, pk, options, create=False):
+    def get_line(self, instance, options, create=False):
         """This method should always be used to get a line, rather than
            directly via orm. """
 
-        app_label, model = ctype.split('.')
-        ctype_obj = ContentType.objects.get(app_label=app_label, model=model)
+        # app_label, model = ctype.split('.')
+        ctype_obj = ContentType.objects.get_for_model(instance)
         lines = self.get_line_cls().objects.filter(parent_object=self)
-        options = validate_options(ctype, pk, options)
+        options = validate_options(instance, options)
         lookup = {
             'parent_object': self,
             # 'item_content_type__app_label': app_label,
             # 'item_content_type__model': model,
             'item_content_type': ctype_obj,
-            'item_object_id': pk,
+            'item_object_id': instance.pk,
             'options': options,
         }
         try:

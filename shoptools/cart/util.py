@@ -44,11 +44,10 @@ def create_instance_key(instance):
     return (ctype, instance.pk)
 
 
-def unpack_instance_key(key):
+def unpack_instance_key(ctype, pk):
     """Retrieve a model instance from a unique key created by
        create_instance_key. """
 
-    (ctype, pk) = key
     content_type = ContentType.objects.get_by_natural_key(*ctype.split('.'))
     try:
         instance = content_type.get_object_for_this_type(pk=pk)

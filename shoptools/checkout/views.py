@@ -231,8 +231,8 @@ def checkout(request, cart, order=Order()):
             cart.save_to(order)
 
             # and off we go to pay, if necessary
-            if order.total > 0:
-                payment_module = get_payment_module()
+            payment_module = get_payment_module()
+            if payment_module and order.total > 0:
                 return payment_module.make_payment(order, request)
             else:
                 order.transaction_succeeded(0)

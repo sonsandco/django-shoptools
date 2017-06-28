@@ -197,21 +197,13 @@ class ICartLine(object):
         """Validate this line's item. Return a list of error strings"""
         return self.item.cart_errors(self) if self.item else []
 
-    # @property
-    # def ctype(self):
-    #     # app.model, compatible with the ctype argument to Cart.update etc
-    #     return '%s.%s' % (self.item._meta.app_label,
-    #                       self.item._meta.model_name)
+    @property
+    def ctype(self):
+        """Returns a string like appname.modelname for the item, compatible
+           with the ctype argument to cart actions etc. """
 
-    # @property
-    # def item_id(self):
-    #     return self.item.pk
-
-    # @property
-    # def unique_identifier(self):
-    #     # unique across all models, intended for use as an id or class
-    #     # attribute where the ability to get a specific item is required
-    #     return self.ctype.replace('.', '-') + '-%d' % self.item.id
+        return '%s.%s' % (self.item._meta.app_label,
+                          self.item._meta.model_name)
 
     def options_text(self):
         # TODO handle the case where options is blank i.e. ''
@@ -251,7 +243,7 @@ class ICartItem(object):
         return []
 
     def cart_description(self):
-        """Describes the item in the checkout admin. Needed because the needs
+        """Describes the item in the checkout admin. Needed because it needs
            to store a description of the item as purchased, even if it is
            deleted or changed down the track. """
         return str(self)
@@ -283,18 +275,6 @@ class ICartItem(object):
            option from each. """
 
         return dict((key, opts[0]) for key, opts in self.available_options())
-
-    # @property
-    # def ctype(self):
-    #     # app.model, compatible with the ctype argument to Cart.add etc
-    #     return '%s.%s' % (self._meta.app_label,
-    #                       self._meta.model_name)
-
-    # @property
-    # def unique_identifier(self):
-    #     # unique across all models, intended for use as an id or class
-    #     # attribute where the ability to get a specific item is required
-    #     return self.ctype.replace('.', '-') + '-%d' % self.id
 
 
 # Abstract models

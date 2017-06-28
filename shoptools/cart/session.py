@@ -26,7 +26,7 @@ def unpack_line_key(key):
 
     bits = key.split(KEY_SEPARATOR)
 
-    instance = unpack_instance_key(bits[:-1])
+    instance = unpack_instance_key(*bits[:-1])
     options = json.loads(bits[-1])
 
     return (instance, options)
@@ -202,7 +202,7 @@ class SessionCart(ICart, IShippable):
 
         order_key = self._data.get('order_obj')
         if order_key:
-            return unpack_instance_key(order_key)
+            return unpack_instance_key(*order_key)
 
         return None
 

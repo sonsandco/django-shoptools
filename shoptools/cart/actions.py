@@ -19,6 +19,11 @@ def cart_action(params=[]):
             errors = []
             kwargs = dict(data)
 
+            # TODO review this. Should probably be explicit about what's
+            # expected. Would need to change how options are passed in though.
+            if 'csrfmiddlewaretoken' in kwargs:
+                del kwargs['csrfmiddlewaretoken']
+
             for field, cast, required in params:
                 val = data.get(field)
 
@@ -67,34 +72,39 @@ def add(cart, ctype, pk, quantity=None, **options):
     return cart.add(instance, quantity, options=options)
 
 
-@cart_action(params=(
-    ('confirm', str, True),
-))
-def clear(cart, data):
+@cart_action()
+def clear(cart, confirm):
     """Remove everything from the cart. """
 
-    confirm = data.get('confirm', None)
-    if confirm:
-        cart.clear()
+    cart.clear()
     return (True, None)
 
 
-@cart_action()
-def set_shipping_options(cart, data):
+@cart_action(params=(
+    ('option', str, True),
+))
+def set_shipping_options(cart, option):
     """Set shipping options for a cart. No validation here - invalid options
        will just be ignored, and any errors will be displayed on the cart
-       page. """
+       page.
 
-    cart.set_shipping_options(data.dict())
+       TODO the cart can handle a dict of shipping options, but I think only
+       one string value is necessary so we should probably change that. """
+
+    cart.set_shipping_options({
+        'option': option,
+    })
     return (True, None)
 
 
-@cart_action()
-def set_voucher_codes(cart, data):
+@cart_action(params=(
+    ('codes', str, True),
+))
+def set_voucher_codes(cart, codes):
     """Set voucher codes for a cart. No validation here - invalid codes
        will just be ignored, with an error message displayed on the cart
        page. """
 
-    codes = map(str.strip, data.get('codes', '').split(','))
-    cart.set_voucher_codes([c for c in codes if c])
+    codes = [c for c in map(str.strip, codes.split(',')) if c]
+    cart.set_voucher_codes(codes)
     return (True, None)

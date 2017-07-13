@@ -7,3 +7,10 @@ Accounts reference
 get_user_account(user):
     return Account()
 ```
+
+and function to get current session data from a request
+
+```
+def get_data(request):
+    return {}
+```

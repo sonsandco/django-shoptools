@@ -4,24 +4,19 @@ from django.http import HttpResponse
 from django.conf import settings
 
 from shoptools.cart import get_cart
+from shoptools.cart.util import get_accounts_module, get_regions_module
 
-# TODO need a smarter way to do this - apps should somehow register their
+
+accounts_module = get_accounts_module()
+regions_module = get_regions_module()
+
+
+# TODO need a smarter way to do this - extra apps should somehow register their
 # presence with the shoptools core
-
 if 'wishlist' in settings.INSTALLED_APPS:
     from wishlist.models import get_wishlist
 else:
     get_wishlist = None
-
-if 'regions' in settings.INSTALLED_APPS:
-    from shoptools.regions.util import regions_data
-else:
-    regions_data = None
-
-if 'accounts' in settings.INSTALLED_APPS:
-    from shoptools.accounts.views import account_data
-else:
-    account_data = None
 
 
 class JsonResponse(HttpResponse):
@@ -37,14 +32,14 @@ def get_data(request):
         'cart': get_cart(request).as_dict(),
     }
 
-    if account_data:
-        data['account'] = account_data(request)
+    if accounts_module:
+        data['account'] = accounts_module.get_data(request)
 
     if get_wishlist:
         data['wishlist'] = get_wishlist(request).as_dict()
 
-    if regions_data:
-        data['regions'] = regions_data(request)
+    if regions_module:
+        data['regions'] = regions_module.get_data(request)
 
     return data
 

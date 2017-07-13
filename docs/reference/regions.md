@@ -1,4 +1,24 @@
-Regions
+Regions reference
+===
+
+`SHOPTOOLS_REGIONS_MODULE` must provide the following function
+
+Get current region from request:
+
+```
+def get_region(user):
+    return Region()
+```
+
+get current session data from a request
+
+```
+def get_data(request):
+    return {}
+```
+
+
+Testing
 ===
 
 To test different regions, use 

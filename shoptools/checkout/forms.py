@@ -1,3 +1,5 @@
+import uuid
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -49,5 +51,9 @@ class CheckoutUserForm(UserCreationForm):
         user.first_name = name.split(' ')[0]
         user.last_name = ' '.join(name.split(' ')[1:])
         user.email = email
+
+        # bogus username since it's not used
+        user.username = uuid.uuid4().hex[:30]
+
         user.save()
         return user

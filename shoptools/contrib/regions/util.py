@@ -81,6 +81,10 @@ def get_int(val):
         return None
 
 
+def regions(request):
+    return ((r.id, r.name) for r in Region.objects.all())
+
+
 def get_region(request):
     """Get region instance from the session region id. """
     info = get_session(request)
@@ -91,6 +95,20 @@ def get_region(request):
         except Region.DoesNotExist:
             pass
     return Region.get_default()
+
+
+def set_region(request, region_id):
+    """Set region instance."""
+    info = get_session(request)
+
+    # just modify the session (not a cookie) since django sessions are
+    # persistent by default
+    if region_id and Region.objects.filter(pk=region_id):
+        info['region_id'] = region_id
+        request.session.modified = True
+        return True
+    else:
+        return False
 
 
 def get_country(request):

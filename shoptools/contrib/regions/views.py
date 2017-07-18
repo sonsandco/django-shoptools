@@ -2,23 +2,12 @@
 import json
 from django.http import HttpResponse, HttpResponseRedirect
 
-from .util import get_session, regions_data
-from .models import Region
+
+from .util import set_region, regions_data
 
 
 def change_region(request):
-    info = get_session(request)
-
-    # just modify the session (not a cookie) since django sessions are
-    # persistent by default
-    region_id = request.POST.get('region_id')
-
-    if region_id and Region.objects.filter(pk=region_id):
-        info['region_id'] = region_id
-        request.session.modified = True
-        success = True
-    else:
-        success = False
+    success = set_region(request, request.POST.get('region_id'))
 
     if request.is_ajax():
         return HttpResponse(json.dumps({

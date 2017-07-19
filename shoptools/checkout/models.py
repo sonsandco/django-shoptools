@@ -63,9 +63,9 @@ class Order(AbstractOrder):
     _shipping_cost = models.DecimalField(
         max_digits=8, decimal_places=2, default=0, db_column='shipping_cost',
         editable=False, verbose_name='shipping cost')
-    _shipping_options = models.TextField(
-        blank=True, default='', editable=False, db_column='shipping_options',
-        verbose_name='shipping options')
+    _shipping_option = models.CharField(
+        max_length=255, blank=True, default='', editable=False,
+        db_column='shipping_option', verbose_name='shipping option')
     # payments = GenericRelation(Transaction)
     dispatched = models.DateTimeField(null=True, editable=False)
     success_page_viewed = models.BooleanField(default=False, editable=False)
@@ -79,19 +79,17 @@ class Order(AbstractOrder):
                             .update(dispatched=datetime.now()):
                 send_dispatch_email(self)
 
-    def set_shipping_options(self, options, validate=True):
-        """Saves the provided options to this order. Assumes the
-           options have already been validated, if necessary.
-        """
+    def set_shipping_option(self, option_slug):
+        """Saves the provided option_slug to this order."""
 
-        self._shipping_options = json.dumps(options)
+        self._shipping_option = option_slug
         shipping_module = get_shipping_module()
         if shipping_module:
             self._shipping_cost = shipping_module.calculate(self)
         self.save()
 
-    def get_shipping_options(self):
-        return json.loads(self._shipping_options or '{}')
+    def get_shipping_option(self):
+        return self._shipping_option or ''
 
     @property
     def name(self):

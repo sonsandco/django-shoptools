@@ -23,22 +23,22 @@ def cart_view(action=None):
 
         cart = get_cart(request)
         success = True
+
+        post_params = request.POST.dict()
+
+        # Remove next from POST parameters now if it was provided, as the
+        # actions do not expect to receive it as an argument.
+        if 'next' in post_params:
+            if not next_url:
+                next_url = post_params['next']
+            del post_params['next']
+
         if action:
             # don't allow multiple values for each get param
-            success, errors = action(request.POST.dict(), cart)
+            success, errors = action(post_params, cart)
 
             if success is None:
                 return HttpResponseBadRequest()
-
-            # TODO remove this, since shipping validation happens in
-            # cart.get_errors
-            # if success:
-            #     # Update shipping since country, quantity etc may have
-            #     # changed
-            #     shipping_module = get_shipping_module()
-            #     if shipping_module:
-            #         shipping_module.save_to_cart(
-            #             cart, **cart.get_shipping_options())
 
         if request.is_ajax():
             data = {
@@ -55,8 +55,7 @@ def cart_view(action=None):
         # TODO hook into messages framework here
         if success:
             if not next_url:
-                next_url = request.POST.get(
-                    'next', request.META.get('HTTP_REFERER', '/'))
+                next_url = request.META.get('HTTP_REFERER', '/')
             return HttpResponseRedirect(next_url)
         else:
             return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
@@ -70,7 +69,7 @@ def cart_view(action=None):
 # TODO rename - confusing
 get_cart = cart_view()
 
-all_actions = ('add', 'quantity', 'clear',
-               'set_shipping_options', 'set_voucher_codes')
+all_actions = ('add', 'quantity', 'clear', 'set_shipping_option',
+               'set_voucher_codes')
 for action in all_actions:
     locals()[action] = cart_view(getattr(actions, action))

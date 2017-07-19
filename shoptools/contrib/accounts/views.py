@@ -56,9 +56,6 @@ def details(request):
 def create(request):
     initial = {}
 
-    # cart = get_cart(request)
-    # initial.update(cart.get_shipping_options())
-
     if request.method == 'POST':
         account_form = AccountForm(request.POST, initial=initial)
         user_form = CreateUserForm(request.POST)

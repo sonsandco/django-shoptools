@@ -14,7 +14,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 # from django.contrib import messages
 
 from shoptools.cart import get_cart
-from shoptools.cart.util import get_accounts_module, get_shipping_module
+from shoptools.cart.util import \
+    get_accounts_module, get_regions_module, get_shipping_module
 
 from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
 from .models import Order, Address
@@ -29,11 +30,33 @@ def get_payment_module():
     return importlib.import_module(PAYMENT_MODULE) if PAYMENT_MODULE else None
 
 
+def regions_info(request):
+    region_module = get_regions_module()
+    if region_module:
+        return (region_module.regions(request),
+                region_module.get_region(request).id)
+    return ([], None)
+
+
 def available_countries(cart):
     shipping_module = get_shipping_module()
     if shipping_module:
         return shipping_module.available_countries(cart)
     return None
+
+
+def shipping_options_info(cart):
+    shipping_module = get_shipping_module()
+    if shipping_module and hasattr(shipping_module, 'available_options'):
+        options = shipping_module.available_options(cart)
+        current = cart.get_shipping_option()
+
+        if current not in [val for (val, text) in options]:
+            # prepend a blank one if the current option is invalid
+            options = (('', '...'), ) + tuple(options)
+
+        return (options, current)
+    return ([], None)
 
 
 def with_order(wrapped_view):
@@ -86,8 +109,16 @@ def cart(request, cart, order=None):
     # for error in cart.get_errors():
     #     messages.add_message(request, messages.ERROR, error)
 
+    regions, selected_region = regions_info(request)
+    shipping_options, selected_shipping_option = \
+        shipping_options_info(cart)
+
     return render(request, 'checkout/cart.html', {
         'cart': cart,
+        'regions': list(regions) if regions else [],
+        'region': selected_region,
+        'shipping_options': list(shipping_options) if shipping_options else [],
+        'shipping_option': selected_shipping_option
     })
 
 

@@ -36,8 +36,8 @@ class ICart(object):
 
            subtotal
            total
-           get_shipping_options
-           set_shipping_options
+           get_shipping_option
+           set_shipping_option
            get_voucher_codes
 
        """
@@ -75,8 +75,8 @@ class ICart(object):
             'lines': [line.as_dict() for line in self.get_lines()],
         }
 
-        if hasattr(self, 'get_shipping_options'):
-            data['shipping_options'] = self.get_shipping_options()
+        if hasattr(self, 'get_shipping_option'):
+            data['shipping_option'] = self.get_shipping_option()
 
         for f in ('subtotal', 'total'):
             if hasattr(self, f):
@@ -105,19 +105,6 @@ class ICart(object):
         """Delete all cart lines. """
         raise NotImplementedError()
 
-    # def set_shipping_options(self, options):
-    #     """Save the provided options
-    #
-    #     Assume the options have already been validated, if necessary.
-    #     """
-    #
-    #     raise NotImplementedError()
-    #
-    # def get_shipping_options(self):
-    #     """Get shipping options, if any. """
-    #
-    #     raise NotImplementedError()
-
     @property
     def shipping_cost(self):
         shipping_module = get_shipping_module()
@@ -127,8 +114,18 @@ class ICart(object):
 
     def shipping_errors(self):
         shipping_module = get_shipping_module()
-        if shipping_module:
-            return shipping_module.get_errors(self)
+
+        if shipping_module and hasattr(shipping_module, 'available_options'):
+            options = list(shipping_module.available_options(self))
+            option_slugs = [slug for (slug, title) in options]
+
+            if not len(options):
+                return ['We are unable to ship your current order to the '
+                        'selected region']
+
+            if self.get_shipping_option() not in option_slugs:
+                return ['Invalid shipping option selected']
+
         return []
 
     # TODO tidy up discount stuff - does it belong here?
@@ -157,11 +154,9 @@ class ICart(object):
             line.quantity = cart_line.quantity
             line.save()
 
-        # save shipping info - cost calculated automatically
-        if hasattr(obj, 'set_shipping_options'):
-            # No need to validate options here, as was done when they were
-            # saved to self.
-            obj.set_shipping_options(self.get_shipping_options())
+        if hasattr(obj, 'set_shipping_option') and \
+           hasattr(self, 'get_shipping_option'):
+            obj.set_shipping_option(self.get_shipping_option())
 
         # save valid discounts - TODO should this go here?
         # Do we need to subclass Cart as DiscountCart?

@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -19,10 +18,9 @@ class SavedCart(AbstractOrder, IShippable):
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
-    # TODO make this a JSONField() - although that ties it to Postgres?
-    _shipping_options = models.TextField(
-        blank=True, default='', editable=False, db_column='shipping_options',
-        verbose_name='shipping options')
+    _shipping_option = models.CharField(
+        max_length=255, blank=True, default='', editable=False,
+        db_column='shipping_option', verbose_name='shipping option')
 
     # TODO maybe this should be a JSONField() too? Has to be a list though
     _voucher_codes = models.TextField(
@@ -41,29 +39,19 @@ class SavedCart(AbstractOrder, IShippable):
         # needs to be called before get_shipping
         self.request = request
 
-    def set_shipping_options(self, options):
-        """Saves the provided options to this SavedCart. Assumes the
-        options have already been validated, if necessary. """
+    def set_shipping_option(self, option_slug):
+        """Saves the provided option_slug to this SavedCart."""
 
-        self._shipping_options = json.dumps(options)
+        self._shipping_option = option_slug
         self.save()
 
-    def get_shipping_options(self):
-        """Get shipping options for this cart, if any, falling back to the
-        shipping options saved against the session. """
+    def get_shipping_option(self):
+        """Get shipping option for this cart, if any. """
 
-        if self._shipping_options:
-            return json.loads(self._shipping_options)
+        if self._shipping_option:
+            return self._shipping_option
 
-        return {}
-
-    # @property
-    # def shipping_cost(self):
-    #     return self.get_shipping_options().get('cost', None)
-
-    # @property
-    # def validate(self):
-    #     return self.shipping_cost is not None
+        return ''
 
     def get_voucher_codes(self):
         return filter(bool, self._voucher_codes.split(','))

@@ -81,19 +81,13 @@ def clear(cart, confirm):
 
 
 @cart_action(params=(
-    ('option', str, True),
+    ('option_slug', str, True),
 ))
-def set_shipping_options(cart, option):
-    """Set shipping options for a cart. No validation here - invalid options
-       will just be ignored, and any errors will be displayed on the cart
-       page.
+def set_shipping_option(cart, option_slug):
+    """Set shipping option id for a cart. No validation here - any errors will
+       be displayed on the cart page."""
 
-       TODO the cart can handle a dict of shipping options, but I think only
-       one string value is necessary so we should probably change that. """
-
-    cart.set_shipping_options({
-        'option': option,
-    })
+    cart.set_shipping_option(option_slug)
     return (True, None)
 
 

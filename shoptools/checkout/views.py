@@ -227,13 +227,17 @@ def checkout(request, cart, order=Order()):
             order = order_form.save(commit=False)
             order.currency = cart.currency
 
+            # Collect shipping address values now in case we need to create an
+            # account.
+            shipping_address = shipping_form.save(commit=False)
+
             # save details to account if requested
             if save_details:
-                account.from_obj(order.shipping_address)
+                account.from_obj(shipping_address)
                 if user_form:
                     user = user_form.save(
-                        email=order.get_billing_address().email,
-                        name=order.get_billing_address().name)
+                        email=shipping_address.email,
+                        name=shipping_address.name)
                     account.user = user
                     auth_user = authenticate(
                         username=user.email,
@@ -246,8 +250,8 @@ def checkout(request, cart, order=Order()):
 
             order.save()
 
-            shipping_form.instance.order = order
-            shipping_address = shipping_form.save()
+            shipping_address.order = order
+            shipping_address.save()
 
             # only save the billing address if it's separate from shipping
             if not billing_is_shipping:

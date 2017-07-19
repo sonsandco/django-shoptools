@@ -132,8 +132,8 @@ def regions_data(request):
     region = get_region(request)
     data['region'] = region.as_dict()
 
-    country = get_country(request)
-    if country:
-        data['country'] = country.as_dict()
+    # country = get_country(request)
+    # if country:
+    #     data['country'] = country.as_dict()
 
     return data

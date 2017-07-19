@@ -11,7 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib import messages
+# from django.contrib import messages
 
 from shoptools.cart import get_cart
 from shoptools.cart.util import get_accounts_module, get_shipping_module
@@ -82,8 +82,10 @@ def checkout_view(view):
 
 @checkout_view
 def cart(request, cart, order=None):
-    for error in cart.get_errors():
-        messages.add_message(request, messages.ERROR, error)
+    # TODO review this? Should we make messages the standard way this works?
+    # for error in cart.get_errors():
+    #     messages.add_message(request, messages.ERROR, error)
+
     return render(request, 'checkout/cart.html', {
         'cart': cart,
     })

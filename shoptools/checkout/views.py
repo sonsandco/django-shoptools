@@ -53,7 +53,7 @@ def shipping_options_info(cart):
 
         if current not in [val for (val, text) in options]:
             # prepend a blank one if the current option is invalid
-            options = (('', '...'), ) + tuple(options)
+            options = (('', 'Select shipping option'), ) + tuple(options)
 
         return (options, current)
     return ([], None)
@@ -112,6 +112,12 @@ def cart(request, cart, order=None):
     regions, selected_region = regions_info(request)
     shipping_options, selected_shipping_option = \
         shipping_options_info(cart)
+
+    # If we have shipping_options and there's no shipping option selected,
+    # default to the first valid one.
+    if shipping_options and not cart.get_shipping_option():
+        selected_shipping_option = shipping_options[1][0]
+        cart.set_shipping_option(selected_shipping_option)
 
     return render(request, 'checkout/cart.html', {
         'cart': cart,

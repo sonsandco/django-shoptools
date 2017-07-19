@@ -96,16 +96,16 @@ class Order(AbstractOrder):
         return self._shipping_option or ''
 
     @property
+    def shipping_cost(self):
+        return self._shipping_cost
+
+    @property
     def name(self):
         return self.shipping_address.name
 
     @property
     def email(self):
         return self.shipping_address.email
-
-    @property
-    def shipping_cost(self):
-        return self._shipping_cost
 
     # @property
     # def has_valid_shipping(self):

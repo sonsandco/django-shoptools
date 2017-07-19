@@ -62,7 +62,8 @@
         <select name='option_slug'>
           {% for slug, name in shipping_options %}
             <option value='{{ slug }}'
-                    {{- ' selected' if slug == shipping_option else '' }}>
+                    {{- ' selected' if slug == shipping_option else '' }}
+                    {{- ' disabled' if not slug else '' }}>
               {{ name }}
             </option>
           {% endfor %}

@@ -33,7 +33,8 @@ class OrderMetaForm(forms.Form):
 class AddressForm(forms.ModelForm):
     class Meta:
         model = Address
-        exclude = ['order', 'address_type']
+        fields = ['name', 'email', 'phone', 'address', 'city', 'postcode',
+                  'state', 'country', ]
 
     def __init__(self, *args, **kwargs):
         country_choices = kwargs.pop('country_choices', None)

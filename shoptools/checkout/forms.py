@@ -8,14 +8,6 @@ from .models import Order, Address
 
 
 class OrderForm(forms.ModelForm):
-    require_unique_email = False
-
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        if self.require_unique_email and User.objects.filter(email=email):
-            raise forms.ValidationError("That email is already in use")
-        return email
-
     class Meta:
         model = Order
         exclude = ('created', 'status', 'amount_paid', 'user',
@@ -31,6 +23,14 @@ class OrderMetaForm(forms.Form):
 
 
 class AddressForm(forms.ModelForm):
+    require_unique_email = False
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if self.require_unique_email and User.objects.filter(email=email):
+            raise forms.ValidationError("That email is already in use")
+        return email
+
     class Meta:
         model = Address
         fields = ['name', 'email', 'phone', 'address', 'city', 'postcode',

@@ -205,15 +205,14 @@ def checkout(request, cart, order=Order()):
 
         order_form = get_order_form(request.POST)
         user_form = get_user_form(request.POST)
+        shipping_form = get_shipping_form(request.POST)
 
         if save_details and user_form:
             # if saving details, the email needs to be unused
-            order_form.require_unique_email = True
+            shipping_form.require_unique_email = True
             user_form_valid = user_form.is_valid()
         else:
             user_form_valid = True
-
-        shipping_form = get_shipping_form(request.POST)
 
         if billing_is_shipping:
             billing_form = get_billing_form()

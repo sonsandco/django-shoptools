@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 import decimal
 
 from django.db import models
@@ -8,6 +7,8 @@ try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
+
+from django.utils.translation import gettext_lazy as _
 
 from shoptools.cart.base import AbstractOrderLine, AbstractOrder
 from shoptools.cart.util import make_uuid, get_shipping_module
@@ -220,12 +221,13 @@ class AbstractAddress(models.Model):
     """Provides standardized address fields. Also used for account addresses.
     """
 
-    address = models.CharField(max_length=1023)
-    city = models.CharField('Town / City', max_length=255)
-    postcode = models.CharField(max_length=100)
-    state = models.CharField(max_length=255, blank=True, default='')
-    country = CountryField()
-    phone = models.CharField(max_length=50, default='', blank=True)
+    address = models.CharField(_('Address'), max_length=1023)
+    city = models.CharField(_('Town / City'), max_length=255)
+    postcode = models.CharField(_('Postcode'), max_length=100)
+    state = models.CharField(_('State'), max_length=255, blank=True,
+                             default='')
+    country = CountryField(_('Country'))
+    phone = models.CharField(_('Phone'), max_length=50, default='', blank=True)
 
     def from_obj(self, obj):
         """Prefill an instance from another AbstractAddress instance. Should

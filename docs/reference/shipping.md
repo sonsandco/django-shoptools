@@ -1,18 +1,20 @@
 Shipping API
 ============
 
-`SHOPTOOLS_SHIPPING_MODULE` is a python module which must define `get_errors(cart)`
-and `calculate(cart)`. `get_errors` should return a list of error strings, or
-an empty list if valid. `calculate` should return the total shipping cost for
+`SHOPTOOLS_SHIPPING_MODULE` is a python module which must define
+`calculate(cart)`. This function should return the total shipping cost for
 the cart.
 
-Shipping modules may also define a `options()` function which returns the
-available shipping options. Example output:
+Shipping modules may also define an `available_options()` function which
+returns an iterable of available shipping option tuples. Example output:
 
-    {'postage': ['courier', 'standard'], }
+    [
+        ('standard', 'Standard Post'),
+        ('courier', 'Courier'),
+    ]
 
-To restrict shipping to a subset of countries, define 
-`available_countries(cart)`. This function should return an iterable of 
+To restrict shipping to a subset of countries, define
+`available_countries(cart)`. This function should return an iterable of
 `(code, name)` tuples.
 
-See a `shoptools/contrib/shipping/basic/__init__.py` for a minimal example
+See a `shoptools/contrib/basic_shipping.py` for a minimal example

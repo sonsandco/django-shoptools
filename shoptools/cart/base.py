@@ -154,6 +154,8 @@ class ICart(object):
             line.quantity = cart_line.quantity
             line.save()
 
+        obj.set_request(self.request)
+
         if hasattr(obj, 'set_shipping_option') and \
            hasattr(self, 'get_shipping_option'):
             obj.set_shipping_option(self.get_shipping_option())

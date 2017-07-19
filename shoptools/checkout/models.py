@@ -80,6 +80,9 @@ class Order(AbstractOrder):
                             .update(dispatched=datetime.now()):
                 send_dispatch_email(self)
 
+    def set_request(self, request):
+        self.request = request
+
     def set_shipping_option(self, option_slug):
         """Saves the provided option_slug to this order."""
 

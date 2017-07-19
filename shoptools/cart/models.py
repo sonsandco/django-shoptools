@@ -36,7 +36,6 @@ class SavedCart(AbstractOrder, IShippable):
     # the cart but the main thing is the cart lines anyway
 
     def set_request(self, request):
-        # needs to be called before get_shipping
         self.request = request
 
     def set_shipping_option(self, option_slug):

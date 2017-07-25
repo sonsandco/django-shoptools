@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% from 'regions/snippets/macros.html' import region_change_form with context %}
 
 {% block content %}
   <h2>Current order</h2>
@@ -50,6 +49,7 @@
     </ul>
 
     {% if regions %}
+      {% from 'regions/snippets/macros.html' import region_change_form with context %}
       {{ region_change_form(get_regions(request), get_region(request).id,
                             next=url("checkout_cart")) }}
     {% endif %}

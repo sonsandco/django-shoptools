@@ -9,10 +9,13 @@ from shoptools.checkout.models import AbstractAddress
 
 class AccountManager(models.Manager):
     def for_user(self, user):
-        try:
-            return self.get(user=user)
-        except Account.DoesNotExist:
-            return Account(user=user)
+        if user.is_authenticated:
+            try:
+                return self.get(user=user)
+            except Account.DoesNotExist:
+                return Account(user=user)
+        else:
+            return Account()
 
 
 class Account(AbstractAddress):

@@ -166,7 +166,7 @@ def checkout(request, cart, order=Order()):
         def get_user_form(*args, **kwargs):
             return None
 
-    if accounts_enabled and request.user.is_authenticated:
+    if accounts_enabled:
         account = accounts_module.get_account(request.user)
     else:
         account = None

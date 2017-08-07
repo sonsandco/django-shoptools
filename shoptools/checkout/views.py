@@ -129,10 +129,15 @@ def cart(request, cart, order=None):
 
 
 @checkout_view
-def checkout(request, cart, order=Order()):
+def checkout(request, cart, order=None):
     """Handle checkout process - if the order is completed, show the success
        page, otherwise show the checkout form.
     """
+
+    if not order:
+        # Don't simply put this as the default argument, see:
+        # http://python-guide-pt-br.readthedocs.io/en/latest/writing/gotchas/#mutable-default-arguments
+        order = Order()
 
     # TODO should the checkout view only ever work with an Order, which may
     # be unsaved (created on the fly from the cart contents)?

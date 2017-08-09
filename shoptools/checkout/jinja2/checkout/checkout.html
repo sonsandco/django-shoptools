@@ -14,11 +14,9 @@
   <form action="{{ request.path_info }}" method="post">
     {{ csrf_input }}
 
-    <h3>Order details</h3>
-    {{ order_form.as_p() }}
-    
     <h3>Shipping address</h3>
     {{ shipping_form.as_p() }}
+    {{ order_form.as_p() }}
 
     <h3>Billing address</h3>
     <label>

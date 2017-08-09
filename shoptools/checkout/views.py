@@ -138,6 +138,9 @@ def checkout(request, cart, order=None):
         # Don't simply put this as the default argument, see:
         # http://python-guide-pt-br.readthedocs.io/en/latest/writing/gotchas/#mutable-default-arguments
         order = Order()
+        new_order = True
+    else:
+        new_order = False
 
     # TODO should the checkout view only ever work with an Order, which may
     # be unsaved (created on the fly from the cart contents)?
@@ -183,12 +186,10 @@ def checkout(request, cart, order=None):
     # previous form submission
     form_initial = request.session.get(CHECKOUT_SESSION_KEY, {})
 
-    if order:
-        get_order_form = partial(OrderForm, instance=order)
-        new_order = False
-    else:
+    if new_order:
         get_order_form = partial(OrderForm, initial=form_initial)
-        new_order = True
+    else:
+        get_order_form = partial(OrderForm, instance=order)
 
     shipping_address = order.get_address(Address.TYPE_SHIPPING, True)
     billing_address = order.get_address(Address.TYPE_BILLING, True)
@@ -196,6 +197,8 @@ def checkout(request, cart, order=None):
     # prefill shipping address from account, if a new order for an account
     if new_order and account and account.pk:
         shipping_address.from_obj(account)
+        shipping_address.name = account.user.get_full_name()
+        shipping_address.email = account.user.email
         shipping_address.address_type = Address.TYPE_SHIPPING
 
     get_shipping_form = partial(AddressForm, prefix='shipping',

@@ -17,7 +17,7 @@ def available_countries(cart):
     """
 
     region = get_region(cart.request)
-    return ((c.country.code, c.country.name) for c in region.countries.all())
+    return [(c.country.code, c.country.name) for c in region.countries.all()]
 
 
 def available_options_qs(cart):

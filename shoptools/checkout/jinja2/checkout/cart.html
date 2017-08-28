@@ -39,7 +39,7 @@
           </form>
 
           {# options form #}
-          <form action="{{ url('cart_options') }}" method="post" class="remove">
+          <form action="{{ url('cart_options') }}" method="post" class="option">
             {{ csrf_input }}
             <input type="hidden" name="key" value="{{ line.key }}">
 

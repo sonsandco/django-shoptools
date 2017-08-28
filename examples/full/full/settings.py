@@ -16,7 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'shoptools.checkout',
-    # 'shoptools.cart',
+    'shoptools.cart',
     'shoptools.contrib.catalogue',
 ]
 

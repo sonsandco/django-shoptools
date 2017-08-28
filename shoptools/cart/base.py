@@ -262,6 +262,7 @@ class ICartItem(object):
            {
                'color': ['red', 'black'],
                'size': ['S', 'M', 'L'],
+               'message': str,
            }
         """
 

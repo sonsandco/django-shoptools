@@ -61,6 +61,16 @@ def quantity(cart, ctype, pk, quantity, **options):
 
 
 @cart_action(params=(
+    ('key', str, True),
+))
+def options(cart, key, **options):
+    """Update an item's options in the cart. NOTE currently this only works
+       with session cart. """
+
+    return cart.update_options(key, options=options)
+
+
+@cart_action(params=(
     ('ctype', str, True),
     ('pk', str, True),
     ('quantity', int, False),

@@ -144,6 +144,35 @@ class SessionCart(ICart, IShippable):
         self.request.session.modified = True
         return (True, None)
 
+    def update_options(self, key, options):
+        # TODO make this less convoluted
+        instance, old_options = unpack_line_key(key)
+        old_options = validate_options(instance, old_options)
+        old_index = self._line_index(instance, old_options)
+
+        if old_index is None:
+            return (False, ['Invalid options'])
+
+        # Create new cart line
+        old_line = self.get_line(instance, old_options)
+        new_options = validate_options(instance, options)
+        new_data = {
+            'key': create_line_key(instance, new_options),
+            'quantity': old_line.quantity,
+            'options': new_options
+        }
+        new_line = self.make_line_obj(new_data)
+        errors = new_line.get_errors()
+        if errors:
+            return (False, errors)
+
+        # Swap out lines if no errors
+        self._data["lines"].append(new_data)
+        del self._data["lines"][old_index]
+
+        self.request.session.modified = True
+        return (True, None)
+
     def get_line_cls(self):
         """Subclasses should override this if SessionCartLine is also
            subclassed. """

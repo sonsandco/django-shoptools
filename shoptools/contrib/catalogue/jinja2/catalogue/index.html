@@ -12,6 +12,7 @@
           {{ csrf_input }}
           <input type="hidden" name="ctype" value="catalogue.product">
           <input type="hidden" name="pk" value="{{ product.pk }}">
+          <input type="hidden" name="quantity" value="1">
           <input type="submit" value="Add to cart">
         </form>
       </li>

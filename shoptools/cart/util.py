@@ -29,10 +29,19 @@ def validate_options(instance, options):
     """Strip invalid cart line options from an options dict. """
 
     available = instance.available_options()
-    filtered = {k: v for k, v in options.items()
-                if k in available and v in available[k]}
 
-    # print (options, available, filtered)
+    def is_valid(k, v):
+        if k not in available:
+            return False
+
+        # allow any user input for str options
+        if available[k] is str:
+            return True
+
+        # assume an iterable of options
+        return k in available and v in available[k]
+
+    filtered = {k: v for k, v in options.items() if is_valid(k, v)}
 
     return filtered
 

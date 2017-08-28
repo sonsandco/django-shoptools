@@ -28,7 +28,7 @@ def make_uuid():
 def validate_options(instance, options):
     """Strip invalid cart line options from an options dict. """
 
-    available = instance.available_options()
+    available = dict(instance.available_options())
 
     def is_valid(k, v):
         if k not in available:

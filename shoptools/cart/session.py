@@ -47,7 +47,7 @@ class SessionCartLine(dict, ICartLine):
 
     @property
     def item(self):
-        instance, options = unpack_line_key(self['key'])
+        instance, options = unpack_line_key(self.key)
         return instance
 
     options = property(lambda s: s['options'])
@@ -55,6 +55,7 @@ class SessionCartLine(dict, ICartLine):
     total = property(lambda s: s.item.cart_line_total(s))
     description = property(lambda s: s.item.cart_description())
     parent_object = property(lambda s: s['parent_object'])
+    key = property(lambda s: s['key'])
 
 
 class SessionCart(ICart, IShippable):

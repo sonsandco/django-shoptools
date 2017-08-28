@@ -1,5 +1,6 @@
 from datetime import datetime
 import decimal
+import json
 
 # from django.contrib.postgres.fields import JSONField
 from django.db import models
@@ -187,6 +188,7 @@ class ICartLine(object):
        total
        description
        parent_object
+       key
 
     """
 
@@ -259,11 +261,11 @@ class ICartItem(object):
 
            Example:
 
-           {
-               'color': ['red', 'black'],
-               'size': ['S', 'M', 'L'],
-               'message': str,
-           }
+           (
+               ('color', ['red', 'black']),
+               ('size', ['S', 'M', 'L']),
+               ('message', str),
+           )
         """
 
         return {}
@@ -322,6 +324,16 @@ class AbstractOrder(models.Model, ICart):
         line.save()
         return (True, None)
 
+    def update_options(self, pk, options):
+        try:
+            line = self.get_line_cls().objects.get(pk=pk)
+        except self.get_line_cls().DoesNotExist:
+            return (False, ['Invalid key'])
+
+        line.options = validate_options(line.item, options)
+        line.save()
+        return (True, None)
+
     def get_line(self, instance, options, create=False):
         """This method should always be used to get a line, rather than
            directly via orm. """
@@ -329,14 +341,14 @@ class AbstractOrder(models.Model, ICart):
         # app_label, model = ctype.split('.')
         ctype_obj = ContentType.objects.get_for_model(instance)
         lines = self.get_line_cls().objects.filter(parent_object=self)
-        options = validate_options(instance, options)
+        options = json.dumps(validate_options(instance, options))
         lookup = {
             'parent_object': self,
             # 'item_content_type__app_label': app_label,
             # 'item_content_type__model': model,
             'item_content_type': ctype_obj,
             'item_object_id': instance.pk,
-            'options': options,
+            '_options': options,
         }
         try:
             line = lines.get(**lookup)
@@ -404,13 +416,25 @@ class AbstractOrderLine(models.Model, ICartLine):
     created = models.DateTimeField(default=datetime.now)
     quantity = models.IntegerField()
     # options = JSONField(default=dict, blank=True)
-    options = models.TextField(default='')
+    _options = models.TextField(default='', db_column='options')
+
+    def get_options(self):
+        return json.loads(self._options)
+
+    def set_options(self, options):
+        self._options = json.dumps(options)
+
+    options = property(get_options, set_options)
+
+    @property
+    def key(self):
+        return self.pk
 
     class Meta:
         abstract = True
         # NOTE I'm relying on the jsonfield ordering its keys consistently
         unique_together = ('item_content_type', 'item_object_id',
-                           'parent_object', 'options')
+                           'parent_object', '_options')
 
     @property
     def total(self):

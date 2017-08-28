@@ -24,7 +24,7 @@ class Product(models.Model, ICartItem):
         return self.shipping_cost * line.quantity
 
     def available_options(self):
-        return {
-            'Colour': ['Red', 'Blue'],
-            'Message': str,
-        }
+        return (
+            ('Colour', ['Red', 'Blue']),
+            ('Message', str),
+        )

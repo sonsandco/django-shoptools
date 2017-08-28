@@ -24,7 +24,7 @@
             {{ csrf_input }}
             <input type="hidden" name="ctype" value="{{ line.ctype }}">
             <input type="hidden" name="pk" value="{{ line.item.pk }}">
-            {% for option_name in options %}
+            {% for option_name, value in options %}
               <input type="hidden" name="{{ option_name }}"
                      value="{{ line.options.get(option_name, '') }}">
             {% endfor %}
@@ -43,11 +43,11 @@
             {{ csrf_input }}
             <input type="hidden" name="key" value="{{ line.key }}">
 
-            {% for option_name in options %}
+            {% for option_name, values in options %}
               {% set line_val = line.options.get(option_name, '') %}
-              {% if options[option_name] is sequence %}
+              {% if values is sequence %}
                 <select name="{{ option_name }}">
-                  {% for val in options[option_name] %}
+                  {% for val in values %}
                     <option value="{{ val }}"
                             {% if val == line_val %}selected{% endif %}>
                       {{ val }}</option>
@@ -69,7 +69,7 @@
             <input type="hidden" name="quantity" value="0">
             <input type="hidden" name="ctype" value="{{ line.ctype }}">
             <input type="hidden" name="pk" value="{{ line.item.pk }}">
-            {% for option_name in options %}
+            {% for option_name, value in options %}
               <input type="hidden" name="{{ option_name }}"
                      value="{{ line.options.get(option_name, '') }}">
             {% endfor %}

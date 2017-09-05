@@ -136,7 +136,7 @@ def checkout(request, cart, order=None):
 
     if not order:
         # Don't simply put this as the default argument, see:
-        # http://python-guide-pt-br.readthedocs.io/en/latest/writing/gotchas/#mutable-default-arguments
+        # http://python-guide-pt-br.readthedocs.io/en/latest/writing/gotchas#mutable-default-arguments
         order = Order()
         new_order = True
     else:

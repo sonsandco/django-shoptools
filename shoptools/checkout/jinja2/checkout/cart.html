@@ -14,6 +14,8 @@
 
     <ul>
       {% for line in cart.get_lines() %}
+        {% set options = line.item.available_options() %}
+
         <li>
           <h6>{{ line.description }}</h6>
 
@@ -22,6 +24,10 @@
             {{ csrf_input }}
             <input type="hidden" name="ctype" value="{{ line.ctype }}">
             <input type="hidden" name="pk" value="{{ line.item.pk }}">
+            {% for option_name, value in options %}
+              <input type="hidden" name="{{ option_name }}"
+                     value="{{ line.options.get(option_name, '') }}">
+            {% endfor %}
 
             <label>
               Qty:
@@ -32,12 +38,41 @@
             <input type="submit" value="Update">
           </form>
 
+          {# options form #}
+          <form action="{{ url('cart_options') }}" method="post" class="option">
+            {{ csrf_input }}
+            <input type="hidden" name="key" value="{{ line.key }}">
+
+            {% for option_name, values in options %}
+              {% set line_val = line.options.get(option_name, '') %}
+              {% if values is sequence %}
+                <select name="{{ option_name }}">
+                  {% for val in values %}
+                    <option value="{{ val }}"
+                            {% if val == line_val %}selected{% endif %}>
+                      {{ val }}</option>
+                  {% endfor %}
+                </select>
+              {% else %}
+                {# assume it's a custom str input #}
+                <input type="text" name="{{ option_name }}"
+                       value="{{ line_val }}" placeholder="{{ option_name }}">
+              {% endif %}
+            {% endfor %}
+
+            <input type="submit" name="Update" value="Update options">
+          </form>
+
           {# remove button #}
           <form action="{{ url('cart_quantity') }}" method="post" class="remove">
             {{ csrf_input }}
             <input type="hidden" name="quantity" value="0">
             <input type="hidden" name="ctype" value="{{ line.ctype }}">
             <input type="hidden" name="pk" value="{{ line.item.pk }}">
+            {% for option_name, value in options %}
+              <input type="hidden" name="{{ option_name }}"
+                     value="{{ line.options.get(option_name, '') }}">
+            {% endfor %}
             <input type="submit" name="Update" value="Remove">
           </form>
 

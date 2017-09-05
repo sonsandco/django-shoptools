@@ -1,1 +1,1 @@
-Bare minimum shoptools implementation
+Example shoptools implementation

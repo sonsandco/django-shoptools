@@ -12,8 +12,7 @@ def get_cart(request):
 
     session_cart = SessionCart(request)
 
-    if apps.is_installed('cart') and request.user.is_authenticated:
-
+    if apps.is_installed('shoptools.cart') and request.user.is_authenticated:
         # django doesn't like this to be imported at compile-time if the app is
         # not installed
         from .models import SavedCart

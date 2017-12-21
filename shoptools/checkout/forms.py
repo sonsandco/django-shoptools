@@ -49,8 +49,8 @@ class CheckoutUserForm(UserCreationForm):
 
     def save(self, name, email):
         user = super(CheckoutUserForm, self).save(commit=False)
-        user.first_name = name.split(' ')[0]
-        user.last_name = ' '.join(name.split(' ')[1:])
+        user.first_name = name.split(' ')[0][:30]
+        user.last_name = ' '.join(name.split(' ')[1:])[:30]
         user.email = email
 
         # bogus username since it's not used

@@ -1,20 +1,15 @@
-{# Must be import "with context" #}
-{% macro region_change_form(regions, selected_region, next='',
-                            action=url("regions_change_region")) %}
-  <form action='{{ action }}' method='POST'
-        class='region-selector'>
-    {{ csrf_input }}
-    {% if next %}
-      <input name='next' value='{{ next }}' type='hidden' />
-    {% endif %}
-    <select name='region_id'>
-      {% for id, name in regions %}
-        <option value='{{ id }}'
-                {{- ' selected' if id == selected_region else '' }}>
-          {{ name }}
-        </option>
-      {% endfor %}
-    </select>
-    <input type='submit' value='Change region '/>
+{% from 'snippets/form.html' import render_form with context %}
+
+{# Must be imported "with context" #}
+{% macro region_change_form(form, next='') %}
+  <form action='{{ url("regions_change_region") }}' method='POST'
+        class='region-selection-form'>
+    <div class='form-inner'>
+      {{ render_form(form) }}
+      {% if next %}
+        <input name='next' value='{{ next }}' type='hidden' />
+      {% endif %}
+      <input type='submit' value='Change region'/>
+    </div>
   </form>
 {% endmacro %}

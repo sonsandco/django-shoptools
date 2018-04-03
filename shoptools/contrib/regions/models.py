@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
+from django.utils.text import mark_safe
 
 from django_countries.fields import CountryField
 
@@ -26,6 +27,10 @@ class Region(models.Model):
     @classmethod
     def get_default(cls):
         return Region.objects.order_by('-is_default').first()
+
+    @property
+    def option_text(self):
+        return mark_safe('%s (%s)' % (self.name, self.currency))
 
     # def get_default_country(self):
     #     return self.countries.order_by('-is_default_for_region').first()

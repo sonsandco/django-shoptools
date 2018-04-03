@@ -13,4 +13,5 @@ class CountryInline(admin.TabularInline):
 class RegionAdmin(admin.ModelAdmin):
     list_display = ('name', 'currency', 'is_default', 'sort_order', )
     list_editable = ('sort_order', )
+    exclude = ('symbol', )  # symbol not implemented yet
     inlines = (CountryInline, )

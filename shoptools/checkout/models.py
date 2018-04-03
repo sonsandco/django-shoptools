@@ -2,12 +2,12 @@ from datetime import datetime
 import decimal
 
 from django.db import models
-from django.conf import settings
 try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
 
+from shoptools import settings as shoptools_settings
 from shoptools.abstractions.models import \
     AbstractOrderLine, AbstractOrder, AbstractAddress
 from shoptools.util import make_uuid, get_shipping_module
@@ -16,7 +16,6 @@ from .emails import send_email_receipt, send_dispatch_email
 
 # TODO make this configurable
 EMAIL_RECEIPT = False
-DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
 
 class Order(AbstractOrder):
@@ -40,7 +39,7 @@ class Order(AbstractOrder):
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
     currency = models.CharField(max_length=3, editable=False,
-                                default=DEFAULT_CURRENCY)
+                                default=shoptools_settings.DEFAULT_CURRENCY)
     created = models.DateTimeField(default=datetime.now)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)

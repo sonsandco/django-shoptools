@@ -7,9 +7,11 @@ try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
+
 from shoptools.abstractions.models import \
     IShippable, AbstractOrder, AbstractOrderLine
-from shoptools.util import make_uuid
+from shoptools.util import make_uuid, get_regions_module
+from shoptools import settings as shoptools_settings
 
 
 class SavedCart(AbstractOrder, IShippable):
@@ -32,9 +34,12 @@ class SavedCart(AbstractOrder, IShippable):
     order_obj_id = models.PositiveIntegerField(null=True)
     order_obj = GenericForeignKey('order_obj_content_type', 'order_obj_id')
 
-    # This wasn't getting updated for some reason, so just use the session
-    # shipping options instead - this means shipping options aren't saved with
-    # the cart but the main thing is the cart lines anyway
+    @property
+    def currency(self):
+        regions_module = get_regions_module()
+        if regions_module:
+            return regions_module.get_region(self.request).currency
+        return shoptools_settings.DEFAULT_CURRENCY
 
     def set_request(self, request):
         self.request = request

@@ -4,6 +4,9 @@ from django.db import models
 
 from django_countries.fields import CountryField
 
+from shoptools import settings as shoptools_settings
+from shoptools.currencies import CURRENCIES
+
 
 class RegionQueryset(models.QuerySet):
     pass
@@ -12,7 +15,8 @@ class RegionQueryset(models.QuerySet):
 class Region(models.Model):
     name = models.CharField(max_length=100, unique=True)
     currency = models.CharField(
-        max_length=3, blank=True, default='NZD', help_text=u'3-letter code')
+        max_length=4, blank=True, choices=CURRENCIES,
+        default=shoptools_settings.DEFAULT_CURRENCY)
     symbol = models.CharField(max_length=1, blank=True, default='$')
     is_default = models.BooleanField(default=False)
     sort_order = models.PositiveSmallIntegerField(default=0)

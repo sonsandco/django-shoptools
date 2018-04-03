@@ -248,7 +248,7 @@ def checkout(request, cart, order=None):
                 billing_form.instance.order = order
                 billing_form.save()
 
-            if billing_is_shipping and order.billing_address:
+            if billing_is_shipping and order.get_address(Address.TYPE_BILLING):
                 # edge case where the order was already saved with a separate
                 # billing address - delete it
                 order.billing_address.delete()

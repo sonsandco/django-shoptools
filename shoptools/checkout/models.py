@@ -145,7 +145,10 @@ class Order(AbstractOrder):
 
     @property
     def billing_address(self):
-        return self.get_address(Address.TYPE_BILLING)
+        billing = self.get_address(Address.TYPE_BILLING)
+        if not billing:
+            billing = self.get_address(Address.TYPE_SHIPPING)
+        return billing
 
     # voucher integration
     def calculate_discounts(self):

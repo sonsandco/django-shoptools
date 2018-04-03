@@ -42,16 +42,14 @@
     {{ order.shipping_address.phone }}<br>
   </p>
 
-  {% if order.billing_address %}
-    <h3>Billing details</h3>
-    <p>
-      {{ order.billing_address.name }}<br>
-      {{ order.billing_address.address }}<br>
-      {{ order.billing_address.city }} {{ order.billing_address.postcode }}<br>
-      {{ order.billing_address.state }}<br>
-      {{ order.billing_address.get_country_display() }}<br>
-      {{ order.billing_address.email }}<br>
-      {{ order.billing_address.phone }}<br>
-    </p>
-  {% endif %}
+  <h3>Billing details</h3>
+  <p>
+    {{ order.billing_address.name }}<br>
+    {{ order.billing_address.address }}<br>
+    {{ order.billing_address.city }} {{ order.billing_address.postcode }}<br>
+    {{ order.billing_address.state }}<br>
+    {{ order.billing_address.get_country_display() }}<br>
+    {{ order.billing_address.email }}<br>
+    {{ order.billing_address.phone }}<br>
+  </p>
 {% endblock %}

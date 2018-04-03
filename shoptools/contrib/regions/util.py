@@ -14,6 +14,9 @@ from .models import Region, Country
 from .forms import RegionSelectionForm
 
 
+COOKIE_MAX_AGE = 52*7*24*60*60  # 1 year
+
+
 def get_ip(request):
     return request.GET.get('REMOTE_ADDR', request.META.get(
         'HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', None)))
@@ -47,7 +50,15 @@ def get_country_code(request):
 def get_cookie(request):
     if shoptools_settings.LOCATION_COOKIE_NAME not in request.COOKIES:
         return {}
-    return json.loads(request.COOKIES[LOCATION_COOKIE])
+    info = json.loads(request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME])
+    return info
+
+
+def set_cookie(request, response, info):
+    info = json.dumps(info)
+    response.set_cookie(shoptools_settings.LOCATION_COOKIE_NAME, info,
+                        max_age=COOKIE_MAX_AGE, httponly=False)
+    request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME] = info
 
 
 def get_int(val):
@@ -87,9 +98,8 @@ def set_region(request, response, region_id):
     info = get_cookie(request)
 
     if region_id and Region.objects.filter(id=region_id):
-        info['region_id'] = region_id
-        response.set_cookie(shoptools_settings.LOCATION_COOKIE_NAME, info)
-        request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME] = info
+        info["region_id"] = region_id
+        set_cookie(request, response, info)
         return True
     else:
         return False
@@ -112,9 +122,8 @@ def set_country(request, response, country_code):
     info = get_cookie(request)
 
     if country_code and Country.objects.filter(country=country_code):
-        info['country_code'] = country_code
-        response.set_cookie(shoptools_settings.LOCATION_COOKIE_NAME, info)
-        request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME] = info
+        info["country_code"] = country_code
+        set_cookie(request, response, info)
         return True
     else:
         return False

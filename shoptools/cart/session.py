@@ -195,10 +195,12 @@ class SessionCart(ICart, IShippable):
         # TODO consistent ordering
         if self._data is None:
             return
+        rv = []
         for line in self._data["lines"]:
             line = self.make_line_obj(line)
             if line.item:
-                yield line
+                rv.append(line)
+        return rv
 
     def count(self):
         if self._data is None:

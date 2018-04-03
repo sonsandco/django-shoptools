@@ -240,11 +240,11 @@ class ICartLine(object):
             'description': self.description,
             'options': self.options,
             'quantity': self.quantity,
-            'total': float(self.total),
             'unique_identifier':
                 self.item.unique_identifier
                 if self.item and hasattr(self.item, 'unique_identifier')
                 else None,
+            'total': float(self.total) if self.total is not None else None,
         }
 
 
@@ -421,7 +421,8 @@ class AbstractOrder(models.Model, ICart):
 
     @property
     def subtotal(self):
-        return decimal.Decimal(sum(line.total for line in self.get_lines()))
+        return decimal.Decimal(
+            sum(line.total if line.total else 0 for line in self.get_lines()))
 
 
 class AbstractOrderLine(models.Model, ICartLine):
@@ -467,9 +468,11 @@ class AbstractOrderLine(models.Model, ICartLine):
     @property
     def total(self):
         if not self.item:
-            return decimal.Decimal(0)
-        return decimal.Decimal(
-            self.item.cart_line_total(self))
+            return None
+        line_total = self.item.cart_line_total(self)
+        if line_total is None:
+            return None
+        return decimal.Decimal(line_total)
 
     @property
     def description(self):

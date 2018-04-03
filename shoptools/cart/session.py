@@ -218,7 +218,8 @@ class SessionCart(ICart, IShippable):
     def subtotal(self):
         if self._data is None:
             return decimal.Decimal(0)
-        return decimal.Decimal(sum(line.total for line in self.get_lines()))
+        return decimal.Decimal(
+            sum(line.total if line.total else 0 for line in self.get_lines()))
 
     @property
     def total(self):

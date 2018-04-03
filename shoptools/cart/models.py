@@ -7,8 +7,9 @@ try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
-from .base import IShippable, AbstractOrder, AbstractOrderLine
-from .util import make_uuid
+from shoptools.abstractions.models import \
+    IShippable, AbstractOrder, AbstractOrderLine
+from shoptools.util import make_uuid
 
 
 class SavedCart(AbstractOrder, IShippable):

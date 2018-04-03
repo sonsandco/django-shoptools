@@ -5,7 +5,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 
 from . import get_cart as default_get_cart
 from . import actions
-from .util import get_cart_html
+from shoptools.util import get_cart_html
 
 
 def cart_view(action=None):

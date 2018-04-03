@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django import forms
 from django.utils.text import mark_safe
 
-from shoptools.cart.util import get_vouchers_module
+from shoptools.util import get_vouchers_module
 
 from .models import Order, OrderLine, Address
 from .export import generate_csv

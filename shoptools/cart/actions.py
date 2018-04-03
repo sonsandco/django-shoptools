@@ -1,4 +1,4 @@
-from .util import unpack_instance_key
+from shoptools.util import unpack_instance_key
 
 
 def cart_action(params=[]):

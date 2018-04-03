@@ -4,7 +4,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 
-from shoptools.checkout.models import AbstractAddress
+from shoptools.abstractions.models import AbstractAddress
 
 
 class AccountManager(models.Manager):

@@ -1,10 +1,12 @@
 import decimal
 import json
 
-from .base import ICart, ICartItem, ICartLine, IShippable
-from .util import validate_options, get_regions_module, create_instance_key, \
+from shoptools.abstractions.models import \
+    ICart, ICartItem, ICartLine, IShippable
+from shoptools.util import \
+    validate_options, get_regions_module, create_instance_key, \
     unpack_instance_key
-from . import settings as cart_settings
+from shoptools import settings as shoptools_settings
 
 
 KEY_SEPARATOR = '|'
@@ -65,7 +67,8 @@ class SessionCart(ICart, IShippable):
 
     def __init__(self, request, session_key=None):
         self.request = request
-        self.session_key = session_key or cart_settings.DEFAULT_SESSION_KEY
+        self.session_key = \
+            session_key or shoptools_settings.DEFAULT_SESSION_KEY
         self._data = self.request.session.get(self.session_key, None)
 
     def get_voucher_codes(self):
@@ -207,7 +210,7 @@ class SessionCart(ICart, IShippable):
         regions_module = get_regions_module()
         if regions_module:
             return regions_module.get_region(self.request).currency
-        return cart_settings.DEFAULT_CURRENCY
+        return shoptools_settings.DEFAULT_CURRENCY
 
     @property
     def subtotal(self):

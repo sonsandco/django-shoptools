@@ -7,11 +7,11 @@ from functools import partial
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 
-from . import settings as cart_settings
+from . import settings as shoptools_settings
 
 
 def get_module(name):
-    module_name = getattr(cart_settings, '%s_MODULE' % name)
+    module_name = getattr(shoptools_settings, '%s_MODULE' % name)
     return importlib.import_module(module_name) if module_name else None
 
 
@@ -19,6 +19,7 @@ get_accounts_module = partial(get_module, 'ACCOUNTS')
 get_regions_module = partial(get_module, 'REGIONS')
 get_shipping_module = partial(get_module, 'SHIPPING')
 get_vouchers_module = partial(get_module, 'VOUCHERS')
+get_favourites_module = partial(get_module, 'FAVOURITES')
 
 
 def make_uuid():
@@ -66,9 +67,7 @@ def unpack_instance_key(ctype, pk):
     return instance
 
 
-def get_cart_html(cart, template='cart/cart_snippet.html'):
-    # TODO - put this somewhere else - views?
-
+def get_cart_html(cart, template='cart/html_snippet.html'):
     from django.template.loader import render_to_string
 
     return render_to_string(template, {

@@ -1,22 +1,15 @@
 import json
 
 from django.http import HttpResponse
-from django.conf import settings
 
 from shoptools.cart import get_cart
-from shoptools.cart.util import get_accounts_module, get_regions_module
+from shoptools.util import \
+    get_accounts_module, get_regions_module, get_favourites_module
 
 
 accounts_module = get_accounts_module()
 regions_module = get_regions_module()
-
-
-# TODO need a smarter way to do this - extra apps should somehow register their
-# presence with the shoptools core
-if 'wishlist' in settings.INSTALLED_APPS:
-    from wishlist.models import get_wishlist
-else:
-    get_wishlist = None
+favourites_module = get_favourites_module()
 
 
 class JsonResponse(HttpResponse):
@@ -27,16 +20,18 @@ class JsonResponse(HttpResponse):
 
 def get_data(request):
     """Collate user data from the different apps in use. """
+    from django.apps import apps
 
-    data = {
-        'cart': get_cart(request).as_dict(),
-    }
+    data = {}
+
+    if apps.is_installed('shoptools.cart'):
+        data['cart'] = get_cart(request).as_dict()
 
     if accounts_module:
         data['account'] = accounts_module.get_data(request)
 
-    if get_wishlist:
-        data['wishlist'] = get_wishlist(request).as_dict()
+    if favourites_module:
+        data['favourites'] = favourites_module.get_data(request)
 
     if regions_module:
         data['regions'] = regions_module.get_data(request)

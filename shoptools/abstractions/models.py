@@ -6,9 +6,12 @@ import json
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.utils.translation import gettext_lazy as _
 
-from .util import get_cart_html, get_shipping_module, get_vouchers_module, \
-    validate_options
+from django_countries.fields import CountryField
+
+from shoptools.util import \
+    get_cart_html, get_shipping_module, get_vouchers_module, validate_options
 
 
 # TODO
@@ -214,8 +217,10 @@ class ICartLine(object):
             'options': self.options,
             'quantity': self.quantity,
             'total': float(self.total),
-            # 'unique_identifier':
-            #     self.unique_identifier if self.item else None,
+            'unique_identifier':
+                self.item.unique_identifier
+                if self.item and hasattr(self.item, 'unique_identifier')
+                else None,
         }
 
 
@@ -275,9 +280,6 @@ class ICartItem(object):
            option from each. """
 
         return dict((key, opts[0]) for key, opts in self.available_options())
-
-
-# Abstract models
 
 
 class AbstractOrder(models.Model, ICart):
@@ -369,12 +371,14 @@ class AbstractOrder(models.Model, ICart):
 
         lines = self.get_line_cls().objects.filter(parent_object=self) \
             .order_by('pk')
+        rv = []
         for line in lines:
             if line.item:
                 # parent_object may have been instantiated with a request,
                 # so attach it to the line
                 line.parent_object = self
-                yield line
+                rv.append(line)
+        return rv
 
     def empty(self):
         return not self.count()
@@ -452,3 +456,41 @@ class AbstractOrderLine(models.Model, ICartLine):
     def __str__(self):
         return "%s x %s: $%.2f" % (self.description, self.quantity,
                                    self.total)
+
+
+class AbstractAddress(models.Model):
+    """Provides standardized address fields. Also used for account addresses.
+    """
+
+    address = models.CharField(_('Address'), max_length=1023)
+    city = models.CharField(_('Town / City'), max_length=255)
+    postcode = models.CharField(_('Postcode'), max_length=100)
+    state = models.CharField(_('State'), max_length=255, blank=True,
+                             default='')
+    country = CountryField(_('Country'))
+    phone = models.CharField(_('Phone'), max_length=50, default='', blank=True)
+
+    def from_obj(self, obj):
+        """Prefill an instance from another AbstractAddress instance. Should
+           only be used with subclasses. """
+
+        assert isinstance(obj, AbstractAddress)
+        assert issubclass(self.__class__, AbstractAddress)
+
+        fields = ('address',  'city', 'postcode', 'state', 'country',
+                  'phone', )
+        for f in fields:
+            setattr(self, f, getattr(obj, f))
+
+    def as_dict(self):
+        return {
+            'address': self.address,
+            'city': self.city,
+            'postcode': self.postcode,
+            'state': self.state,
+            'country': self.country,
+            'phone': self.phone
+        }
+
+    class Meta:
+        abstract = True

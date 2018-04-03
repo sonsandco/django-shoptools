@@ -5,7 +5,7 @@ product's get_shipping_cost method, and restricts shipping destination to
 countries within the current region.
 """
 
-from shoptools.cart.util import get_regions_module
+from shoptools.util import get_regions_module
 
 
 regions_module = get_regions_module()

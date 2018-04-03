@@ -10,7 +10,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from model_utils.managers import InheritanceManager
 
-from shoptools.cart.base import ICart
+from shoptools.abstractions.models import ICart
 from shoptools.checkout.models import Order
 
 

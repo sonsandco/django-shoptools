@@ -1,6 +1,6 @@
 from django.db import models
 
-from shoptools.cart.base import ICartItem
+from shoptools.abstractions.models import ICartItem
 
 
 class Product(models.Model, ICartItem):

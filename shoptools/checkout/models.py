@@ -8,14 +8,10 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 
-from django.utils.translation import gettext_lazy as _
+from shoptools.abstractions.models import \
+    AbstractOrderLine, AbstractOrder, AbstractAddress
+from shoptools.util import make_uuid, get_shipping_module
 
-from shoptools.cart.base import AbstractOrderLine, AbstractOrder
-from shoptools.cart.util import make_uuid, get_shipping_module
-# from dps.models import FullTransactionProtocol, Transaction
-# from paypal.models import FullTransactionProtocol, Transaction
-
-from django_countries.fields import CountryField
 from .emails import send_email_receipt, send_dispatch_email
 
 # TODO make this configurable
@@ -218,44 +214,6 @@ class OrderLine(AbstractOrderLine):
             self.description = self.item.cart_description()
 
         return super(OrderLine, self).save(*args, **kwargs)
-
-
-class AbstractAddress(models.Model):
-    """Provides standardized address fields. Also used for account addresses.
-    """
-
-    address = models.CharField(_('Address'), max_length=1023)
-    city = models.CharField(_('Town / City'), max_length=255)
-    postcode = models.CharField(_('Postcode'), max_length=100)
-    state = models.CharField(_('State'), max_length=255, blank=True,
-                             default='')
-    country = CountryField(_('Country'))
-    phone = models.CharField(_('Phone'), max_length=50, default='', blank=True)
-
-    def from_obj(self, obj):
-        """Prefill an instance from another AbstractAddress instance. Should
-           only be used with subclasses. """
-
-        assert isinstance(obj, AbstractAddress)
-        assert issubclass(self.__class__, AbstractAddress)
-
-        fields = ('address',  'city', 'postcode', 'state', 'country',
-                  'phone', )
-        for f in fields:
-            setattr(self, f, getattr(obj, f))
-
-    def as_dict(self):
-        return {
-            'address': self.address,
-            'city': self.city,
-            'postcode': self.postcode,
-            'state': self.state,
-            'country': self.country,
-            'phone': self.phone
-        }
-
-    class Meta:
-        abstract = True
 
 
 class Address(AbstractAddress):

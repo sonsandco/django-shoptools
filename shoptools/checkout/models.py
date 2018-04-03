@@ -15,7 +15,7 @@ from shoptools.util import make_uuid, get_shipping_module
 from .emails import send_email_receipt, send_dispatch_email
 
 # TODO make this configurable
-EMAIL_RECEIPT = False
+EMAIL_RECEIPT = True
 
 
 class Order(AbstractOrder):

@@ -1,8 +1,4 @@
-<h2 class='favourites-heading'>
-  Favourites
-</h2>
 {% set lines = cart.get_lines() %}
-{% include 'favourites/snippets/share.html' %}
 <div class='favourites-list'>
   {% for line in lines %}
     {% set item = line.item %}
@@ -19,7 +15,7 @@
       {% if editable and item %}
         <form action='{{ url("favourites_toggle") }}' method='POST'
               class='favourites-toggle-form'
-              data-item='{{ item.ctype.replace('.', '-') }}-{{ item.id }}'>
+              id='{{ item.ctype.replace('.', '-') }}-{{ item.id }}'>
           {{ csrf_input }}
           <input type='hidden' name='pk' value='{{ item.pk }}'/>
           <input type='hidden' name='ctype' value='{{ item.ctype }}'/>

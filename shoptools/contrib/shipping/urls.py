@@ -2,7 +2,7 @@
 
 from django.conf.urls import url
 
-from shoptools.checkout.util import get_html_snippet
+from shoptools.cart.util import get_html_snippet
 from . import views
 
 

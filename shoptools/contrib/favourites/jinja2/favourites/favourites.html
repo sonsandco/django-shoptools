@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 
+{% block title %}Favourites{% endblock %}
+
 {% block content %}
-  {% include 'favourites/html_snippet.html' %}
+  <article class="shoptools-favourites-page shoptools-page">
+    <h2 class='favourites-heading'>
+      Favourites
+    </h2>
+    {% include 'favourites/html_snippet.html' %}
+  </article>
 {% endblock %}

@@ -2,8 +2,9 @@ from django.conf.urls import url
 from django.views.generic.base import RedirectView
 
 import shoptools.cart.views
+from shoptools.cart.util import get_html_snippet
 from . import views
-from .util import get_html_snippet
+
 
 urlpatterns = [
     url(r'^cart$', views.cart, {}, 'checkout_cart'),

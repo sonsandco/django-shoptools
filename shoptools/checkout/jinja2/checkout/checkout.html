@@ -30,7 +30,7 @@
       <p>
         <label>
           {{ meta_form.save_details }}
-          {% if request.user.is_authenticated() %}
+          {% if request.user.is_authenticated %}
             Save details to your account
           {% else %}
             Create an account

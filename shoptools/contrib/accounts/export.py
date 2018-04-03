@@ -29,9 +29,8 @@ ORDER_FIELDS = (
     ('State', 'state'),
     ('Postcode', 'postcode'),
     ('Country', 'country'),
-    ('email', lambda o: o.user.email),
+    ('Email', lambda o: o.user.email),
     ('Phone', 'phone'),
-    ('Is club member', 'club_member'),
 )
 
 

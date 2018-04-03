@@ -13,8 +13,10 @@ from django.conf import settings
 from .models import Region, Country
 
 
-LOCATION_SESSION_KEY = getattr(settings, 'LOCATION_SESSION_KEY',
-                               'location_info')
+# Use a cookie separate from the session, so we can vary the cache based on
+# region
+LOCATION_INFO_COOKIE = getattr(settings, 'SHOPTOOLS_LOCATION_COOKIE',
+                               'shoptools_location')
 
 
 def get_ip(request):
@@ -47,28 +49,10 @@ def get_country_code(request):
     return country['country_code']
 
 
-def get_session(request):
-    if LOCATION_SESSION_KEY not in request.session:
-        request.session[LOCATION_SESSION_KEY] = {}
-    return request.session[LOCATION_SESSION_KEY]
-
-
-def update_session(request):
-    """Examine the request to determine (and save) country_code and
-       region_id, if not already set.
-       Saves the minimum info required to the request (and doesn't hit the
-       db unless necessary) because we don't assume that all requests
-       require this information. """
-
-    info = get_session(request)
-
-    if not info.get('country_code'):
-        info['country_code'] = get_country_code(request)
-        request.session.modified = True
-
-    if not info.get('region_id'):
-        info['region_id'] = get_region_id(info.get('country_code'))
-        request.session.modified = True
+def get_cookie(request):
+    if LOCATION_INFO_COOKIE not in request.COOKIES:
+        return {}
+    return request.COOKIES[LOCATION_INFO_COOKIE]
 
 
 def get_int(val):
@@ -87,33 +71,32 @@ def regions(request):
 
 def get_region(request):
     """Get region instance from the session region id. """
-    info = get_session(request)
+    info = get_cookie(request)
     region_id = get_int(info.get('region_id'))
     if region_id:
         try:
-            return Region.objects.get(pk=region_id)
+            return Region.objects.get(id=region_id)
         except Region.DoesNotExist:
             pass
     return Region.get_default()
 
 
-def set_region(request, region_id):
+def set_region(request, response, region_id):
     """Set region instance."""
-    info = get_session(request)
+    info = get_cookie(request)
 
-    # just modify the session (not a cookie) since django sessions are
-    # persistent by default
-    if region_id and Region.objects.filter(pk=region_id):
+    if region_id and Region.objects.filter(id=region_id):
         info['region_id'] = region_id
-        request.session.modified = True
+        response.set_cookie(LOCATION_INFO_COOKIE, info)
+        request.COOKIES[LOCATION_INFO_COOKIE] = info
         return True
     else:
         return False
 
 
-def get_country(request):
+def get_country(request, response):
     """Get country instance from the session country code. """
-    info = get_session(request)
+    info = get_cookie(request)
     country_code = info.get('country_code')
     if country_code:
         try:
@@ -123,6 +106,19 @@ def get_country(request):
     return None
 
 
+def set_country(request, response, country_code):
+    """Set region instance."""
+    info = get_cookie(request)
+
+    if country_code and Country.objects.filter(country=country_code):
+        info['country_code'] = country_code
+        response.set_cookie(LOCATION_INFO_COOKIE, info)
+        request.COOKIES[LOCATION_INFO_COOKIE] = info
+        return True
+    else:
+        return False
+
+
 def regions_data(request):
     """Get region and country info from the session, as a dict for json
        serialization. """
@@ -130,10 +126,11 @@ def regions_data(request):
     data = {}
 
     region = get_region(request)
-    data['region'] = region.as_dict()
+    if region:
+        data['region'] = region.as_dict()
 
-    # country = get_country(request)
-    # if country:
-    #     data['country'] = country.as_dict()
+    country = get_country(request)
+    if country:
+        data['country'] = country.as_dict()
 
     return data

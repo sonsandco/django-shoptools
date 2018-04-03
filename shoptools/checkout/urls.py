@@ -3,6 +3,7 @@ from django.views.generic.base import RedirectView
 
 import shoptools.cart.views
 from . import views
+from .util import get_html_snippet
 
 urlpatterns = [
     url(r'^cart$', views.cart, {}, 'checkout_cart'),
@@ -17,5 +18,5 @@ urlpatterns = [
 for action in shoptools.cart.views.all_actions:
     urlpatterns.append(
         url(r'^_action/%s$' % action, getattr(shoptools.cart.views, action), {
-            'ajax_template': 'checkout/cart_ajax.html',
+            'get_html_snippet': get_html_snippet,
         }, 'checkout_%s' % action))

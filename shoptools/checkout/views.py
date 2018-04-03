@@ -30,33 +30,11 @@ def get_payment_module():
     return importlib.import_module(PAYMENT_MODULE) if PAYMENT_MODULE else None
 
 
-def regions_info(request):
-    region_module = get_regions_module()
-    if region_module:
-        return (region_module.regions(request),
-                region_module.get_region(request).id)
-    return ([], None)
-
-
 def available_countries(cart):
     shipping_module = get_shipping_module()
     if shipping_module:
         return shipping_module.available_countries(cart)
     return None
-
-
-def shipping_options_info(cart):
-    shipping_module = get_shipping_module()
-    if shipping_module and hasattr(shipping_module, 'available_options'):
-        options = shipping_module.available_options(cart)
-        current = cart.get_shipping_option()
-
-        if current not in [val for (val, text) in options]:
-            # prepend a blank one if the current option is invalid
-            options = (('', 'Select shipping option'), ) + tuple(options)
-
-        return (options, current)
-    return ([], None)
 
 
 def with_order(wrapped_view):
@@ -105,27 +83,25 @@ def checkout_view(view):
 
 @checkout_view
 def cart(request, cart, order=None):
-    # TODO review this? Should we make messages the standard way this works?
-    # for error in cart.get_errors():
-    #     messages.add_message(request, messages.ERROR, error)
+    # Check for errors now, so if the cart is updated during this process it
+    # is reflected in ctx.
+    # TODO: rename error related methods to be validation related
+    errors = cart.get_errors()
 
-    regions, selected_region = regions_info(request)
-    shipping_options, selected_shipping_option = \
-        shipping_options_info(cart)
-
-    # If we have shipping_options and there's no shipping option selected,
-    # default to the first valid one.
-    if shipping_options and not cart.get_shipping_option():
-        selected_shipping_option = shipping_options[1][0]
-        cart.set_shipping_option(selected_shipping_option)
-
-    return render(request, 'checkout/cart.html', {
+    ctx = {
         'cart': cart,
-        'regions': list(regions) if regions else [],
-        'region': selected_region,
-        'shipping_options': list(shipping_options) if shipping_options else [],
-        'shipping_option': selected_shipping_option
-    })
+        'cart_errors': errors
+    }
+
+    region_module = get_regions_module()
+    if region_module:
+        ctx.update(region_module.get_context(request))
+
+    shipping_module = get_shipping_module()
+    if shipping_module:
+        ctx.update(shipping_module.get_context(cart))
+
+    return render(request, 'checkout/cart.html', ctx)
 
 
 @checkout_view

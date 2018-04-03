@@ -5,7 +5,6 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 
 from . import get_cart as default_get_cart
 from . import actions
-from shoptools.util import get_cart_html
 
 
 def cart_view(action=None):
@@ -16,7 +15,7 @@ def cart_view(action=None):
        ajax and non-ajax requests, respectively. """
 
     def view_func(request, next_url=None, get_cart=default_get_cart,
-                  ajax_template=None):
+                  get_html_snippet=None):
 
         if action and not request.POST:
             return HttpResponseNotAllowed(['POST'])
@@ -46,8 +45,8 @@ def cart_view(action=None):
                 'errors': errors,
                 'cart': cart.as_dict(),
             }
-            if ajax_template:
-                data['html_snippet'] = get_cart_html(cart, ajax_template)
+            if get_html_snippet:
+                data['html_snippet'] = get_html_snippet(request, cart)
 
             return HttpResponse(json.dumps(data),
                                 content_type='application/json')

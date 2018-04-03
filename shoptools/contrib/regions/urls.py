@@ -2,10 +2,13 @@
 
 from django.conf.urls import url
 
+from shoptools.checkout.util import get_html_snippet
 from . import views
 
 
+# TODO: Non-snippet version here, move snippet version to checkout.urls
 urlpatterns = [
-    # url(r'^country$', views.change_country, {}, 'regions_change_country'),
-    url(r'^region$', views.change_region, {}, 'regions_change_region'),
+    url(r'^_change$', views.change_region, {
+        'get_html_snippet': get_html_snippet,
+    }, 'regions_change_region'),
 ]

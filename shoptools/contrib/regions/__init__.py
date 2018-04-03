@@ -14,6 +14,6 @@ def get_data(request):
     return regions_data(request)
 
 
-def regions(request):
-    from .util import regions
-    return regions(request)
+def get_context(request):
+    from .util import regions_context
+    return regions_context(request)

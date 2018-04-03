@@ -8,14 +8,12 @@ except ImportError:
 else:
     from geoip2.errors import AddressNotFoundError
 
-from django.conf import settings
-
+from shoptools import settings as shoptools_settings
 from .models import Region, Country
+from .forms import RegionSelectionForm
 
 
-# Use a cookie separate from the session, so we can vary the cache based on
-# region
-LOCATION_INFO_COOKIE = getattr(settings, 'SHOPTOOLS_LOCATION_COOKIE',
+LOCATION_COOKIE_NAME = getattr(shoptools_settings, 'LOCATION_COOKIE_NAME',
                                'shoptools_location')
 
 
@@ -50,9 +48,9 @@ def get_country_code(request):
 
 
 def get_cookie(request):
-    if LOCATION_INFO_COOKIE not in request.COOKIES:
+    if LOCATION_COOKIE_NAME not in request.COOKIES:
         return {}
-    return request.COOKIES[LOCATION_INFO_COOKIE]
+    return request.COOKIES[LOCATION_COOKIE_NAME]
 
 
 def get_int(val):
@@ -65,14 +63,16 @@ def get_int(val):
         return None
 
 
-def regions(request):
-    return ((r.id, r.name) for r in Region.objects.all())
+def available_regions(request):
+    return [(r.id, r.option_text) for r in Region.objects.all()]
 
 
 def get_region(request):
     """Get region instance from the session region id. """
     info = get_cookie(request)
+
     region_id = get_int(info.get('region_id'))
+
     if region_id:
         try:
             return Region.objects.get(id=region_id)
@@ -83,12 +83,16 @@ def get_region(request):
 
 def set_region(request, response, region_id):
     """Set region instance."""
+    region_id = get_int(region_id)
+    if not region_id:
+        return False
+
     info = get_cookie(request)
 
     if region_id and Region.objects.filter(id=region_id):
         info['region_id'] = region_id
-        response.set_cookie(LOCATION_INFO_COOKIE, info)
-        request.COOKIES[LOCATION_INFO_COOKIE] = info
+        response.set_cookie(LOCATION_COOKIE_NAME, info)
+        request.COOKIES[LOCATION_COOKIE_NAME] = info
         return True
     else:
         return False
@@ -112,25 +116,45 @@ def set_country(request, response, country_code):
 
     if country_code and Country.objects.filter(country=country_code):
         info['country_code'] = country_code
-        response.set_cookie(LOCATION_INFO_COOKIE, info)
-        request.COOKIES[LOCATION_INFO_COOKIE] = info
+        response.set_cookie(LOCATION_COOKIE_NAME, info)
+        request.COOKIES[LOCATION_COOKIE_NAME] = info
         return True
     else:
         return False
 
 
+def regions_context(request):
+    """Return region related context for use in cart related html.
+    """
+    valid_regions = list(available_regions(request))
+    selected_region = get_region(request)
+
+    initial = {
+        'region_id': selected_region.id
+    }
+    if selected_region.id not in [r_id for (r_id, name) in valid_regions]:
+        # prepend a blank one if the current option is invalid
+        valid_regions = (('', 'Select region'), ) + \
+            tuple(valid_regions)
+        initial = {}
+
+    region_selection_form = RegionSelectionForm(
+        initial=initial,
+        region_choices=valid_regions)
+    return {
+        'available_regions': valid_regions,
+        'selected_region': selected_region,
+        'region_selection_form': region_selection_form
+    }
+
+
 def regions_data(request):
     """Get region and country info from the session, as a dict for json
        serialization. """
+    valid_regions = list(available_regions(request))
+    selected_region = get_region(request)
 
-    data = {}
-
-    region = get_region(request)
-    if region:
-        data['region'] = region.as_dict()
-
-    country = get_country(request)
-    if country:
-        data['country'] = country.as_dict()
-
-    return data
+    return {
+        'available_regions': valid_regions,
+        'selected_region': selected_region.as_dict(),
+    }

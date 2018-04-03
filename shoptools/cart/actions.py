@@ -91,17 +91,6 @@ def clear(cart, confirm):
 
 
 @cart_action(params=(
-    ('option_slug', str, True),
-))
-def set_shipping_option(cart, option_slug):
-    """Set shipping option id for a cart. No validation here - any errors will
-       be displayed on the cart page."""
-
-    cart.set_shipping_option(option_slug)
-    return (True, None)
-
-
-@cart_action(params=(
     ('codes', str, True),
 ))
 def set_voucher_codes(cart, codes):

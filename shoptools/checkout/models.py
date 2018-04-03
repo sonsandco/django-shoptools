@@ -60,8 +60,8 @@ class Order(AbstractOrder):
     _shipping_cost = models.DecimalField(
         max_digits=8, decimal_places=2, default=0, db_column='shipping_cost',
         editable=False, verbose_name='shipping cost')
-    _shipping_option = models.CharField(
-        max_length=255, blank=True, default='', editable=False,
+    _shipping_option = models.PositiveSmallIntegerField(
+        blank=True, null=True, editable=False,
         db_column='shipping_option', verbose_name='shipping option')
     # payments = GenericRelation(Transaction)
     dispatched = models.DateTimeField(null=True, editable=False)
@@ -79,17 +79,16 @@ class Order(AbstractOrder):
     def set_request(self, request):
         self.request = request
 
-    def set_shipping_option(self, option_slug):
-        """Saves the provided option_slug to this order."""
-
-        self._shipping_option = option_slug
+    def set_shipping_option(self, option_id):
+        """Saves the provided option_id to this order."""
+        self._shipping_option = option_id
         shipping_module = get_shipping_module()
         if shipping_module:
             self._shipping_cost = shipping_module.calculate(self)
         self.save()
 
     def get_shipping_option(self):
-        return self._shipping_option or ''
+        return self._shipping_option
 
     @property
     def shipping_cost(self):

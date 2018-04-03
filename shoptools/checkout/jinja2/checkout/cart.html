@@ -94,11 +94,11 @@
             class='shipping-option-selector'>
         {{ csrf_input }}
         <input name='next' value='{{ url("checkout_cart") }}' />
-        <select name='option_slug'>
-          {% for slug, name in shipping_options %}
-            <option value='{{ slug }}'
-                    {{- ' selected' if slug == shipping_option else '' }}
-                    {{- ' disabled' if not slug else '' }}>
+        <select name='option_id'>
+          {% for id, name in shipping_options %}
+            <option value='{{ id }}'
+                    {{- ' selected' if id == shipping_option else '' }}
+                    {{- ' disabled' if not id else '' }}>
               {{ name }}
             </option>
           {% endfor %}

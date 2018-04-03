@@ -69,7 +69,6 @@ def cart_view(action=None):
 # TODO rename - confusing
 get_cart = cart_view()
 
-all_actions = ('add', 'quantity', 'options', 'clear', 'set_shipping_option',
-               'set_voucher_codes')
+all_actions = ('add', 'quantity', 'options', 'clear', 'set_voucher_codes')
 for action in all_actions:
     locals()[action] = cart_view(getattr(actions, action))

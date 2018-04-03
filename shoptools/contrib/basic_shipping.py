@@ -11,20 +11,13 @@ from shoptools.util import get_regions_module
 regions_module = get_regions_module()
 
 
-def get_errors(cart):
-    """Return a list of error strings, or an empty list if valid. """
-
-    return []
-
-
 def calculate(cart):
     """Return the total shipping cost for the cart. """
 
-    total = 0
-    for line in cart.get_lines():
-        total += line.item.get_shipping_cost(line)
+    if cart.subtotal > 200:
+        return 0
 
-    return total
+    return 30
 
 
 def available_countries(cart):
@@ -33,10 +26,10 @@ def available_countries(cart):
        Return None if there's no restriction. """
 
     region = regions_module.get_region(cart.request)
-    return ((c.country.code, c.country.name) for c in region.countries.all())
+    return [(c.country.code, c.country.name) for c in region.countries.all()]
 
 
-def options(cart):
+def available_options(cart):
     """Return the shipping options as a list of two-tuples, suitable for use by
        a django forms ChoiceField. Choices may be restricted by the given
        cart. Return None if not used.
@@ -47,4 +40,10 @@ def options(cart):
         ]
     """
 
-    return None
+    return []
+
+
+def get_context(cart):
+    """Return shipping related context for use in cart related html.
+    """
+    return {}

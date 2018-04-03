@@ -85,19 +85,19 @@ class SessionCart(ICart, IShippable):
         self._data["vouchers"] = list(codes)
         self.request.session.modified = True
 
-    def set_shipping_option(self, option_slug):
-        """Saves the provided option_slug to this SessionCart."""
+    def set_shipping_option(self, option_id):
+        """Saves the provided option_id to this SessionCart."""
 
         self._init_session_cart()
-        self._data['shipping_option'] = option_slug
+        self._data['shipping_option'] = option_id
         self.request.session.modified = True
 
     def get_shipping_option(self):
         """Get shipping options for this cart, if any. """
 
         if self._data is None:
-            return ''
-        return self._data.get('shipping_option', '')
+            return None
+        return self._data.get('shipping_option', None)
 
     def update_quantity(self, instance, quantity=1, add=False, options={}):
         assert isinstance(quantity, int)

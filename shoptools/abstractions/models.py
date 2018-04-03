@@ -121,15 +121,38 @@ class ICart(object):
         shipping_module = get_shipping_module()
 
         if shipping_module and hasattr(shipping_module, 'available_options'):
-            options = list(shipping_module.available_options(self))
-            option_slugs = [slug for (slug, title) in options]
+            shipping_options = list(shipping_module.available_options(self))
 
-            if not len(options):
+            if not len(shipping_options):
                 return ['We are unable to ship your current order to the '
                         'selected region']
 
-            if self.get_shipping_option() not in option_slugs:
-                return ['Invalid shipping option selected']
+            shipping_option_ids = [opt_id for (opt_id, title) in
+                                   shipping_options]
+
+            current_shipping_option_id = self.get_shipping_option()
+
+            if not current_shipping_option_id:
+                self.set_shipping_option(shipping_option_ids[0])
+            elif current_shipping_option_id not in shipping_option_ids:
+                # Check if a ShippingOption with the same Option as our
+                # shipping option is available, so if the user changes region
+                # it keeps the same type of shipping selected.
+                if hasattr(shipping_module, 'get_shipping_option_instance'):
+                    shipping_option_instance = \
+                        shipping_module.get_shipping_option_instance(
+                            current_shipping_option_id)
+                    ids_from_option = shipping_option_instance.option \
+                        .shipping_options.values_list('id', flat=True)
+                    valid_from_option = \
+                        [option_id for option_id in ids_from_option
+                         if option_id in shipping_option_ids]
+                    if len(valid_from_option):
+                        self.set_shipping_option(valid_from_option[0])
+                    else:
+                        return ['Please select a shipping option.']
+                else:
+                    return ['Please select a shipping option.']
 
         return []
 

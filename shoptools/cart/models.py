@@ -19,8 +19,8 @@ class SavedCart(AbstractOrder, IShippable):
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
-    _shipping_option = models.CharField(
-        max_length=255, blank=True, default='', editable=False,
+    _shipping_option = models.PositiveSmallIntegerField(
+        blank=True, null=True, editable=False,
         db_column='shipping_option', verbose_name='shipping option')
 
     # TODO maybe this should be a JSONField() too? Has to be a list though
@@ -39,19 +39,15 @@ class SavedCart(AbstractOrder, IShippable):
     def set_request(self, request):
         self.request = request
 
-    def set_shipping_option(self, option_slug):
-        """Saves the provided option_slug to this SavedCart."""
+    def set_shipping_option(self, option_id):
+        """Saves the provided option_id to this SavedCart."""
 
-        self._shipping_option = option_slug
+        self._shipping_option = option_id
         self.save()
 
     def get_shipping_option(self):
         """Get shipping option for this cart, if any. """
-
-        if self._shipping_option:
-            return self._shipping_option
-
-        return ''
+        return self._shipping_option
 
     def get_voucher_codes(self):
         return filter(bool, self._voucher_codes.split(','))

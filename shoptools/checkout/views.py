@@ -15,7 +15,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 from shoptools.cart import get_cart
 from shoptools.util import \
-    get_accounts_module, get_regions_module, get_shipping_module
+    get_accounts_module, get_shipping_module, get_regions_module
 
 from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
 from .models import Order, Address

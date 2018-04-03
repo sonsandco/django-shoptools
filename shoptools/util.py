@@ -7,7 +7,7 @@ from functools import partial
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 
-from . import settings as shoptools_settings
+from shoptools import settings as shoptools_settings
 
 
 def get_module(name):

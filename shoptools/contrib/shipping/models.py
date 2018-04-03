@@ -7,7 +7,8 @@ from shoptools.contrib.regions.models import Region
 
 class Option(models.Model):
     name = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=191, unique=True)
+    # TODO delete slug
+    slug = models.SlugField(max_length=191, unique=True, editable=False)
     sort_order = models.PositiveSmallIntegerField(default=0)
 
     class Meta:

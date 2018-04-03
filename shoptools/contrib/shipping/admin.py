@@ -9,8 +9,9 @@ from .models import Option, ShippingOption
 
 @admin.register(Option)
 class OptionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug')
-    prepopulated_fields = {'slug': ('name', )}
+    list_display = ('name', )
+    list_editable = ('name', )
+    list_display_links = None
 
 
 class ShippingOptionInline(admin.TabularInline):

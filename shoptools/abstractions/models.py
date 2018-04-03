@@ -6,6 +6,7 @@ import json
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.utils.text import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from django_countries.fields import CountryField
@@ -454,9 +455,8 @@ class AbstractOrderLine(models.Model, ICartLine):
         return self.item.cart_description()
 
     def __str__(self):
-        return "%s x %s: $%.2f" % (self.description, self.quantity,
-                                   self.total)
-
+        return mark_safe("%s x %s: $%.2f" % (self.description, self.quantity,
+                                             self.total))
 
 class AbstractAddress(models.Model):
     """Provides standardized address fields. Also used for account addresses.

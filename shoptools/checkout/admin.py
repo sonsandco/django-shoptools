@@ -21,9 +21,15 @@ class AddressInline(admin.StackedInline):
 
 class OrderLineInline(admin.TabularInline):
     model = OrderLine
-    exclude = ('item_content_type', 'item_object_id', 'created')
-    readonly_fields = ('quantity', '_description', '_total', )
+    exclude = ('item_content_type', 'item_object_id', 'created',
+               '_description')
+    readonly_fields = ('quantity', '_html_description',
+                       '_total', )
     extra = 0
+
+    def _html_description(self, obj):
+        return mark_safe(obj._description)
+    _html_description.allow_tags = True
 
     def has_add_permission(self, request):
         return False

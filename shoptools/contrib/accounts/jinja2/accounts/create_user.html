@@ -1,0 +1,14 @@
+{% extends "accounts/base.html" %}
+{% from 'snippets/form.html' import render_form with context %}
+
+{% set page_title = 'Create an account' %}
+
+{% block bodyclass %}create-account{% endblock %}
+
+{% block accounts_content %}
+  <form action="{{ request.path_info }}" method="post"
+        class="accounts-form">
+    {{ render_form(user_form) }}
+    <input type="submit" name="confirm" value="Create account">
+  </form>
+{% endblock %}

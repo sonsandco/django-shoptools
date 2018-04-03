@@ -12,6 +12,7 @@ urlpatterns = [
     url(r'^checkout/([\w\-]+)$', views.checkout, {}, 'checkout_checkout'),
     url(r'^checkout/([\w\-]+)/print$', views.invoice, {}, 'checkout_invoice'),
     url(r'^_emails/([\w\-]+)$', views.preview_emails),
+    url(r'^_emails/$', views.preview_first_emails),
 ]
 
 # identical to the cart views, but generating a checkout snippet

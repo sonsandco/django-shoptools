@@ -319,3 +319,9 @@ def preview_emails(request, order):
     return render(request, 'checkout/preview_emails.html', {
         'emails': emails,
     })
+
+
+@staff_member_required
+def preview_first_emails(request):
+    order = Order.objects.first()
+    return redirect(preview_emails, order.secret)

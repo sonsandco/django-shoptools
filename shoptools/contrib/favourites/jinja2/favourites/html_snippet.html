@@ -1,0 +1,38 @@
+<h2 class='favourites-heading'>
+  Favourites
+</h2>
+{% set lines = cart.get_lines() %}
+{% include 'favourites/snippets/share.html' %}
+<div class='favourites-list'>
+  {% for line in lines %}
+    {% set item = line.item %}
+    <div class='favourites-line'>
+      {% if item %}
+        <a href='{{ item.get_absolute_url() }}'>
+      {% endif %}
+          <p class='description'>
+            {{ item.description }}
+          </p>
+      {% if item %}
+        </a>
+      {% endif %}
+      {% if editable and item %}
+        <form action='{{ url("favourites_toggle") }}' method='POST'
+              class='favourites-toggle-form'
+              data-item='{{ item.unique_identifier }}'>
+          {{ csrf_input }}
+          <input type='hidden' name='pk' value='{{ item.pk }}'/>
+          <input type='hidden' name='ctype' value='{{ item.ctype }}'/>
+          <input class='remove'
+                 type='submit' value='Remove' />
+          <input class='add'
+                 type='submit' value='Restore' />
+        </form>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class='no-results'>
+      You have no favourite listings.
+    </p>
+  {% endfor %}
+</div>

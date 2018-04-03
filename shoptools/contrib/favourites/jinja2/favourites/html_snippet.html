@@ -19,7 +19,7 @@
       {% if editable and item %}
         <form action='{{ url("favourites_toggle") }}' method='POST'
               class='favourites-toggle-form'
-              data-item='{{ item.unique_identifier }}'>
+              data-item='{{ item.ctype.replace('.', '-') }}-{{ item.id }}'>
           {{ csrf_input }}
           <input type='hidden' name='pk' value='{{ item.pk }}'/>
           <input type='hidden' name='ctype' value='{{ item.ctype }}'/>

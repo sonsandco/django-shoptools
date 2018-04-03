@@ -1,0 +1,15 @@
+{% from 'snippets/form.html' import render_form with context %}
+
+{# Must be imported "with context" #}
+{% macro shipping_change_form(form, next='') %}
+  <form action='{{ url("shipping_change_option") }}' method='POST'
+        class='shipping-option-selection-form'>
+    <div class='form-inner'>
+      {{ render_form(form) }}
+      {% if next %}
+        <input name='next' value='{{ next }}' type='hidden' />
+      {% endif %}
+      <input type='submit' value='Change shipping option'/>
+    </div>
+  </form>
+{% endmacro %}

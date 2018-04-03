@@ -1,50 +1,99 @@
-{% extends "base.html" %}
+{% extends 'checkout/base.html' %}
+{% from 'snippets/form.html' import form_field with context %}
+
+{% block title %}Shipping Details{% endblock %}
 
 {% block content %}
-  <h2>Checkout</h2>
-
-  <p>
-    {% if request.user.is_authenticated %}
-      Logged in as {{ request.user.first_name }}
-    {% else %}
-      <a href="{{ url('login') }}?next={{ request.path }}">Log in</a>
-    {% endif %}
-  </p>
-
-  <form action="{{ request.path_info }}" method="post">
-    {{ csrf_input }}
-
-    <h3>Shipping address</h3>
-    {{ shipping_form.as_p() }}
-    {{ order_form.as_p() }}
-
-    <h3>Billing address</h3>
-    <label>
-      {{ meta_form.billing_is_shipping }}
-      Same as shipping
-    </label>
-    {{ billing_form.as_p() }}
-
+  <article class='shoptools-checkout-page shoptools-page'>
     {% if accounts_enabled %}
-      <h3>Save details</h3>
-      <p>
-        <label>
-          {{ meta_form.save_details }}
-          {% if request.user.is_authenticated %}
-            Save details to your account
-          {% else %}
-            Create an account
-          {% endif %}
-        </label>
-      </p>
-      {% if user_form %}
-        {{ user_form.as_p() }}
-      {% endif %}
+      <section class='user'>
+        {% if request.user.is_authenticated %}
+          <h6>
+            Logged in as {{ request.user.first_name }}
+          </h6>
+        {% else %}
+          {% include 'checkout/snippets/side_login.html' %}
+        {% endif %}
+      </section>
     {% endif %}
 
-    <p>
-      <a href="{{ url('checkout_cart') }}" class="back">Back to cart</a>
-      <input type="submit" name="confirm" value="Continue to payment">
-    </p>
-  </form>
+    {% if order or not cart.empty() %}
+      {# novalidate so we can have blank user / billing address forms #}
+      <form action='{{ request.path_info }}#form' method='post'
+            class='checkout-form'
+            novalidate>
+        {{- csrf_input }}
+        {%- for field in order_form.hidden_fields() %}{{ field }}{% endfor %}
+        {%- for field in billing_form.hidden_fields() %}{{ field }}{% endfor %}
+        {%- for field in shipping_form.hidden_fields() %}{{ field }}{% endfor -%}
+        <section class='shipping-address'>
+          <h3>Shipping Address</h3>
+
+          {% if shipping_form.errors or order_form.errors %}
+            <p class='error-warning'>Please correct the errors below</p>
+          {% endif %}
+          {{ shipping_form.non_field_errors()|safe }}
+          {{ order_form.non_field_errors()|safe }}
+
+          {% for field in shipping_form.visible_fields() %}
+            {{ form_field(field) }}
+          {% endfor %}
+          {% for field in order_form.visible_fields() %}
+            {{ form_field(field) }}
+          {% endfor %}
+
+          {% if accounts_enabled and account and not account.pk and user_form %}
+            <h3>Save details</h3>
+            <div class='form-field save_details'>
+              {{ meta_form.save_details }}
+              <label for='id_save_details'>
+                Would you like to save these details?
+              </label>
+            </div>
+            {% for field in user_form.hidden_fields() %}
+              {{ field|safe }}
+            {% endfor %}
+            <div class='user-form'>
+              {{ user_form.non_field_errors()|safe }}
+
+              {% for field in user_form.visible_fields() %}
+                {{ form_field(field) }}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </section>
+        {#- spaceless -#}
+        <section class='billing-address'>
+          <h3>Billing Address</h3>
+          <div class='form-field billing_is_shipping'>
+            <span class='input-wrap'>
+              {{ meta_form.billing_is_shipping }}
+            </span>
+            <label for='id_billing_is_shipping'>
+              Same as shipping address
+            </label>
+          </div>
+          <div class='billing-address-inner'>
+            {% if billing_form.errors %}
+              <p class='error-warning'>Please correct the errors below</p>
+            {% endif %}
+            {{ billing_form.non_field_errors()|safe }}
+
+            {% for field in billing_form.visible_fields() %}
+              {{ form_field(field) }}
+            {% endfor %}
+          </div>
+        </section>
+        {#- spaceless -#}
+        <div class='checkout-buttons'>
+          <input type='submit' name='confirm' class='button' value='Continue to payment'>
+          <a href='{{ url("checkout_cart") }}' class='back'><span>Back to cart</span></a>
+        </div>
+      </form>
+    {% else %}
+      <p class='empty'>
+        No products in your cart.
+      </p>
+    {% endif %}
+  </article>
 {% endblock %}

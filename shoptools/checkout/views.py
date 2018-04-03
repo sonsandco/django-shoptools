@@ -275,7 +275,6 @@ def checkout(request, cart, order=None):
         user_form = get_user_form()
 
     return render(request, 'checkout/checkout.html', {
-        'template': 'checkout/checkout.html',
         'order_form': order_form,
         'meta_form': meta_form,
         'shipping_form': shipping_form,
@@ -284,6 +283,7 @@ def checkout(request, cart, order=None):
         'cart': cart,
         'order': order,
         'accounts_enabled': accounts_enabled,
+        'account': account
     })
 
 

@@ -241,9 +241,8 @@ class ICartLine(object):
             'options': self.options,
             'quantity': self.quantity,
             'unique_identifier':
-                self.item.unique_identifier
-                if self.item and hasattr(self.item, 'unique_identifier')
-                else None,
+                '%s-%s' % (self.item.ctype.replace('.', '-'), self.item.id)
+                if self.item else '',
             'total': float(self.total) if self.total is not None else None,
         }
 

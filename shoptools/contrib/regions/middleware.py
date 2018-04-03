@@ -2,8 +2,8 @@
 
 from django.utils.deprecation import MiddlewareMixin
 
-from .util import \
-    LOCATION_COOKIE_NAME, get_cookie, get_country_code, get_region_id
+from shoptools import settings as shoptools_settings
+from .util import get_cookie, get_country_code, get_region_id
 
 
 class RegionMiddleware(MiddlewareMixin):
@@ -24,11 +24,11 @@ class RegionMiddleware(MiddlewareMixin):
         # and save the updated info against the request so we can set the
         # cookie in process_response.
         if updated:
-            request.COOKIES[LOCATION_COOKIE_NAME] = info
+            request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME] = info
             request.shoptools_region_info = info
 
     def process_response(self, request, response):
         if hasattr(request, 'shoptools_region_info'):
-            response.set_cookie(LOCATION_COOKIE_NAME,
+            response.set_cookie(shoptools_settings.LOCATION_COOKIE_NAME,
                                 request.shoptools_region_info)
         return response

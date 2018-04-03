@@ -13,10 +13,6 @@ from .models import Region, Country
 from .forms import RegionSelectionForm
 
 
-LOCATION_COOKIE_NAME = getattr(shoptools_settings, 'LOCATION_COOKIE_NAME',
-                               'shoptools_location')
-
-
 def get_ip(request):
     return request.GET.get('REMOTE_ADDR', request.META.get(
         'HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', None)))
@@ -48,9 +44,9 @@ def get_country_code(request):
 
 
 def get_cookie(request):
-    if LOCATION_COOKIE_NAME not in request.COOKIES:
+    if shoptools_settings.LOCATION_COOKIE_NAME not in request.COOKIES:
         return {}
-    return request.COOKIES[LOCATION_COOKIE_NAME]
+    return request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME]
 
 
 def get_int(val):
@@ -91,8 +87,8 @@ def set_region(request, response, region_id):
 
     if region_id and Region.objects.filter(id=region_id):
         info['region_id'] = region_id
-        response.set_cookie(LOCATION_COOKIE_NAME, info)
-        request.COOKIES[LOCATION_COOKIE_NAME] = info
+        response.set_cookie(shoptools_settings.LOCATION_COOKIE_NAME, info)
+        request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME] = info
         return True
     else:
         return False
@@ -116,8 +112,8 @@ def set_country(request, response, country_code):
 
     if country_code and Country.objects.filter(country=country_code):
         info['country_code'] = country_code
-        response.set_cookie(LOCATION_COOKIE_NAME, info)
-        request.COOKIES[LOCATION_COOKIE_NAME] = info
+        response.set_cookie(shoptools_settings.LOCATION_COOKIE_NAME, info)
+        request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME] = info
         return True
     else:
         return False

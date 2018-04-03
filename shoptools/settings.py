@@ -12,7 +12,8 @@ FAVOURITES_MODULE = getattr(settings, 'SHOPTOOLS_FAVOURITES_MODULE', None)
 DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
 DEFAULT_CURRENCY = getattr(settings, 'DEFAULT_CURRENCY', 'NZD')
 
-LOCATION_COOKIE_NAME = getattr(settings, 'LOCATION_COOKIE_NAME', '')
+LOCATION_COOKIE_NAME = getattr(settings, 'LOCATION_COOKIE_NAME',
+                               'shoptools_location')
 
 FAVOURITES_SESSION_KEY = getattr(settings, 'FAVOURITES_SESSION_KEY',
                                  'favourites_info')

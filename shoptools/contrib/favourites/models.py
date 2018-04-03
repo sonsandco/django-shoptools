@@ -6,7 +6,7 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 from shoptools.abstractions.models import AbstractOrder, AbstractOrderLine
-from shoptools.util import make_uuid, get_cart_html
+from shoptools.util import make_uuid
 
 
 class FavouritesList(AbstractOrder):
@@ -56,9 +56,6 @@ class FavouritesList(AbstractOrder):
             'count': self.count(),
             'lines': [line.as_dict() for line in self.get_lines()],
         }
-
-        data['html_snippet'] = \
-            get_cart_html(self, template='favourites/html_snippet.html')
 
         return data
 

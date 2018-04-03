@@ -65,11 +65,3 @@ def unpack_instance_key(ctype, pk):
         instance = None
 
     return instance
-
-
-def get_cart_html(cart, template='cart/html_snippet.html'):
-    from django.template.loader import render_to_string
-
-    return render_to_string(template, {
-        'cart': cart
-    }, request=cart.request)

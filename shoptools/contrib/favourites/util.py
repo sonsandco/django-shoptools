@@ -1,3 +1,5 @@
+from django.template.loader import render_to_string
+
 from shoptools.settings import FAVOURITES_SESSION_KEY
 
 
@@ -46,3 +48,9 @@ def favourites_data(request):
         data = favourites.as_dict()
 
     return data
+
+
+def get_html_snippet(favourites):
+    return render_to_string('favourites/html_snippet.html', {
+        'favourites': favourites
+    }, request=favourites.request)

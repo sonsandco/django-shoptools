@@ -10,7 +10,6 @@ except ImportError:
 from django.views.decorators.cache import never_cache
 
 from shoptools.settings import FAVOURITES_SESSION_POST_KEY
-from shoptools.util import get_cart_html
 
 from . import get_favourites as default_get_favourites
 from . import actions
@@ -53,7 +52,7 @@ def favourites_action_view(action=None):
 
     def view_func(request, next_url=None,
                   get_favourites=default_get_favourites,
-                  ajax_template=None):
+                  get_html_snippet=None):
 
         if action and not request.POST:
             return HttpResponseNotAllowed(['POST'])
@@ -108,8 +107,8 @@ def favourites_action_view(action=None):
                 'errors': errors,
                 'favourites': favourites.as_dict(),
             }
-            if ajax_template:
-                data['html_snippet'] = get_cart_html(favourites, ajax_template)
+            if get_html_snippet:
+                data['html_snippet'] = get_html_snippet(favourites)
 
             return HttpResponse(json.dumps(data),
                                 content_type='application/json')

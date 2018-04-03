@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import socket
+import json
 
 try:
     from django.contrib.gis.geoip2 import GeoIP2
@@ -46,7 +47,7 @@ def get_country_code(request):
 def get_cookie(request):
     if shoptools_settings.LOCATION_COOKIE_NAME not in request.COOKIES:
         return {}
-    return request.COOKIES[shoptools_settings.LOCATION_COOKIE_NAME]
+    return json.loads(request.COOKIES[LOCATION_COOKIE])
 
 
 def get_int(val):

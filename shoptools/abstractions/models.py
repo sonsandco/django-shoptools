@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from django_countries.fields import CountryField
 
 from shoptools.util import \
-    get_cart_html, get_shipping_module, get_vouchers_module, validate_options
+    get_shipping_module, get_vouchers_module, validate_options
 
 
 # TODO
@@ -89,8 +89,6 @@ class ICart(object):
                 data[f] = float(attr) if attr is not None else None
 
         # TODO add discounts?
-
-        data['html_snippet'] = get_cart_html(self)
 
         return data
 

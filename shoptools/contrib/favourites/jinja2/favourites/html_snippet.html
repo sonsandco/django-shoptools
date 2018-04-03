@@ -1,4 +1,4 @@
-{% set lines = cart.get_lines() %}
+{% set lines = favourites.get_lines() %}
 <div class='favourites-list'>
   {% for line in lines %}
     {% set item = line.item %}

@@ -75,7 +75,7 @@ def options(cart, key, **options):
     ('pk', str, True),
     ('quantity', int, False),
 ))
-def add(cart, ctype, pk, quantity=None, **options):
+def add(cart, ctype, pk, quantity=1, **options):
     """Add an item to the cart. """
 
     instance = unpack_instance_key(ctype, pk)

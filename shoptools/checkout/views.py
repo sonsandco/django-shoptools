@@ -136,7 +136,7 @@ def checkout(request, cart, order=None):
     # Send back to cart page if cart isn't valid. The cart view will show an
     # appropriate error message.
     # At this point we don't care about order.is_valid because its contents
-    # will be overridden by the cart's anyway.
+    # will be overridden by the cart's contents anyway.
     if not order.pk and not cart.is_valid:
         return redirect('checkout_cart')
 
@@ -312,9 +312,6 @@ def invoice(request, order):
 @staff_member_required
 @with_order
 def preview_emails(request, order):
-    # send_email('receipt', [order.email], order=order)
-    # send_email('notification', [t[1] for t in settings.CHECKOUT_MANAGERS],
-    #            order=order)
     emails = []
     for t in ('receipt', 'notification', 'dispatch'):
         emails.append(email_content(t, order=order))

@@ -444,7 +444,7 @@ class AbstractOrderLine(models.Model, ICartLine):
     created = models.DateTimeField(default=datetime.now)
     quantity = models.IntegerField()
     # options = JSONField(default=dict, blank=True)
-    _options = models.TextField(default='', db_column='options')
+    _options = models.TextField(default='', blank=True, db_column='options')
 
     def get_options(self):
         return json.loads(self._options)
@@ -511,7 +511,7 @@ class AbstractAddress(models.Model):
             'city': self.city,
             'postcode': self.postcode,
             'state': self.state,
-            'country': self.country,
+            'country': self.country.code,
             'phone': self.phone
         }
 

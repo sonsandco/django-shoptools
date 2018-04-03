@@ -18,7 +18,7 @@ exec(open('shoptools/_version.py').read())
 setup(
     name='django-shoptools',
     version=__version__,
-    description='Recurring event tools for django',
+    description='Another Django eCommerce library',
     long_description=open(readme_path).read(),
     author='Greg Brown',
     author_email='greg@sons.co.nz',

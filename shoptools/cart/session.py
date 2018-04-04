@@ -193,9 +193,9 @@ class SessionCart(ICart, IShippable):
 
     def get_lines(self):
         # TODO consistent ordering
-        if self._data is None:
-            return
         rv = []
+        if self._data is None:
+            return rv
         for line in self._data["lines"]:
             line = self.make_line_obj(line)
             if line.item:

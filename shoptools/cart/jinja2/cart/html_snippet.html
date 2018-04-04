@@ -28,14 +28,20 @@
     </div>
   {% endif %}
 
+  {% if vouchers_enabled %}
+    {% from 'vouchers/snippets/macros.html' import cart_voucher_form with context %}
+    {{ cart_voucher_form(cart) }}
+  {% endif %}
+
   <div class='checkout-totals {{- " cart-invalid" if not cart.is_valid else '' }}'>
+    {% set code, symbol = cart.get_currency() %}
     <div class='subtotal'>
       {% if cart.is_valid %}
         <strong>Subtotal</strong>
         {#- spaceless -#}
         <span class='subtotal-inner'>
-          $<span class='cart-subtotal'>
-            {{- '{:,.0f}'.format(cart.subtotal) -}}
+          {{ symbol }}<span class='cart-subtotal'>
+            {{- '{:,.2f}'.format(cart.subtotal) -}}
           </span>
         </span>
       {% endif %}
@@ -45,19 +51,23 @@
         <strong>Shipping</strong>
         {#- spaceless -#}
         <span class='shipping-inner'>
-          $<span class='cart-shipping-cost'>
-            {{- '{:,.0f}'.format(cart.shipping_cost) -}}
+          {{ symbol }}<span class='cart-shipping-cost'>
+            {{- '{:,.2f}'.format(cart.shipping_cost) -}}
           </span>
         </span>
       {% endif %}
     </div>
+    {% if vouchers_enabled %}
+      {% from 'vouchers/snippets/macros.html' import cart_voucher_discounts %}
+      {{ cart_voucher_discounts(cart) }}
+    {% endif %}
     <div class='total'>
       {% if cart.is_valid %}
         <strong>Total</strong>
         {#- spaceless -#}
         <span class='total-inner'>
-          $<span class='cart-total'>
-            {{- '{:,.0f}'.format(cart.total) }} {{ selected_region.currency -}}
+          {{ symbol }}<span class='cart-total'>
+            {{- '{:,.2f}'.format(cart.total) }} {{ code -}}
           </span>
         </span>
       {% endif %}

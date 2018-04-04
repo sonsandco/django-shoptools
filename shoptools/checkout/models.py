@@ -38,8 +38,13 @@ class Order(AbstractOrder):
 
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
-    currency = models.CharField(max_length=3, editable=False,
-                                default=shoptools_settings.DEFAULT_CURRENCY)
+    # hardcode currency in case the client subsequently deletes it in the admin
+    currency_code = models.CharField(
+        max_length=4, editable=False,
+        default=shoptools_settings.DEFAULT_CURRENCY_CODE)
+    currency_symbol = models.CharField(
+        max_length=1, editable=False,
+        default=shoptools_settings.DEFAULT_CURRENCY_SYMBOL)
     created = models.DateTimeField(default=datetime.now)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)
@@ -88,6 +93,9 @@ class Order(AbstractOrder):
 
     def get_shipping_option(self):
         return self._shipping_option
+
+    def get_currency(self):
+        return (self.currency_code, self.currency_symbol)
 
     @property
     def shipping_cost(self):

@@ -1,7 +1,8 @@
 from django.apps import apps
 from django.template.loader import render_to_string
 
-from shoptools.util import get_regions_module, get_shipping_module
+from shoptools.util import \
+    get_regions_module, get_shipping_module, get_vouchers_module
 from .session import SessionCart
 
 
@@ -54,5 +55,9 @@ def get_html_snippet(request, cart=None):
     shipping_module = get_shipping_module()
     if shipping_module:
         ctx.update(shipping_module.get_context(cart))
+
+    vouchers_module = get_vouchers_module()
+    if vouchers_module:
+        ctx.update(vouchers_module.get_context(cart))
 
     return render_to_string('cart/html_snippet.html', ctx, request=request)

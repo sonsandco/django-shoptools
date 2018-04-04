@@ -1,0 +1,37 @@
+{% macro cart_voucher_form(cart) %}
+  <form action='{{ url("checkout_set_voucher_codes") }}' method='post'
+        class='voucher-form'>
+    {{ csrf_input }}
+
+    <div class='form-field'>
+      <label for='voucher-codes'>Vouchers</label>
+      <div class='input-wrap'>
+        <input type='text' name='codes' id='voucher-codes'
+               value='{{ ", ".join(cart.get_voucher_codes()) }}'>
+      </div>
+      <p class='help'>Separate multiple vouchers with a comma</p>
+    </div>
+
+    {% set discounts, invalid = cart.calculate_discounts() %}
+    {% for code in invalid %}
+      <p class='invalid'>
+        <span>{{ code }}</span> is invalid or expired
+      </p>
+    {% endfor %}
+
+    <input type='submit' value='Update'>
+  </form>
+{% endmacro %}
+
+{% macro cart_voucher_discounts(cart) %}
+  <div class='discount'>
+    {% set discounts, invalid = cart.calculate_discounts() %}
+    {% set _, symbol = cart.get_currency() %}
+    {% for discount in discounts %}
+      <p>
+        <span class='text'>{{ discount.voucher.discount_text }}</span>
+        <span class='amount'>-{{ symbol }}{{ discount.amount|floatformat(2) }}</span>
+      </p>
+    {% endfor %}
+  </div>
+{% endmacro %}

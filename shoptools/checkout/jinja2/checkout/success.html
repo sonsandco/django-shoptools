@@ -12,7 +12,7 @@
         ga('ecommerce:clear');
         ga('ecommerce:addTransaction', {
           'id': '{{ order.invoice_number }}',
-          {% if order.currency %}'currency': '{{ order.currency }}',{% endif %}
+          {% if order.currency_code %}'currency': '{{ order.currency_code }}',{% endif %}
           {% if order.shipping_cost %}'shipping': '{{ order.shipping_cost }}',{% endif %}
           'revenue': '{{ order.total }}'
         });
@@ -53,8 +53,8 @@
         <strong>Subtotal</strong>
         {#- spaceless -#}
         <span class="subtotal-inner">
-          $<span class="cart-subtotal">
-            {{- '{:,.0f}'.format(order.subtotal) -}}
+          {{ order.currency_symbol }}<span class="cart-subtotal">
+            {{- '{:,.2f}'.format(order.subtotal) -}}
           </span>
         </span>
       </div>
@@ -62,17 +62,27 @@
         <strong>Shipping</strong>
         {#- spaceless -#}
         <span class="shipping-inner">
-          $<span class="cart-shipping-cost">
-            {{- '{:,.0f}'.format(order.shipping_cost) -}}
+          {{ order.currency_symbol }}<span class="cart-shipping-cost">
+            {{- '{:,.2f}'.format(order.shipping_cost) -}}
           </span>
         </span>
       </div>
+      {% if order.total_discount -%}
+        <div class="discount">
+          <strong>Discount</strong>
+          {#- spaceless -#}
+          <span class="discount-inner">
+            -{{ order.currency_symbol }}<span class="cart-discount">
+              {{- '{:,.2f}'.format(order.total_discount) -}}
+          </span>
+        </div>
+      {% endif -%}
       <div class="total">
         <strong>Total</strong>
         {#- spaceless -#}
         <span class="total-inner">
-          $<span class="cart-total">
-            {{- '{:,.0f}'.format(order.total) -}}
+          {{ order.currency_symbol }}<span class="cart-total">
+            {{- '{:,.2f}'.format(order.total) -}}
           </span>
         </span>
       </div>

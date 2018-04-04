@@ -49,6 +49,8 @@ admin.site.register(FreeShippingVoucher, VoucherAdmin)
 class FixedVoucherAdmin(VoucherAdmin):
     list_display = VoucherAdmin.list_display + (
         'order', 'amount_redeemed', 'amount_remaining', )
+    readonly_fields = ('currency_code', )
+    exclude = ('limit', )
     actions = ('csv_export', )
 
     def amount_remaining(self, obj):

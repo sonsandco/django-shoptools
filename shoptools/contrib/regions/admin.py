@@ -2,7 +2,12 @@
 
 from django.contrib import admin
 
-from .models import Region, Country
+from .models import Currency, Region, Country
+
+
+@admin.register(Currency)
+class CurrencyAdmin(admin.ModelAdmin):
+    list_display = ('code', 'symbol')
 
 
 class CountryInline(admin.TabularInline):
@@ -13,5 +18,4 @@ class CountryInline(admin.TabularInline):
 class RegionAdmin(admin.ModelAdmin):
     list_display = ('name', 'currency', 'is_default', 'sort_order', )
     list_editable = ('sort_order', )
-    exclude = ('symbol', )  # symbol not implemented yet
     inlines = (CountryInline, )

@@ -38,9 +38,10 @@
           </div>
         {%- endif -%}
         <div class='line-total cell'>
+          {% set code, symbol = order_obj.get_currency() %}
           {% if line.total or line.total == 0 %}
             <p>
-              {{ '${:,.0f}'.format(line.total) }}
+              {{ symbol }}{{ '{:,.2f}'.format(line.total) }}
             </p>
           {% endif %}
         </div>

@@ -1,12 +1,27 @@
 # -*- coding: utf-8 -*-
 
 from django.db import models
-from django.utils.text import mark_safe
 
 from django_countries.fields import CountryField
 
 from shoptools import settings as shoptools_settings
 from shoptools.currencies import CURRENCIES
+
+
+# TODO: Own app?
+class Currency(models.Model):
+    code = models.CharField(
+        verbose_name='type',
+        max_length=4, unique=True, choices=CURRENCIES,
+        default=shoptools_settings.DEFAULT_CURRENCY_CODE)
+    symbol = models.CharField(
+        max_length=1, default=shoptools_settings.DEFAULT_CURRENCY_SYMBOL)
+
+    class Meta:
+        verbose_name_plural = 'currencies'
+
+    def __str__(self):
+        return self.get_code_display()
 
 
 class RegionQueryset(models.QuerySet):
@@ -15,10 +30,7 @@ class RegionQueryset(models.QuerySet):
 
 class Region(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    currency = models.CharField(
-        max_length=4, blank=True, choices=CURRENCIES,
-        default=shoptools_settings.DEFAULT_CURRENCY)
-    symbol = models.CharField(max_length=1, blank=True, default='$')
+    currency = models.ForeignKey(Currency, related_name='regions')
     is_default = models.BooleanField(default=False)
     sort_order = models.PositiveSmallIntegerField(default=0)
 
@@ -30,13 +42,17 @@ class Region(models.Model):
 
     @property
     def option_text(self):
-        return mark_safe('%s (%s)' % (self.name, self.currency))
+        if self.currency:
+            return '%s (%s)' % (self.name, self.currency.code)
+        return self.name
 
     # def get_default_country(self):
     #     return self.countries.order_by('-is_default_for_region').first()
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.currency)
+        if self.currency:
+            return '%s (%s)' % (self.name, self.currency.code)
+        return self.name
 
     class Meta:
         ordering = ('name', )
@@ -45,8 +61,8 @@ class Region(models.Model):
         return {
             'id': self.id,
             'name': self.name,
-            'currency': self.currency,
-            'symbol': self.symbol,
+            'currency_code': self.currency.code,
+            'currency_symbol': self.currency.symbol,
         }
 
 

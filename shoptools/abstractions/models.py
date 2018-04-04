@@ -478,8 +478,8 @@ class AbstractOrderLine(models.Model, ICartLine):
         return self.item.cart_description()
 
     def __str__(self):
-        return mark_safe("%s x %s: $%.2f" % (self.description, self.quantity,
-                                             self.total))
+        return mark_safe("%s x %s" % (self.description, self.quantity))
+
 
 class AbstractAddress(models.Model):
     """Provides standardized address fields. Also used for account addresses.

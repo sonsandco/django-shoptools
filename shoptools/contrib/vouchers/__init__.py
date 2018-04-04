@@ -4,10 +4,15 @@ def get_checkout_inlines():
 
 
 def calculate_discounts(*args, **kwargs):
-    from .models import calculate_discounts
+    from .util import calculate_discounts
     return calculate_discounts(*args, **kwargs)
 
 
 def save_discounts(*args, **kwargs):
-    from .models import save_discounts
+    from .util import save_discounts
     return save_discounts(*args, **kwargs)
+
+
+def get_context(request):
+    from .util import vouchers_context
+    return vouchers_context(request)

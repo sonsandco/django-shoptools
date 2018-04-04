@@ -15,7 +15,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 
 from shoptools.cart import get_cart
 from shoptools.util import \
-    get_accounts_module, get_shipping_module, get_regions_module
+    get_accounts_module, get_shipping_module, get_regions_module, \
+    get_vouchers_module
 
 from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
 from .models import Order, Address
@@ -100,6 +101,10 @@ def cart(request, cart, order=None):
     shipping_module = get_shipping_module()
     if shipping_module:
         ctx.update(shipping_module.get_context(cart))
+
+    vouchers_module = get_vouchers_module()
+    if vouchers_module:
+        ctx.update(vouchers_module.get_context(cart))
 
     return render(request, 'checkout/cart.html', ctx)
 
@@ -215,7 +220,9 @@ def checkout(request, cart, order=None):
                 shipping_form.is_valid() and billing_form_valid:
             # save the order obj to the db...
             order = order_form.save(commit=False)
-            order.currency = cart.currency
+            code, symbol = cart.get_currency()
+            order.currency_code = code
+            order.currency_symbol = symbol
 
             # Collect shipping address values now in case we need to create an
             # account.

@@ -33,7 +33,7 @@ export function globalUpdate (data) {
 
   if (data.regions && data.regions.region) {
     $('.regions-region-name').html(data.regions.region.name);
-    $('.regions-region-currency').html(data.regions.region.currency);
+    $('.regions-region-currency').html(data.regions.region.currency_code);
   }
 
   if (data.cart) {

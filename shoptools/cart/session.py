@@ -207,12 +207,15 @@ class SessionCart(ICart, IShippable):
             return 0
         return sum(r['quantity'] for r in self._data["lines"])
 
-    @property
-    def currency(self):
+    def get_currency(self):
         regions_module = get_regions_module()
         if regions_module:
-            return regions_module.get_region(self.request).currency
-        return shoptools_settings.DEFAULT_CURRENCY
+            selected_region = regions_module.get_region(self.request)
+            if selected_region and selected_region.currency:
+                return (selected_region.currency.code,
+                        selected_region.currency.symbol)
+        return (shoptools_settings.DEFAULT_CURRENCY_CODE,
+                shoptools_settings.DEFAULT_CURRENCY_SYMBOL)
 
     @property
     def subtotal(self):

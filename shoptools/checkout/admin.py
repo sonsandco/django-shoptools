@@ -88,7 +88,8 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email', 'id', 'phone', 'address', 'city',
                      'state', 'postcode', )
     actions = ('csv_export', 'resend_dispatch_email')
-    readonly_fields = ('_shipping_cost', 'id', 'amount_paid', 'currency', )
+    readonly_fields = ('_shipping_cost', 'id', 'amount_paid',
+                       'currency_code', )
 
     def resend_dispatch_email(self, request, queryset):
         for order in queryset:

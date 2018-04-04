@@ -13,11 +13,13 @@
     </div>
 
     {% set discounts, invalid = cart.calculate_discounts() %}
-    {% for code in invalid %}
-      <p class='invalid'>
-        <span>{{ code }}</span> is invalid or expired
-      </p>
-    {% endfor %}
+    <div class='invalid-vouchers'>
+      {% for code in invalid %}
+        <p>
+          <span>{{ code }}</span> is invalid or expired
+        </p>
+      {% endfor %}
+    </div>
 
     <input type='submit' value='Update'>
   </form>

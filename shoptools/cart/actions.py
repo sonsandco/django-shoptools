@@ -91,9 +91,9 @@ def clear(cart, confirm):
 
 
 @cart_action(params=(
-    ('codes', str, True),
+    ('codes', str, False),
 ))
-def set_voucher_codes(cart, codes):
+def set_voucher_codes(cart, codes=''):
     """Set voucher codes for a cart. No validation here - invalid codes
        will just be ignored, with an error message displayed on the cart
        page. """

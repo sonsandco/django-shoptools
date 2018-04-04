@@ -1,4 +1,5 @@
 import decimal
+from datetime import date
 from functools import reduce
 
 from django.db.models import Q
@@ -49,6 +50,10 @@ def calculate_discounts(obj, codes, include_shipping=True):
 
     # filter out any that have already been used
     vouchers = [v for v in vouchers if v.available(exclude=defaults)]
+
+    # filter out any that are expired
+    vouchers = [v for v in vouchers if
+                (not v.expiry_date or v.expiry_date >= date.today())]
 
     # filter out any under their minimum_spend value
     # invalid_spend = [v for v in vouchers if obj.subtotal < v.minimum_spend]

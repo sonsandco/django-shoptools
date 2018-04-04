@@ -22,6 +22,7 @@ class BaseVoucher(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     limit = models.PositiveSmallIntegerField(null=True, blank=True)
     minimum_spend = models.PositiveIntegerField(default=0)
+    expiry_date = models.DateField(blank=True, null=True)
 
     objects = InheritanceManager()
 

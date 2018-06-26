@@ -142,7 +142,7 @@ def checkout(request, cart, order=None):
     # appropriate error message.
     # At this point we don't care about order.is_valid because its contents
     # will be overridden by the cart's contents anyway.
-    if not order.pk and not cart.is_valid:
+    if not cart.is_valid:
         return redirect('checkout_cart')
 
     # if the user is anon, and accounts module is installed, show

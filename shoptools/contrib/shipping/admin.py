@@ -12,6 +12,7 @@ class OptionAdmin(admin.ModelAdmin):
     list_display = ('name', )
     list_editable = ('name', )
     list_display_links = None
+    prepopulated_fields = {"slug": ("name", )}
 
 
 class ShippingOptionInline(admin.TabularInline):

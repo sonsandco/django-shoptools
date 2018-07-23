@@ -23,27 +23,27 @@ class Migration(migrations.Migration):
             field=models.CharField(blank=True, db_column='shipping_option', default='', editable=False, max_length=255, verbose_name='shipping option'),
         ),
         migrations.AlterField(
-            model_name='address',
+            model_name='giftrecipient',
             name='address',
             field=models.CharField(max_length=1023, verbose_name='Address'),
         ),
         migrations.AlterField(
-            model_name='address',
+            model_name='giftrecipient',
             name='country',
             field=django_countries.fields.CountryField(max_length=2, verbose_name='Country'),
         ),
         migrations.AlterField(
-            model_name='address',
+            model_name='giftrecipient',
             name='phone',
             field=models.CharField(blank=True, default='', max_length=50, verbose_name='Phone'),
         ),
         migrations.AlterField(
-            model_name='address',
+            model_name='giftrecipient',
             name='postcode',
             field=models.CharField(max_length=100, verbose_name='Postcode'),
         ),
         migrations.AlterField(
-            model_name='address',
+            model_name='giftrecipient',
             name='state',
             field=models.CharField(blank=True, default='', max_length=255, verbose_name='State'),
         ),

@@ -30,7 +30,6 @@ class RegionQueryset(models.QuerySet):
 
 class Region(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    currency = models.ForeignKey(Currency, related_name='regions')
     currency = models.ForeignKey(Currency, related_name='regions',
                                  on_delete=models.CASCADE)
     is_default = models.BooleanField(default=False)

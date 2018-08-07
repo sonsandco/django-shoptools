@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 
 from . import get_cart as default_get_cart
 from . import actions
+from . import signals
 
 
 def cart_view(action=None):
@@ -38,6 +39,11 @@ def cart_view(action=None):
 
             if success is None:
                 return HttpResponseBadRequest()
+
+        signal = getattr(signals, action.__name__, None)
+        if signal:
+            signal.send(
+                sender=cart.__class__, success=success, request=request)
 
         if request.is_ajax():
             data = {

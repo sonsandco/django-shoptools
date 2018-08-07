@@ -22,3 +22,8 @@ def get_context(request):
 def get_shipping_option_instance(shipping_option_id):
     from .models import ShippingOption
     return ShippingOption.objects.get(id=shipping_option_id)
+
+
+def get_region_inlines():
+    from .admin import ShippingOptionInline
+    return [ShippingOptionInline]

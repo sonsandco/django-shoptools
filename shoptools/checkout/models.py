@@ -13,6 +13,9 @@ from shoptools.abstractions.models import \
 from shoptools.util import make_uuid, get_shipping_module
 
 from .emails import send_email_receipt, send_dispatch_email
+from .signals import \
+    checkout_post_payment_pre_success, checkout_post_payment_post_success, \
+    checkout_post_payment_pre_failure, checkout_post_payment_post_failure
 
 # TODO make this configurable
 EMAIL_RECEIPT = True
@@ -172,29 +175,60 @@ class Order(AbstractOrder):
     def get_amount(self):
         return max(0, self.total - self.amount_paid)
 
-    def transaction_succeeded(self, amount):
-        """Assume this will only be called once per payment. """
-        self.amount_paid = models.F('amount_paid') + amount
-        # TODO verify that it's fully paid for
-        self.status = self.STATUS_PAID
-        self.save()
+    def transaction_succeeded(self, transaction=None, interactive=None,
+                              status_updated=None):
+        """Assumes this will only be called once per payment. """
+        checkout_post_payment_pre_success.send(
+            sender=Order, transaction=transaction, interactive=interactive,
+            status_updated=status_updated)
 
-        if EMAIL_RECEIPT:
-            send_email_receipt(self)
+        needs_save = False
 
-        for line in self.get_lines():
-            item = line.item
-            if hasattr(item, 'purchase'):
-                item.purchase(line)
+        if transaction:
+            complete = self.get_amount() <= transaction.amount
+            self.amount_paid = models.F('amount_paid') + transaction.amount
+            needs_save = bool(transaction.amount)
+        else:
+            complete = self.get_amount()
 
-    def transaction_failed(self):
+        if complete:
+            self.status = self.STATUS_PAID
+            self.checkout_completed = datetime.now()
+            needs_save = True
+
+        if needs_save:
+            self.save()
+
+        if complete:
+            if EMAIL_RECEIPT:
+                send_email_receipt(self)
+
+            for line in self.get_lines():
+                item = line.item
+                if hasattr(item, 'purchase'):
+                    item.purchase(line)
+
+        checkout_post_payment_post_success.send(
+            sender=Order, transaction=transaction, interactive=interactive,
+            status_updated=status_updated)
+
+    def transaction_failed(self, transaction=None, interactive=None,
+                           status_updated=None):
+        checkout_post_payment_pre_failure.send(
+            sender=Order, transaction=transaction, interactive=interactive,
+            status_updated=status_updated)
+
         self.status = self.STATUS_PAYMENT_FAILED
         self.save()
 
-    def transaction_success_url(self, transaction):
+        checkout_post_payment_post_failure.send(
+            sender=Order, transaction=transaction, interactive=interactive,
+            status_updated=status_updated)
+
+    def transaction_success_url(self):
         return self.get_absolute_url()
 
-    def transaction_failure_url(self, transaction):
+    def transaction_failure_url(self):
         return self.get_absolute_url()
 
 

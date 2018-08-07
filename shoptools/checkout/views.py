@@ -19,6 +19,7 @@ from shoptools.util import \
 from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
 from .models import Order, Address
 from .emails import email_content
+from .signals import checkout_pre_payment
 
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
@@ -265,6 +266,7 @@ def checkout(request, cart, order=None):
 
             # and off we go to pay, if necessary
             payment_module = get_payment_module()
+            checkout_pre_payment.send(sender=Order, request=request)
             if order.total <= 0:
                 order.transaction_succeeded()
                 return redirect(order)

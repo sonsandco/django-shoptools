@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from model_utils.managers import InheritanceManager
 
 from shoptools import settings as shoptools_settings
-from shoptools.checkout.models import Order
+from shoptools.checkout.models import Order, OrderLine
 
 
 def make_code():

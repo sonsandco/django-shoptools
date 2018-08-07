@@ -15,6 +15,8 @@ from utilities.render import render
 
 from .models import Account
 from .forms import AccountForm, UserForm, CreateUserForm
+from .signals import \
+    create_pre_save, create_post_save, update_pre_save, update_post_save
 
 
 @login_required
@@ -59,8 +61,10 @@ def details(request):
         account_form = AccountForm(request.POST, instance=account)
         user_form = UserForm(request.POST, instance=account.user)
         if account_form.is_valid() and user_form.is_valid():
+            update_pre_save.send(sender=Account, request=request)
             account_form.save()
             user_form.save()
+            update_post_save.send(sender=Account, request=request)
 
             if request.is_ajax():
                 data = {
@@ -94,12 +98,14 @@ def create(request):
         if account_form.is_valid() and user_form.is_valid():
             account = account_form.save(commit=False)
             account.user = user_form.save()
+            create_pre_save.send(sender=Account, request=request)
             account.save()
             auth_user = authenticate(
                 username=account.user.username,
                 password=user_form.cleaned_data['password1'])
             login(request, auth_user)
             success = True
+            create_post_save.send(sender=Account, request=request)
 
         errors = user_form.errors
         errors.update(account_form.errors)

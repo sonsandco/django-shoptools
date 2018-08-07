@@ -39,14 +39,18 @@ def calculate_discounts(obj, codes, include_shipping=True):
     discounts = []
     total = obj.subtotal + (decimal.Decimal(obj.shipping_cost)
                             if include_shipping else decimal.Decimal(0))
-    # if obj is an order, and the voucher has already been used on that order,
-    # those instances are ignored when checking limits etc, since they will be
-    # overridden when it's saved. The order is also attached to each Discount
-    # instance
+    # if obj is or has an associated an order, and the voucher has already been
+    # used on that order, those instances are ignored when checking limits etc,
+    # since they will be overridden when it's saved. The order is also attached
+    # to each Discount instance
     if isinstance(obj, Order):
         defaults = {'order': obj}
     else:
-        defaults = {}
+        o = getattr(obj, 'order_obj', None)
+        if o and not o.amount_paid:
+            defaults = {'order': o}
+        else:
+            defaults = {}
 
     # filter out any that have already been used
     vouchers = [v for v in vouchers if v.available(exclude=defaults)]
@@ -97,7 +101,7 @@ def calculate_discounts(obj, codes, include_shipping=True):
 
     # apply fixed vouchers, smallest remaining amount first
     fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
-    fixed.sort(key=lambda v: v.amount_remaining())
+    fixed.sort(key=lambda v: v.amount_remaining(exclude=defaults))
 
     for voucher in fixed:
         # exclude any vouchers that do not match the cart's currency
@@ -105,7 +109,8 @@ def calculate_discounts(obj, codes, include_shipping=True):
         if voucher.currency_code != cart_currency_code:
             continue
 
-        amount = min(total, voucher.amount, voucher.amount_remaining())
+        amount = min(total, voucher.amount,
+                     voucher.amount_remaining(exclude=defaults))
         if amount == 0:
             continue
         total -= amount

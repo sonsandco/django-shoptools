@@ -66,7 +66,7 @@ class SavedCart(AbstractOrder, IShippable):
         return True
 
     def get_absolute_url(self):
-        return reverse('cart_cart', args=(self.secret, ))
+        return reverse('cart_get_cart', args=(self.secret, ))
 
     def __str__(self):
         if self.user:

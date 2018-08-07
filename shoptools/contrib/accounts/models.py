@@ -19,7 +19,8 @@ class AccountManager(models.Manager):
 
 
 class Account(AbstractAddress):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE,
+                                related_name='shoptools_account')
 
     objects = AccountManager()
 

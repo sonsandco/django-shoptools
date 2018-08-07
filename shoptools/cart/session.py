@@ -1,5 +1,6 @@
 import decimal
 import json
+import copy
 
 from shoptools.abstractions.models import \
     ICart, ICartItem, ICartLine, IShippable
@@ -135,7 +136,7 @@ class SessionCart(ICart, IShippable):
             self._data["lines"].append(data)
         else:
             # Already in the cart, so update the existing line
-            data = self._data["lines"][index]
+            data = copy.deepcopy(self._data["lines"][index])
             data['quantity'] = quantity
             line = self.make_line_obj(data)
             errors = line.get_errors()

@@ -145,7 +145,8 @@ def checkout(request, cart, order=None):
     accounts_module = get_accounts_module()
     accounts_enabled = bool(accounts_module)
     if accounts_enabled and not request.user.is_authenticated:
-        get_user_form = partial(CheckoutUserForm, use_required_attribute=False)
+        get_user_form = partial(CheckoutUserForm, use_required_attribute=False,
+                                prefix='checkout')
     else:
         def get_user_form(*args, **kwargs):
             return None

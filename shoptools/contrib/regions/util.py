@@ -135,6 +135,9 @@ def regions_context(request):
     valid_regions = list(available_regions(request))
     selected_region = get_region(request)
 
+    if not (valid_regions and selected_region):
+        return None
+
     initial = {
         'region_id': selected_region.id
     }
@@ -159,6 +162,9 @@ def regions_data(request):
        serialization. """
     valid_regions = list(available_regions(request))
     selected_region = get_region(request)
+
+    if not (valid_regions and selected_region):
+        return None
 
     return {
         'available_regions': valid_regions,

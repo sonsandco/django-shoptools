@@ -2,7 +2,6 @@ import json
 
 from django.http import HttpResponse
 
-from shoptools.cart import get_cart
 from shoptools.util import \
     get_accounts_module, get_regions_module, get_favourites_module
 
@@ -25,7 +24,9 @@ def get_data(request):
     data = {}
 
     if apps.is_installed('shoptools.cart'):
-        data['cart'] = get_cart(request).as_dict()
+        from shoptools.cart import get_cart
+        cart = get_cart(request)
+        data['cart'] = cart.as_dict()
 
     if accounts_module:
         data['account'] = accounts_module.get_data(request)

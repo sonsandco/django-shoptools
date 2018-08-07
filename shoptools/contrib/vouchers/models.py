@@ -82,8 +82,8 @@ class FixedVoucher(BaseVoucher):
     currency_symbol = models.CharField(
         max_length=1, editable=False,
         default=shoptools_settings.DEFAULT_CURRENCY_SYMBOL)
-    order_line = models.ForeignKey('checkout.OrderLine', null=True,
-                                   editable=False, on_delete=models.SET_NULL)
+    order_line = models.ForeignKey(OrderLine, null=True, editable=False,
+                                   on_delete=models.SET_NULL)
 
     @property
     def discount_text(self):

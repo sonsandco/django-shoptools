@@ -1,5 +1,4 @@
 from functools import partial
-import importlib
 
 from django.shortcuts import redirect, get_object_or_404, render
 from django.http import Http404
@@ -8,7 +7,6 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 from django.views.decorators.cache import never_cache
-from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.contrib.admin.views.decorators import staff_member_required
 # from django.contrib import messages
@@ -91,15 +89,21 @@ def cart(request, cart, order=None):
 
     region_module = get_regions_module()
     if region_module:
-        ctx.update(region_module.get_context(request))
+        context = region_module.get_context(request)
+        if context:
+            ctx.update(context)
 
     shipping_module = get_shipping_module()
     if shipping_module:
-        ctx.update(shipping_module.get_context(cart))
+        context = shipping_module.get_context(cart)
+        if context:
+            ctx.update(context)
 
     vouchers_module = get_vouchers_module()
     if vouchers_module:
-        ctx.update(vouchers_module.get_context(cart))
+        context = vouchers_module.get_context(cart)
+        if context:
+            ctx.update(context)
 
     return render(request, 'checkout/cart.html', ctx)
 
@@ -281,7 +285,7 @@ def checkout(request, cart, order=None):
         billing_form = get_billing_form()
         user_form = get_user_form()
 
-    return render(request, 'checkout/checkout.html', {
+    ctx = {
         'order_form': order_form,
         'meta_form': meta_form,
         'shipping_form': shipping_form,
@@ -291,7 +295,27 @@ def checkout(request, cart, order=None):
         'order': order,
         'accounts_enabled': accounts_enabled,
         'account': account
-    })
+    }
+
+    region_module = get_regions_module()
+    if region_module:
+        context = region_module.get_context(request)
+        if context:
+            ctx.update(context)
+
+    shipping_module = get_shipping_module()
+    if shipping_module:
+        context = shipping_module.get_context(cart)
+        if context:
+            ctx.update(context)
+
+    vouchers_module = get_vouchers_module()
+    if vouchers_module:
+        context = vouchers_module.get_context(cart)
+        if context:
+            ctx.update(context)
+
+    return render(request, 'checkout/checkout.html', ctx)
 
 
 def order_success_response(request, order):
@@ -300,10 +324,18 @@ def order_success_response(request, order):
         order.success_page_viewed = True
         order.save()
 
-    return render(request, 'checkout/success.html', {
+    ctx = {
         'order': order,
         'first_view': first_view,
-    })
+    }
+
+    vouchers_module = get_vouchers_module()
+    if vouchers_module:
+        context = vouchers_module.get_context(cart)
+        if context:
+            ctx.update(context)
+
+    return render(request, 'checkout/success.html', ctx)
 
 
 @with_order

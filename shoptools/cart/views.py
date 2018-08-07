@@ -46,7 +46,7 @@ def cart_view(action=None):
                 'cart': cart.as_dict(),
             }
             if get_html_snippet:
-                data['html_snippet'] = get_html_snippet(request, cart)
+                data['html_snippet'] = get_html_snippet(request, cart, errors)
 
             return HttpResponse(json.dumps(data),
                                 content_type='application/json')

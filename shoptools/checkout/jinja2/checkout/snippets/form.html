@@ -1,0 +1,72 @@
+{% macro form_errors(form) %}
+  {# if form.errors %}
+    <p class="error">Please correct the errors below</p>
+  {% endif #}
+  {{ form.non_field_errors() }}
+{% endmacro %}
+
+
+{% macro form_hidden(form) %}
+  {{ csrf_input }}
+  {% for field in form.hidden_fields() %}{{ field }}{% endfor %}
+{% endmacro %}
+
+
+{% macro custom_radio_select(field) %}
+  <div class='custom-radio-select' data-label='{{ field.label }}'>
+    {{ field|safe }}
+  </div>
+{% endmacro %}
+
+
+{% macro form_field(field, label=None) %}
+  <div class="form-field {{ field.name -}}
+              {%- if field|widget_type == 'CheckboxInput' %} checkbox
+              {%- endif -%}
+              {%- if field.errors %} error{% endif -%}
+              {%- if field.field.required %} required{% endif %}">
+    {{ field.errors|safe }}
+
+    {% if field|widget_type == 'RadioSelect' %}
+      {{ custom_radio_select(field) }}
+    {% elif field|widget_type == 'CheckboxInput' %}
+      <div class="input-wrap">{{ field|safe }}</div>
+      {{ field.label_tag(label, label_suffix='')|safe }}
+    {% else %}
+      {{ field.label_tag(label, label_suffix='')|safe }}
+      <div class="input-wrap">{{ field|safe }}</div>
+    {% endif %}
+
+    {% if field.help_text %}
+      <p class="help">{{ field.help_text }}</p>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+
+{% macro render_form(form) %}
+  {{ form_hidden(form) }}
+  {{ form_errors(form) }}
+
+  {% for field in form.visible_fields() %}
+    {{ form_field(field) }}
+  {% endfor %}
+{% endmacro %}
+
+
+{% macro render_formset(formset) %}
+  {{ formset.management_form }}
+
+  {% for form in formset %}
+    <section class="inline">
+      {{ form_hidden(form) }}
+      {{ form_errors(form) }}
+
+      {% for field in form.visible_fields() %}
+        {% if field.name != 'DELETE' or form.instance.pk %}
+          {{ form_field(field) }}
+        {% endif %}
+      {% endfor %}
+    </section>
+  {% endfor %}
+{% endmacro %}

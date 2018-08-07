@@ -25,8 +25,10 @@ def get_data(request):
 
     if apps.is_installed('shoptools.cart'):
         from shoptools.cart import get_cart
+        from shoptools.cart.util import get_html_snippet
         cart = get_cart(request)
         data['cart'] = cart.as_dict()
+        data['cart']['html_snippet'] = get_html_snippet(request, cart)
 
     if accounts_module:
         data['account'] = accounts_module.get_data(request)

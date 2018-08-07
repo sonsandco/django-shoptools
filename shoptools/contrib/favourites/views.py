@@ -108,7 +108,7 @@ def favourites_action_view(action=None):
                 'favourites': favourites.as_dict(),
             }
             if get_html_snippet:
-                data['html_snippet'] = get_html_snippet(favourites)
+                data['html_snippet'] = get_html_snippet(favourites, errors)
 
             return HttpResponse(json.dumps(data),
                                 content_type='application/json')

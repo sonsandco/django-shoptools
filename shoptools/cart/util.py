@@ -38,10 +38,19 @@ def get_cart(request):
     return session_cart
 
 
-def get_html_snippet(request, cart=None):
+def get_html_snippet(request, cart=None, errors=[]):
+    """
+    Both the cart and the checkout app have a get_html_snippet function.
+
+    This (cart version) is intended to return a minimal snippet containing only
+    the cart rows, so that it can be used to populate a cart summary panel, for
+    example.
+    """
     if not cart:
         cart = get_cart(request)
-    errors = cart.get_errors()
+
+    if not errors:
+        errors = cart.get_errors()
 
     ctx = {
         'cart': cart,
@@ -50,14 +59,20 @@ def get_html_snippet(request, cart=None):
 
     region_module = get_regions_module()
     if region_module:
-        ctx.update(region_module.get_context(request))
+        context = region_module.get_context(request)
+        if context:
+            ctx.update(context)
 
     shipping_module = get_shipping_module()
     if shipping_module:
-        ctx.update(shipping_module.get_context(cart))
+        context = shipping_module.get_context(cart)
+        if context:
+            ctx.update(context)
 
     vouchers_module = get_vouchers_module()
     if vouchers_module:
-        ctx.update(vouchers_module.get_context(cart))
+        context = vouchers_module.get_context(cart)
+        if context:
+            ctx.update(context)
 
     return render_to_string('cart/html_snippet.html', ctx, request=request)

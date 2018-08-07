@@ -50,7 +50,8 @@ def favourites_data(request):
     return data
 
 
-def get_html_snippet(favourites):
+def get_html_snippet(favourites, errors=[]):
     return render_to_string('favourites/html_snippet.html', {
-        'favourites': favourites
+        'favourites': favourites,
+        'favourites_errors': errors
     }, request=favourites.request)

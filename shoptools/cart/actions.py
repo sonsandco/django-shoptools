@@ -24,10 +24,12 @@ def cart_action(params=[]):
             if 'csrfmiddlewaretoken' in kwargs:
                 del kwargs['csrfmiddlewaretoken']
 
+            failure_rv = False
             for field, cast, required in params:
                 val = data.get(field)
 
                 if required and not val:
+                    failure_rv = None
                     errors.append('%s is required' % field)
 
                 if val:
@@ -37,7 +39,7 @@ def cart_action(params=[]):
                         errors.append('%s is invalid' % field)
 
             if len(errors):
-                return (False, errors)
+                return (failure_rv, errors)
 
             return wrapped_func(cart, **kwargs)
 

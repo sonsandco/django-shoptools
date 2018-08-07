@@ -1,5 +1,10 @@
 {% set lines = favourites.get_lines() %}
 <div class='favourites-list'>
+  <div class='favourites-errors'>
+    {% for error in favourites_errors %}
+      <p class='error'>{{ error }}</p>
+    {% endif %}
+  </div>
   {% for line in lines %}
     {% set item = line.item %}
     <div class='favourites-line'>

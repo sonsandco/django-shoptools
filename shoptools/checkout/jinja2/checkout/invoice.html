@@ -5,14 +5,7 @@
   <head>
     <title>{{ order }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    {%- assets 'main_utils_css' %}
-      <link href='{{ ASSET_URL }}' type='text/css' rel='stylesheet' />
-    {% endassets -%}
-
-    {%- assets 'main_css' %}
-      <link href='{{ ASSET_URL }}' type='text/css' rel='stylesheet' />
-    {% endassets -%}
+    {{ render_bundle('css_main') }}
   </head>
   <body onload="window.print()">
     <article class="shoptools-invoice-page shoptools-page">

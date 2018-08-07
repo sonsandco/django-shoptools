@@ -20,6 +20,7 @@ get_regions_module = partial(get_module, 'REGIONS')
 get_shipping_module = partial(get_module, 'SHIPPING')
 get_vouchers_module = partial(get_module, 'VOUCHERS')
 get_favourites_module = partial(get_module, 'FAVOURITES')
+get_payment_module = partial(get_module, 'PAYMENT')
 
 
 def make_uuid():

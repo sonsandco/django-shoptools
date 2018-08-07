@@ -16,7 +16,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from shoptools.cart import get_cart
 from shoptools.util import \
     get_accounts_module, get_shipping_module, get_regions_module, \
-    get_vouchers_module
+    get_vouchers_module, get_payment_module
 
 from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
 from .models import Order, Address
@@ -24,11 +24,6 @@ from .emails import email_content
 
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
-PAYMENT_MODULE = getattr(settings, 'CHECKOUT_PAYMENT_MODULE', None)
-
-
-def get_payment_module():
-    return importlib.import_module(PAYMENT_MODULE) if PAYMENT_MODULE else None
 
 
 def available_countries(cart):
@@ -265,11 +260,15 @@ def checkout(request, cart, order=None):
 
             # and off we go to pay, if necessary
             payment_module = get_payment_module()
-            if payment_module and order.total > 0:
-                return payment_module.make_payment(order, request)
-            else:
-                order.transaction_succeeded(0)
+            if order.total <= 0:
+                order.transaction_succeeded()
                 return redirect(order)
+            else:
+                if payment_module:
+                    return payment_module.make_payment(order, request)
+                else:
+                    order.transaction_failed()
+                    return redirect(order)
         else:
             # Save posted data so the user doesn't have to re-enter it
             request.session[CHECKOUT_SESSION_KEY] = request.POST.dict()

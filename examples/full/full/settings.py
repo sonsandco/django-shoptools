@@ -74,4 +74,4 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-CHECKOUT_PAYMENT_MODULE = 'payment_stub'
+SHOPTOOLS_PAYMENT_MODULE = 'payment_stub'

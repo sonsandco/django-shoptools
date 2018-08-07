@@ -50,7 +50,7 @@ TODO
 1. Add a valid payment module to settings, e.g.:
 
     ```python
-    CHECKOUT_PAYMENT_MODULE = 'dps.transactions'
+    SHOPTOOLS_PAYMENT_MODULE = 'dps.transactions'
     ```
 
 2. See the [payments reference](reference/payment.md) for more information

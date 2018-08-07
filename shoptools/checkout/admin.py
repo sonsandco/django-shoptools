@@ -4,11 +4,15 @@ from django.http import HttpResponse
 from django import forms
 from django.utils.text import mark_safe
 
-from shoptools.util import get_vouchers_module
+from shoptools.util import get_payment_module, get_vouchers_module
 
 from .models import Order, OrderLine, Address
 from .export import generate_csv
 from .emails import send_dispatch_email
+
+payment_mod = get_payment_module()
+payment_inlines = getattr(payment_mod, "get_checkout_inlines",
+                          lambda *args: [])() if payment_mod else []
 
 voucher_mod = get_vouchers_module()
 voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
@@ -81,9 +85,8 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [
         AddressInline,
         OrderLineInline,
-        AddOrderLineInline,
-        # TODO grab transactions as an inline from the payment module - see TPM
-    ] + voucher_inlines
+        AddOrderLineInline
+    ] + voucher_inlines + payment_inlines
     save_on_top = True
     search_fields = ('name', 'email', 'id', 'phone', 'address', 'city',
                      'state', 'postcode', )

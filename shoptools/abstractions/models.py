@@ -250,6 +250,10 @@ class ICartItem(object):
 
     Subclasses must define cart_line_total; other methods are optional"""
 
+    @property
+    def ctype(self):
+        return '%s.%s' % (self._meta.app_label, self._meta.model_name)
+
     def cart_line_total(self, line):
         """Returns the total price for quantity of this item. """
 
@@ -486,6 +490,8 @@ class AbstractAddress(models.Model):
     """
 
     address = models.CharField(_('Address'), max_length=1023)
+    suburb = models.CharField(_('Suburb'), max_length=1023, blank=True,
+                              default='')
     city = models.CharField(_('Town / City'), max_length=255)
     postcode = models.CharField(_('Postcode'), max_length=100)
     state = models.CharField(_('State'), max_length=255, blank=True,

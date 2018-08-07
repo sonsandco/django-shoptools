@@ -15,7 +15,8 @@ payment_inlines = getattr(payment_mod, "get_checkout_inlines",
                           lambda *args: [])() if payment_mod else []
 
 voucher_mod = get_vouchers_module()
-voucher_inlines = voucher_mod.get_checkout_inlines() if voucher_mod else []
+voucher_inlines = getattr(voucher_mod, "get_checkout_inlines",
+                          lambda *args: [])() if voucher_mod else []
 
 
 class AddressInline(admin.StackedInline):
@@ -27,13 +28,14 @@ class OrderLineInline(admin.TabularInline):
     model = OrderLine
     exclude = ('item_content_type', 'item_object_id', 'created',
                '_description')
-    readonly_fields = ('quantity', '_html_description',
+    readonly_fields = ('_html_description', 'quantity', '_options',
                        '_total', )
     extra = 0
 
     def _html_description(self, obj):
         return mark_safe(obj._description)
     _html_description.allow_tags = True
+    _html_description.short_description = 'description'
 
     def has_add_permission(self, request):
         return False
@@ -91,8 +93,8 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email', 'id', 'phone', 'address', 'city',
                      'state', 'postcode', )
     actions = ('csv_export', 'resend_dispatch_email')
-    readonly_fields = ('_shipping_cost', 'id', 'amount_paid',
-                       'currency_code', )
+    readonly_fields = ('created', 'checkout_completed', '_shipping_cost', 'id',
+                       'amount_paid', 'currency_code', )
 
     def resend_dispatch_email(self, request, queryset):
         for order in queryset:

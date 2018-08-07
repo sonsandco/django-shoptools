@@ -15,7 +15,6 @@ class AccountAdmin(admin.ModelAdmin):
     list_filter = ('city', 'country')
     search_fields = ('user__last_name', 'user__first_name', 'user__email',
                      'phone', 'address', 'country')
-    # inlines = [OrderInline, ]
     readonly_fields = ('user', )
     actions = ('csv_export', )
 

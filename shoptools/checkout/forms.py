@@ -10,8 +10,8 @@ from .models import Order, Address
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        exclude = ('created', 'status', 'amount_paid', 'user',
-                   'estimated_delivery', )
+        exclude = ('created', 'checkout_completed', 'status', 'amount_paid',
+                   'user')
 
 
 class OrderMetaForm(forms.Form):
@@ -33,8 +33,8 @@ class AddressForm(forms.ModelForm):
 
     class Meta:
         model = Address
-        fields = ['name', 'email', 'phone', 'address', 'city', 'postcode',
-                  'state', 'country', ]
+        fields = ['first_name', 'last_name', 'email', 'phone', 'address',
+                  'suburb', 'city', 'postcode', 'state', 'country', ]
 
     def __init__(self, *args, **kwargs):
         country_choices = kwargs.pop('country_choices', None)

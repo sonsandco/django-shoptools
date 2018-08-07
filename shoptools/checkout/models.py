@@ -46,6 +46,7 @@ class Order(AbstractOrder):
         max_length=1, editable=False,
         default=shoptools_settings.DEFAULT_CURRENCY_SYMBOL)
     created = models.DateTimeField(default=datetime.now)
+    checkout_completed = models.DateTimeField(blank=True, null=True)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)
     estimated_delivery = models.DateField(blank=True, null=True)
@@ -55,9 +56,6 @@ class Order(AbstractOrder):
     delivery_notes = models.TextField(blank=True, default='')
     gift_message = models.TextField(blank=True, default='')
 
-    # TODO review this. It doesn't really belong here
-    receive_email = models.BooleanField('Receive our email news and offers',
-                                        default=False)
 
     user = models.ForeignKey('auth.User', null=True, blank=True,
                              on_delete=models.SET_NULL)
@@ -67,7 +65,7 @@ class Order(AbstractOrder):
     _shipping_option = models.PositiveSmallIntegerField(
         blank=True, null=True, editable=False,
         db_column='shipping_option', verbose_name='shipping option')
-    # payments = GenericRelation(Transaction)
+
     dispatched = models.DateTimeField(null=True, editable=False)
     success_page_viewed = models.BooleanField(default=False, editable=False)
 
@@ -125,7 +123,7 @@ class Order(AbstractOrder):
         return str(self.pk).zfill(5)
 
     def __str__(self):
-        return "Order #%s" % (self.pk)
+        return 'Order #%s' % (self.pk)
 
     @property
     def total(self):
@@ -237,8 +235,13 @@ class Address(AbstractAddress):
                               related_name='addresses')
     address_type = models.CharField(choices=TYPE_CHOICES,
                                     default=TYPE_SHIPPING, max_length=20)
-    name = models.CharField(max_length=1023, default='')
-    email = models.EmailField(blank=True, default='')
+    first_name = models.CharField(max_length=1023, default='')
+    last_name = models.CharField(max_length=1023, default='')
+    email = models.EmailField(default='')
+
+    @property
+    def name(self):
+        return '%s %s' % (self.first_name, self.last_name)
 
     class Meta:
         verbose_name_plural = 'addresses'

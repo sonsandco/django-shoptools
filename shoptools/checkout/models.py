@@ -52,7 +52,6 @@ class Order(AbstractOrder):
     checkout_completed = models.DateTimeField(blank=True, null=True)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)
-    estimated_delivery = models.DateField(blank=True, null=True)
     amount_paid = models.DecimalField(max_digits=8, decimal_places=2,
                                       default=0)
 

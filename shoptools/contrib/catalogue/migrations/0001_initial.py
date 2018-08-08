@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-import shoptools.cart.base
+import shoptools.abstractions.models
 
 
 class Migration(migrations.Migration):
@@ -22,6 +22,6 @@ class Migration(migrations.Migration):
                 ('price', models.DecimalField(decimal_places=2, max_digits=10)),
                 ('shipping_cost', models.DecimalField(decimal_places=2, max_digits=10)),
             ],
-            bases=(models.Model, shoptools.cart.base.ICartItem),
+            bases=(models.Model, shoptools.abstractions.models.ICartItem),
         ),
     ]

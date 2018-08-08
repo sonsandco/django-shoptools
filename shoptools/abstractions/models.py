@@ -1,9 +1,9 @@
-from datetime import datetime
 import decimal
 import json
 
 # from django.contrib.postgres.fields import JSONField
 from django.db import models
+from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.utils.text import mark_safe
@@ -443,7 +443,7 @@ class AbstractOrderLine(models.Model, ICartLine):
     item_object_id = models.PositiveIntegerField()
     item = GenericForeignKey('item_content_type', 'item_object_id')
 
-    created = models.DateTimeField(default=datetime.now)
+    created = models.DateTimeField(default=timezone.now)
     quantity = models.IntegerField()
     # options = JSONField(default=dict, blank=True)
     _options = models.TextField(default='', blank=True, db_column='options')

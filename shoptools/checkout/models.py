@@ -1,7 +1,7 @@
-from datetime import datetime
 import decimal
 
 from django.db import models
+from django.utils import timezone
 try:
     from django.urls import reverse
 except ImportError:
@@ -48,7 +48,7 @@ class Order(AbstractOrder):
     currency_symbol = models.CharField(
         max_length=1, editable=False,
         default=shoptools_settings.DEFAULT_CURRENCY_SYMBOL)
-    created = models.DateTimeField(default=datetime.now)
+    created = models.DateTimeField(default=timezone.now)
     checkout_completed = models.DateTimeField(blank=True, null=True)
     status = models.PositiveSmallIntegerField(
         choices=STATUS_CHOICES, default=STATUS_NEW)
@@ -57,7 +57,6 @@ class Order(AbstractOrder):
 
     delivery_notes = models.TextField(blank=True, default='')
     gift_message = models.TextField(blank=True, default='')
-
 
     user = models.ForeignKey('auth.User', null=True, blank=True,
                              on_delete=models.SET_NULL)
@@ -77,7 +76,7 @@ class Order(AbstractOrder):
             # Only send the email if the update actually does something,
             # to guard against race conditions
             if Order.objects.filter(pk=self.pk, dispatched__isnull=True) \
-                            .update(dispatched=datetime.now()):
+                            .update(dispatched=timezone.now()):
                 send_dispatch_email(self)
 
     def set_request(self, request):
@@ -192,7 +191,7 @@ class Order(AbstractOrder):
 
         if complete:
             self.status = self.STATUS_PAID
-            self.checkout_completed = datetime.now()
+            self.checkout_completed = timezone.now()
             needs_save = True
 
         if needs_save:

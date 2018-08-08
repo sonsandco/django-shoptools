@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from django.db import models
+from django.utils import timezone
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 try:
@@ -17,7 +16,7 @@ from shoptools import settings as shoptools_settings
 class SavedCart(AbstractOrder, IShippable):
     """A db-saved cart class, which can be used interchangeably with Cart. """
 
-    created = models.DateTimeField(default=datetime.now)
+    created = models.DateTimeField(default=timezone.now)
     user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 

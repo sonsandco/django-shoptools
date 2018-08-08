@@ -1,10 +1,10 @@
-from datetime import datetime
-
+from django.utils import timezone
 from django.db import models
 try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
+
 from shoptools.abstractions.models import AbstractOrder, AbstractOrderLine
 from shoptools.util import make_uuid
 
@@ -21,7 +21,7 @@ class FavouritesList(AbstractOrder):
     FavouritesList. A specific FavouritesList can be altered by passing the
     get_favourites parameter to the relevant view.
     """
-    created = models.DateTimeField(default=datetime.now)
+    created = models.DateTimeField(default=timezone.now)
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
     name = models.CharField(max_length=191, blank=True, default='')

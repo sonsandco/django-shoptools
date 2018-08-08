@@ -1,0 +1,22 @@
+{% extends 'checkout/emails/base.html' %}
+
+{% block heading %}A new order has been received.{% endblock %}
+
+{% block intro %}
+  {% include 'checkout/emails/snippets/billing_address.html' %}
+{% endblock %}
+
+{% block content %}
+  <table style="width: 100%; cell-spacing: 0; border: none;
+                border-collapse: collapse; padding-top: 20px;">
+    {% include 'checkout/emails/snippets/order_lines.html' %}
+    {% include 'checkout/emails/snippets/order_totals.html' %}
+  </table>
+  <p>
+    <a href='http://{{ site.domain }}{{ url('admin:checkout_order_change', order.pk) }}'
+       style='color: inherit;'>
+      Click here</a> to view this order in the website admin.
+  </p>
+{% endblock %}
+
+{% block footer %}{% endblock footer %}

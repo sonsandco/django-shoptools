@@ -8,11 +8,11 @@
       <div class='form-row'
            {% if item %}id='{{ item.ctype.replace('.', '-') }}-{{ item.id }}'{% endif %}>
         <div class='description cell'>
-          <h6>
-            {% if item %}<a href='{{ item.get_absolute_url() }}'>{% endif %}
+          <p>
+            {% if item and item.get_absolute_url %}<a href='{{ item.get_absolute_url() }}'>{% endif %}
               {{ line.description|safe }}
             {% if item %}</a>{% endif %}
-          </h6>
+          </p>
         </div>
         {%- if show_quantity -%}
           <div class='quantity cell'>

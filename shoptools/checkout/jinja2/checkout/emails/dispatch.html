@@ -1,0 +1,10 @@
+{% extends 'checkout/emails/base.html' %}
+
+{% block heading %}Your order has been shipped.{% endblock %}
+
+{% block content %}
+  <p>
+    Your order has been shipped to:
+  </p>
+  {% include 'checkout/emails/snippets/billing_address.html' %}
+{% endblock %}

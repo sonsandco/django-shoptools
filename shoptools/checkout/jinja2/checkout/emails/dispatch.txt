@@ -1,0 +1,8 @@
+Your order has been shipped.
+
+Order: {{ order.id }}
+
+Your order has been shipped to:
+{% include 'checkout/emails/snippets/shipping_address.txt' %}
+
+{% include 'checkout/emails/snippets/footer.txt' %}

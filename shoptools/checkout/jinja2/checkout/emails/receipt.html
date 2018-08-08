@@ -1,0 +1,15 @@
+{% extends 'checkout/emails/base.html' %}
+
+{% block heading %}Thank you for your purchase.{% endblock %}
+
+{% block intro %}
+  {% include 'checkout/emails/snippets/billing_address.html' %}
+{% endblock %}
+
+{% block content %}
+  <table style="width: 100%; cell-spacing: 0; border: none;
+                border-collapse: collapse; padding-top: 20px;">
+    {% include 'checkout/emails/snippets/order_lines.html' %}
+    {% include 'checkout/emails/snippets/order_totals.html' %}
+  </table>
+{% endblock %}

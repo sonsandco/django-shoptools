@@ -1,8 +1,8 @@
 <!doctype html>
 <head>
-  <title>Example shop</title>
+  <title>{% block title %}Example shop{% endblock %}</title>
 </head>
-<body>
+<body class='{% block bodyclass %}{% endblock %}'>
   <header>
     <h1>Example Shop</h1>
 

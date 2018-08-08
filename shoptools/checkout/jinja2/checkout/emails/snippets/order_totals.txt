@@ -1,0 +1,7 @@
+Subtotal: {{ order.currency_symbol }}{{ '{:,.2f}'.format(order.subtotal) }}
+Shipping: {{ order.currency_symbol }}{{ '{:,.2f}'.format(order.shipping_cost) }}
+{% if order.total_discount -%}
+  Discount: -{{ order.currency_symbol }}{{ '{:,.2f}'.format(order.total_discount) }}
+{%- endif %}
+
+Total: {{ order.currency_symbol }}{{ '{:,.2f}'.format(order.total) }}

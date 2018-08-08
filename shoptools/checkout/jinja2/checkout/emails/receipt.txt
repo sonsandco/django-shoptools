@@ -1,0 +1,11 @@
+Thank you for your purchase.
+
+{% include 'checkout/emails/snippets/billing_address.txt' %}
+
+Order: {{ order.id }}
+
+{% include 'checkout/emails/snippets/order_lines.txt' %}
+
+{% include 'checkout/emails/snippets/order_totals.txt' %}
+
+{% include 'checkout/emails/snippets/footer.txt' %}

@@ -8,9 +8,9 @@
     {% if accounts_enabled %}
       <section class='user'>
         {% if request.user.is_authenticated %}
-          <h6>
+          <p>
             Logged in as {{ request.user.first_name }}
-          </h6>
+          </p>
         {% else %}
           {% include 'checkout/snippets/side_login.html' %}
         {% endif %}

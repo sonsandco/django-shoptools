@@ -1,0 +1,3 @@
+{% for line in order.get_lines() -%}
+  {{ line.quantity }} x {{ line.description }}: {{ order.currency_symbol }}{{- '{:,.2f}'.format(line.total) -}}
+{%- endfor %}

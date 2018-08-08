@@ -1,0 +1,15 @@
+<p>
+  {% set shipping_address = order.shipping_address %}
+  {{ shipping_address.name }}<br>
+  {{ shipping_address.address }}<br>
+  {% if shipping_address.suburb %}
+    {{ shipping_address.suburb }}<br>
+  {% endif %}
+  {{ shipping_address.city }} {{ shipping_address.postcode }}<br>
+  {% if shipping_address.state %}
+    {{ shipping_address.state }}<br>
+  {% endif %}
+  {{ shipping_address.get_country_display() }}<br>
+  Email: {{ shipping_address.email }}<br>
+  Phone: {{ shipping_address.phone }}<br>
+</p>

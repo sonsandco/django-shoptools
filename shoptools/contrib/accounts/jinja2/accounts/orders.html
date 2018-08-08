@@ -11,12 +11,12 @@
       </a>
     {% endfor %}
     <div class="text">
-      <h6><a href="{{ order.get_absolute_url() }}">
+      <p><a href="{{ order.get_absolute_url() }}">
         {{ order.name }}<br>
         {{ order.created|date('d F y') }}<br>
         {{ order.lines.count() }} item{{ order.lines.count()|pluralize }}<br>
         {{ order.currency_symbol }}{{ order.total|floatformat(2) }} {{ order.currency_code }}
-      </a></h6>
+      </a></p>
       <p class="status">
         Status: {{ order.get_status_display() }}
       </p>

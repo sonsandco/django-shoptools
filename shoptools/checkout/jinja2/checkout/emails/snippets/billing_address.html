@@ -1,0 +1,15 @@
+<p>
+  {% set billing_address = order.billing_address %}
+  {{ billing_address.name }}<br>
+  {{ billing_address.address }}<br>
+  {% if billing_address.suburb %}
+    {{ billing_address.suburb }}<br>
+  {% endif %}
+  {{ billing_address.city }} {{ billing_address.postcode }}<br>
+  {% if billing_address.state %}
+    {{ billing_address.state }}<br>
+  {% endif %}
+  {{ billing_address.get_country_display() }}<br>
+  Email: {{ billing_address.email }}<br>
+  Phone: {{ billing_address.phone }}<br>
+</p>

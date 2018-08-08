@@ -1,0 +1,38 @@
+<tr class="subtotal">
+  <th style="text-align: right; padding-right: 15px;">Subtotal</th>
+  {#- spaceless -#}
+  <td class="subtotal-inner">
+    {{ order.currency_symbol }}<span class="cart-subtotal">
+      {{- '{:,.2f}'.format(order.subtotal) -}}
+    </span>
+  </td>
+</tr>
+<tr class="shipping">
+  <th style="text-align: right; padding-right: 15px;">Shipping</th>
+  {#- spaceless -#}
+  <td class="shipping-inner">
+    {{ order.currency_symbol }}<span class="cart-shipping-cost">
+      {{- '{:,.2f}'.format(order.shipping_cost) -}}
+    </span>
+  </td>
+</tr>
+{% if order.total_discount -%}
+  <tr class="discount">
+    <th style="text-align: right; padding-right: 15px;">Discount</th>
+    {#- spaceless -#}
+    <td class="discount-inner">
+      -{{ order.currency_symbol }}<span class="cart-discount">
+        {{- '{:,.2f}'.format(order.total_discount) -}}
+    </td>
+  </tr>
+{% endif -%}
+<tr><td colspan='2'>&nbsp;</td></tr>
+<tr class="total">
+  <th style="text-align: right; padding-right: 15px;">Total</th>
+  {#- spaceless -#}
+  <th class="total-inner" style="text-align: left;">
+    {{ order.currency_symbol }}<span class="cart-total">
+      {{- '{:,.2f}'.format(order.total) -}}
+    </span>
+  </th>
+</tr>

@@ -1,0 +1,6 @@
+{% for line in order.get_lines() %}
+  <tr>
+    <th style="text-align: left; padding: 0 0 10px; width: 50%;">{{ line.quantity }} x {{ line.description }}</th>
+    <td style="padding: 0 0 10px 0;">{{ order.currency_symbol }}{{- '{:,.2f}'.format(line.total) -}}</td>
+  </tr>
+{% endfor %}

@@ -5,7 +5,7 @@
 
 {% block accounts_content %}
   <section class="user">
-    <h6>Logged in as {{ request.user.first_name }}</h6>
+    <p>Logged in as {{ request.user.first_name }}</p>
   </section>
   <form action="{{ request.path_info }}" method="post"
         class="accounts-form">

@@ -36,9 +36,9 @@ def unpack_line_key(key):
 
 
 class SessionCartLine(dict, ICartLine):
-    '''Thin wrapper around dict providing some convenience methods for
+    """Thin wrapper around dict providing some convenience methods for
        accessing computed information about the line, according to ICartLine.
-    '''
+    """
 
     def __init__(self, **kwargs):
         assert sorted(kwargs.keys()) == ['key', 'options', 'parent_object',

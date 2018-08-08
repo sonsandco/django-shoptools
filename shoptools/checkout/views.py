@@ -27,8 +27,9 @@ CHECKOUT_SESSION_KEY = 'checkout-data'
 
 def available_countries(cart):
     shipping_module = get_shipping_module()
-    if shipping_module:
+    if shipping_module and hasattr(shipping_module, 'available_countries'):
         return shipping_module.available_countries(cart)
+    # None == unrestricted
     return None
 
 

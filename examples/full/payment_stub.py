@@ -1,13 +1,20 @@
 from django.shortcuts import redirect
 
 
-def make_payment(order, request):
-    """Fake payment module which set the order's paid status, then redirects
-       back. """
+class Transaction(object):
+    def __init__(self, amount):
+        self.amount = amount
 
-    # TODO: simple transaction model, set payment amount equal to
-    # order.get_amount() so that it is paid in full.
-    order.transaction_succeeded()
+
+def make_payment(order, request):
+    """
+    Fake payment module which simply passes a transaction with amount set to
+    the amount owing to transaction_succeeded, then redirects to the
+    order's absolute url.
+    """
+
+    transaction = Transaction(amount=order.get_amount())
+    order.transaction_succeeded(transaction)
     return redirect(order)
 
 

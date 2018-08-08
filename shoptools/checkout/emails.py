@@ -1,75 +1,28 @@
 # -*- coding: utf-8 -*-
 
-from smtplib import SMTPRecipientsRefused
-from django.template.loader import render_to_string
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
-from django.template import TemplateDoesNotExist
-from django.apps import apps
 
+from shoptools.util import get_email_module
+email_module = get_email_module()
 
 TEMPLATE_DIR = 'checkout/emails/'
 
 
-def get_current_site():
-    if not apps.is_installed('django.contrib.sites'):
-        return None
-
-    from django.contrib.sites.models import Site
-    return Site.objects.get_current()
-
-
 def send_email_receipt(order):
-    send_email('receipt', [order.email], order=order)
-    manager_emails = getattr(settings, 'CHECKOUT_MANAGERS', [])
-    send_email('notification', [t[1] for t in manager_emails],
-               order=order)
+    if email_module and hasattr(email_module, 'send_email'):
+        email_module.send_email('receipt', TEMPLATE_DIR, [order.email],
+                                related_obj=order, fail_silently=True,
+                                order=order)
+        manager_emails = getattr(settings, 'CHECKOUT_MANAGERS', [])
+        if manager_emails:
+            email_module.send_email('notification', TEMPLATE_DIR,
+                                    [t[1] for t in manager_emails],
+                                    related_obj=order, fail_silently=True,
+                                    order=order)
 
 
 def send_dispatch_email(order):
-    send_email('dispatch', [order.email], order=order)
-
-
-def email_content(email_type, **context):
-    '''Return tuple of subject, text content and html content for a given email
-       type and context.'''
-
-    template_dir = context.pop('template_dir', TEMPLATE_DIR)
-
-    context.update({
-        'site': get_current_site(),
-    })
-    subject = render_to_string(template_dir + '%s_subject.txt' % email_type,
-                               context)
-    context['subject'] = subject
-    text_content = render_to_string(template_dir + '%s.txt' % email_type,
-                                    context)
-
-    context['text_content'] = text_content
-    try:
-        html_content = render_to_string(template_dir + '%s.html' % email_type,
-                                        context)
-    except TemplateDoesNotExist:
-        html_content = None
-
-    return (subject.strip(), text_content,
-            html_content if html_content else None)
-
-
-def send_email(email_type, recipients, cc=[], bcc=[], **context_dict):
-    '''Send an email of a given type to email_address, using given context.'''
-
-    from_email = context_dict.get('from_email', settings.DEFAULT_FROM_EMAIL)
-    subject, text, html = email_content(email_type, **context_dict)
-
-    message = EmailMultiAlternatives(subject, text, from_email, recipients,
-                                     cc=cc, bcc=bcc)
-    if html:
-        message.attach_alternative(html, "text/html")
-    # TODO should we be failing silently here? If not will need some way to
-    # tell the user the address didn't work
-
-    try:
-        return message.send()
-    except SMTPRecipientsRefused:
-        return False
+    if email_module and hasattr(email_module, 'send_email'):
+        email_module.send_email('dispatch', TEMPLATE_DIR, [order.email],
+                                related_obj=order, fail_silently=True,
+                                order=order)

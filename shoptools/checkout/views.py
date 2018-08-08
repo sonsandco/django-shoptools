@@ -14,11 +14,10 @@ from django.contrib.admin.views.decorators import staff_member_required
 from shoptools.cart import get_cart
 from shoptools.util import \
     get_accounts_module, get_shipping_module, get_regions_module, \
-    get_vouchers_module, get_payment_module
+    get_vouchers_module, get_payment_module, get_email_module
 
 from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
 from .models import Order, Address
-from .emails import email_content
 from .signals import checkout_pre_payment
 
 
@@ -355,8 +354,11 @@ def invoice(request, order):
 @with_order
 def preview_emails(request, order):
     emails = []
-    for t in ('receipt', 'notification', 'dispatch'):
-        emails.append(email_content(t, order=order))
+
+    email_module = get_email_module()
+    if email_module and hasattr(email_module, 'email_content'):
+        for t in ('receipt', 'notification', 'dispatch'):
+            emails.append(email_module.email_content(t, order=order))
 
     return render(request, 'checkout/preview_emails.html', {
         'emails': emails,

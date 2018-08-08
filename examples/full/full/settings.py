@@ -18,6 +18,7 @@ INSTALLED_APPS = [
     'shoptools.checkout',
     'shoptools.cart',
     'shoptools.contrib.catalogue',
+    'shoptools.contrib.emails'
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,7 @@ USE_TZ = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = SERVER_EMAIL = 'noreply@example.com'
+CHECKOUT_MANAGERS = [SERVER_EMAIL]
 
 STATIC_URL = '/static/'
 
@@ -82,4 +84,5 @@ COUNTRIES_FIRST_SORT = ('NZ', 'AU')
 COUNTRIES_FIRST_BREAK = '--------'
 
 SHOPTOOLS_PAYMENT_MODULE = 'payment_stub'
-SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.basic_shipping'
+SHOPTOOLS_SHIPPING_MODULE = 'basic_shipping'
+SHOPTOOLS_EMAIL_MODULE = 'shoptools.contrib.emails'

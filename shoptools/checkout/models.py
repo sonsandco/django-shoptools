@@ -17,9 +17,6 @@ from .signals import \
     checkout_post_payment_pre_success, checkout_post_payment_post_success, \
     checkout_post_payment_pre_failure, checkout_post_payment_post_failure
 
-# TODO make this configurable
-EMAIL_RECEIPT = True
-
 
 class Order(AbstractOrder):
 
@@ -196,8 +193,7 @@ class Order(AbstractOrder):
             self.save()
 
         if complete:
-            if EMAIL_RECEIPT:
-                send_email_receipt(self)
+            send_email_receipt(self)
 
             for line in self.get_lines():
                 item = line.item

@@ -173,12 +173,10 @@ class Order(AbstractOrder):
     def get_amount(self):
         return max(0, self.total - self.amount_paid)
 
-    def transaction_succeeded(self, transaction=None, interactive=None,
-                              status_updated=None):
+    def transaction_succeeded(self, transaction=None, **kwargs):
         """Assumes this will only be called once per payment. """
         checkout_post_payment_pre_success.send(
-            sender=Order, transaction=transaction, interactive=interactive,
-            status_updated=status_updated)
+            sender=Order, transaction=transaction, **kwargs)
 
         needs_save = False
 
@@ -207,8 +205,7 @@ class Order(AbstractOrder):
                     item.purchase(line)
 
         checkout_post_payment_post_success.send(
-            sender=Order, transaction=transaction, interactive=interactive,
-            status_updated=status_updated)
+            sender=Order, transaction=transaction, **kwargs)
 
     def transaction_failed(self, transaction=None, interactive=None,
                            status_updated=None):

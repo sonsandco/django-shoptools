@@ -37,7 +37,7 @@ class OrderLineInline(admin.TabularInline):
     _html_description.allow_tags = True
     _html_description.short_description = 'description'
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
         return False
 
 

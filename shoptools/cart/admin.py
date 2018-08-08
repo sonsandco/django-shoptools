@@ -18,7 +18,7 @@ def orderline_inline_factory(model_cls):
         readonly_fields = ('quantity', 'description', 'total')
         # form = OrderLineForm
 
-        def has_add_permission(self, request):
+        def has_add_permission(self, request, obj=None):
             return False
 
     return OrderLineInline

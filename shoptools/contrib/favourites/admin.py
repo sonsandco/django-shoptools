@@ -9,7 +9,7 @@ class FavouritesLineInline(admin.TabularInline):
                '_options')
     readonly_fields = ('quantity', 'description')
 
-    def has_add_permission(self, request):
+    def has_add_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):

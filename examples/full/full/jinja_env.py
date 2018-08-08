@@ -28,6 +28,7 @@ def environment(extensions=[], **options):
     })
     env.filters.update({
         'floatformat': defaultfilters.floatformat,
-        'widget_type': widget_type,
+        'date': defaultfilters.date,
+        'widget_type': widget_type
     })
     return env

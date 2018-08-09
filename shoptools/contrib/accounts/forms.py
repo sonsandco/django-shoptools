@@ -1,7 +1,13 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import AuthenticationForm, UsernameField
 
 from .models import Account
+
+
+class EmailAuthenticationForm(AuthenticationForm):
+    username = UsernameField(label='Email address',
+                             widget=forms.TextInput(attrs={'autofocus': True}))
 
 
 class AccountForm(forms.ModelForm):

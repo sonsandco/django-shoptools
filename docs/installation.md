@@ -9,7 +9,7 @@ Basic installation
 ---
 
 1. Install the shoptools library
-   
+
     ```
     pip install django-shoptools
     ```
@@ -19,7 +19,7 @@ Basic installation
     ```python
     INSTALLED_APPS = [
         ...
-        
+
         'shoptools.checkout',
         'shoptools.contrib.catalogue',
     ]
@@ -32,7 +32,7 @@ Basic installation
     ```python
     urlpatterns = [
         ...
-        
+
         url(r'^checkout/', include('shoptools.checkout.urls')),
         url(r'^catalogue/', include('shoptools.contrib.catalogue.urls')),
         url(r'^cart/', include('shoptools.cart.urls')),
@@ -55,17 +55,29 @@ TODO
 
 2. See the [payments reference](reference/payment.md) for more information
 
-Shipping 
+Shipping
 ---
 
 1. Add the shipping module to settings, e.g.:
 
     ```python
-    SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.shipping.basic'
+    SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.shipping'
     ```
 
-2. For custom shipping functionality, create your own shipping module. See [shipping reference](reference/shipping.md)
-    
+2. Add `'shoptools.contrib.shipping'` to `INSTALLED_APPS`
+
+3. Add urls to your root urlconf:
+
+  ```python
+  urlpatterns = [
+      ...
+
+      url(r'^shipping/', include('shoptools.contrib.shipping.urls')),
+  ]
+  ```
+
+4. For custom shipping functionality, create your own shipping module. See [shipping reference](reference/shipping.md)
+
 
 Regions
 ---
@@ -78,6 +90,15 @@ Regions
 
 2. Add `'shoptools.contrib.regions'` to `INSTALLED_APPS`
 
+3. Add urls to your root urlconf:
+
+  ```python
+  urlpatterns = [
+      ...
+
+      url(r'^regions/', include('shoptools.contrib.regions.urls')),
+  ]
+  ```
 
 User accounts
 ---
@@ -90,6 +111,16 @@ User accounts
 
 2. Add `'shoptools.contrib.accounts'` to `INSTALLED_APPS`
 
+3. Add `'shoptools.contrib.accounts.auth_backends.EmailBackend'` to `AUTHENTICATION_BACKENDS`
+
+4. Add urls to your root urlconf:
+
+  ```python
+  urlpatterns = [
+      ...
+
+      url(r'^accounts/', include('shoptools.contrib.accounts.urls')),
+  ]
 
 Vouchers
 ---
@@ -108,4 +139,3 @@ Save logged-in user's cart across sessions
 ---
 
 1. Add `'shoptools.cart'` to `INSTALLED_APPS` and run `./manage.py migrate`
-

@@ -95,6 +95,11 @@ SHOPTOOLS_REGIONS_MODULE = 'shoptools.contrib.regions'
 SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.shipping'
 SHOPTOOLS_VOUCHERS_MODULE = 'shoptools.contrib.vouchers'
 
+AUTHENTICATION_BACKENDS = (
+    'shoptools.contrib.accounts.auth_backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend'
+)
+
 try:
     from .local import *  # NOQA
 except ImportError:

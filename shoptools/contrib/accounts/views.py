@@ -4,17 +4,56 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
-from django.http import Http404
+from django.contrib.auth import authenticate, login as auth_login
+from django.http import Http404, HttpResponseRedirect
 try:
     from django.urls import reverse
 except ImportError:
     from django.core.urlresolvers import reverse
 
 from .models import Account
-from .forms import AccountForm, UserForm, CreateUserForm
+from .forms import \
+    EmailAuthenticationForm, AccountForm, UserForm, CreateUserForm
 from .signals import \
     create_pre_save, create_post_save, update_pre_save, update_post_save
+
+
+def login(request):
+    ctx = {}
+
+    if request.method == 'POST':
+        success = False
+        next_url = request.POST.get('next')
+
+        auth_form = EmailAuthenticationForm(data=request.POST)
+
+        if auth_form.is_valid():
+            user = auth_form.get_user()
+            auth_login(request, user)
+            success = True
+
+            if not request.is_ajax():
+                return HttpResponseRedirect(
+                    next_url or request.META.get('HTTP_REFERER', '/'))
+    else:
+        next_url = request.GET.get('next')
+
+        auth_form = EmailAuthenticationForm()
+
+    if request.is_ajax():
+        data = {
+            'success': success,
+            'errors': auth_form.errors,
+            'next': next
+        }
+        return HttpResponse(json.dumps(data),
+                            content_type='application/json')
+
+    ctx.update({
+        'form': auth_form
+    })
+
+    return render(request, 'registration/login.html', ctx)
 
 
 @login_required
@@ -102,7 +141,7 @@ def create(request):
             auth_user = authenticate(
                 username=account.user.username,
                 password=user_form.cleaned_data['password1'])
-            login(request, auth_user)
+            auth_login(request, auth_user)
             success = True
             create_post_save.send(sender=Account, request=request)
 
@@ -140,7 +179,7 @@ def create_user(request):
             auth_user = authenticate(
                 username=user.username,
                 password=user_form.cleaned_data['password1'])
-            login(request, auth_user)
+            auth_login(request, auth_user)
             success = True
 
         if request.is_ajax():

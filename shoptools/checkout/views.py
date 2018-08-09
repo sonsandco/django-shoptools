@@ -204,7 +204,7 @@ def checkout(request, cart, order=None):
         shipping_form = get_shipping_form(request.POST)
 
         if save_details and user_form:
-            # if saving details, the email needs to be unused
+            # If saving details, the email needs to be unused
             shipping_form.require_unique_email = True
             user_form_valid = user_form.is_valid()
         else:

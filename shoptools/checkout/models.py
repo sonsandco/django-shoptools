@@ -216,10 +216,10 @@ class Order(AbstractOrder):
             sender=Order, transaction=transaction, interactive=interactive,
             status_updated=status_updated)
 
-    def transaction_success_url(self):
+    def transaction_success_url(self, transaction=None):
         return self.get_absolute_url()
 
-    def transaction_failure_url(self):
+    def transaction_failure_url(self, transaction=None):
         return self.get_absolute_url()
 
 

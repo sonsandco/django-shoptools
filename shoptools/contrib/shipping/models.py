@@ -6,9 +6,7 @@ from shoptools.contrib.regions.models import Region
 
 
 class Option(models.Model):
-    name = models.CharField(max_length=255)
-    # TODO delete slug
-    slug = models.SlugField(max_length=191, unique=True)
+    name = models.CharField(max_length=255, unique=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
@@ -19,7 +17,8 @@ class Option(models.Model):
 
 
 class ShippingOption(models.Model):
-    option = models.ForeignKey(Option, related_name='shipping_options',
+    option = models.ForeignKey(Option, verbose_name='name',
+                               related_name='shipping_options',
                                on_delete=models.PROTECT)
     region = models.ForeignKey(Region, related_name='shipping_options',
                                on_delete=models.CASCADE)

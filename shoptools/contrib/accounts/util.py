@@ -5,7 +5,7 @@ def get_account(user):
     return Account.objects.for_user(user)
 
 
-def accounts_context(request):
+def account_context(request):
     data = {}
     user = request.user
     if request.user.is_authenticated:
@@ -19,8 +19,8 @@ def accounts_context(request):
     return data
 
 
-def accounts_data(request):
-    data = accounts_context(request)
+def account_data(request):
+    data = account_context(request)
 
     if 'user' in data:
         data['user'] = {

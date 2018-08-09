@@ -82,18 +82,21 @@ def shipping_context(cart):
     initial = {}
 
     if selected_option_id:
-        initial['shipping_option'] = selected_option_id
+        initial['option_id'] = selected_option_id
 
-    if selected_option_id not in \
-            [opt_id for (opt_id, name) in available_shipping_options]:
-        # prepend a blank one if the current option is invalid
-        available_shipping_options = ((None, 'Select shipping option'), ) + \
-            tuple(available_shipping_options)
-        initial = {}
+    if available_shipping_options:
+        if selected_option_id not in [opt_id for (opt_id, name) in
+                                      available_shipping_options]:
+            # prepend a blank one if the current option is invalid
+            available_shipping_options = ((None, 'Select shipping option'), ) + \
+                tuple(available_shipping_options)
+            initial = {}
 
-    shipping_option_selection_form = ShippingOptionSelectionForm(
-        initial=initial,
-        shipping_option_choices=available_shipping_options)
+        shipping_option_selection_form = ShippingOptionSelectionForm(
+            initial=initial,
+            shipping_option_choices=available_shipping_options)
+    else:
+        shipping_option_selection_form = None
 
     return {
         'available_shipping_options': available_shipping_options,

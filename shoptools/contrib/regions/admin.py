@@ -6,10 +6,9 @@ from .models import Currency, Region, Country
 from shoptools.util import get_shipping_module
 
 
-
-shipping_mod = get_shipping_module()
-shipping_inlines = getattr(shipping_mod, 'get_region_inlines',
-                           lambda *args: [])() if shipping_mod else []
+shipping_module = get_shipping_module()
+shipping_inlines = getattr(shipping_module, 'get_region_inlines',
+                           lambda *args: [])() if shipping_module else []
 
 
 @admin.register(Currency)

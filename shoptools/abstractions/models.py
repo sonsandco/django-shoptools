@@ -122,8 +122,8 @@ class ICart(object):
             shipping_options = list(shipping_module.available_options(self))
 
             if not len(shipping_options):
-                return ['We are unable to ship your current order to the '
-                        'selected region']
+                return ['There are no valid shipping options for your current '
+                        'order.']
 
             shipping_option_ids = [opt_id for (opt_id, title) in
                                    shipping_options]

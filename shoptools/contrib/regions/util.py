@@ -135,21 +135,23 @@ def regions_context(request):
     valid_regions = list(available_regions(request))
     selected_region = get_region(request)
 
-    if not (valid_regions and selected_region):
-        return None
-
     initial = {
         'region_id': selected_region.id
     }
-    if selected_region.id not in [r_id for (r_id, name) in valid_regions]:
-        # prepend a blank one if the current option is invalid
-        valid_regions = (('', 'Select region'), ) + \
-            tuple(valid_regions)
-        initial = {}
 
-    region_selection_form = RegionSelectionForm(
-        initial=initial,
-        region_choices=valid_regions)
+    if valid_regions:
+        if selected_region.id not in [r_id for (r_id, name) in valid_regions]:
+            # prepend a blank one if the current option is invalid
+            valid_regions = (('', 'Select region'), ) + \
+                tuple(valid_regions)
+            initial = {}
+
+        region_selection_form = RegionSelectionForm(
+            initial=initial,
+            region_choices=valid_regions)
+    else:
+        region_selection_form = None
+
     return {
         'available_regions': valid_regions,
         'selected_region': selected_region,

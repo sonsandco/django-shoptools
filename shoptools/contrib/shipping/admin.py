@@ -16,6 +16,7 @@ class OptionAdmin(admin.ModelAdmin):
         return {}
 
 
+@admin.register(ShippingOption)
 class ShippingOptionAdmin(admin.ModelAdmin):
     list_display = ('option', 'region', 'cost', 'min_cart_value',
                     'max_cart_value')

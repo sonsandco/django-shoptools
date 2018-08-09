@@ -4,5 +4,5 @@ def get_account(user):
 
 
 def get_data(request):
-    from .views import account_data
+    from .util import account_data
     return account_data(request)

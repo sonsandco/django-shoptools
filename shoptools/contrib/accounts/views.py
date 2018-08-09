@@ -2,7 +2,7 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.http import Http404
@@ -11,8 +11,6 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 
-from utilities.render import render
-
 from .models import Account
 from .forms import AccountForm, UserForm, CreateUserForm
 from .signals import \
@@ -20,7 +18,6 @@ from .signals import \
 
 
 @login_required
-@render('accounts/orders.html')
 def orders(request):
     from django.apps import apps
     if not apps.is_installed('shoptools.checkout'):
@@ -34,14 +31,15 @@ def orders(request):
     completed = orders.filter(status=Order.STATUS_SHIPPED) \
                       .order_by('-created')
 
-    return {
+    ctx = {
         'orders': orders,
         'current': current,
         'completed': completed,
     }
 
+    return render(request, 'accounts/orders.html', ctx)
 
-@render('accounts/details.html')
+
 def details(request):
     if not request.user.is_authenticated:
         if request.is_ajax():
@@ -81,13 +79,14 @@ def details(request):
         account_form = AccountForm(instance=account)
         user_form = UserForm(instance=account.user)
 
-    return {
+    ctx = {
         'account_form': account_form,
         'user_form': user_form,
     }
 
+    return render(request, 'accounts/details.html', ctx)
 
-@render('accounts/create.html')
+
 def create(request):
     initial = {}
 
@@ -124,13 +123,14 @@ def create(request):
         account_form = AccountForm(initial=initial)
         user_form = CreateUserForm()
 
-    return {
+    ctx = {
         'account_form': account_form,
         'user_form': user_form,
     }
 
+    return render(request, 'accounts/create.html', ctx)
 
-@render('accounts/create_user.html')
+
 def create_user(request):
     if request.method == 'POST':
         success = False
@@ -156,18 +156,8 @@ def create_user(request):
     else:
         user_form = CreateUserForm()
 
-    return {
+    ctx = {
         'user_form': user_form,
     }
 
-
-def account_data(request):
-    data = None
-
-    if request.user.is_authenticated:
-        data = {
-            'first_name': request.user.first_name,
-            'last_name': request.user.last_name,
-        }
-
-    return data
+    return render(request, 'accounts/create_user.html', ctx)

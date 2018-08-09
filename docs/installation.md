@@ -45,15 +45,13 @@ Basic installation
 Payment
 ---
 
-TODO
-
 1. Add a valid payment module to settings, e.g.:
 
     ```python
-    SHOPTOOLS_PAYMENT_MODULE = 'dps.transactions'
+    SHOPTOOLS_PAYMENT_MODULE = 'shoptools.contrib.paypal'
     ```
 
-2. See the [payments reference](reference/payment.md) for more information
+2. For custom payment functionality, create your own payment module. See the [payments reference](reference/payment.md).
 
 Shipping
 ---
@@ -68,15 +66,15 @@ Shipping
 
 3. Add urls to your root urlconf:
 
-  ```python
-  urlpatterns = [
-      ...
+    ```python
+    urlpatterns = [
+        ...
 
-      url(r'^shipping/', include('shoptools.contrib.shipping.urls')),
-  ]
-  ```
+        url(r'^shipping/', include('shoptools.contrib.shipping.urls')),
+    ]
+    ```
 
-4. For custom shipping functionality, create your own shipping module. See [shipping reference](reference/shipping.md)
+4. For custom shipping functionality, create your own shipping module. See the [shipping reference](reference/shipping.md).
 
 
 Regions
@@ -92,15 +90,15 @@ Regions
 
 3. Add urls to your root urlconf:
 
-  ```python
-  urlpatterns = [
-      ...
+    ```python
+    urlpatterns = [
+        ...
 
-      url(r'^regions/', include('shoptools.contrib.regions.urls')),
-  ]
-  ```
+        url(r'^regions/', include('shoptools.contrib.regions.urls')),
+    ]
+    ```
 
-User accounts
+Accounts
 ---
 
 1. Add the accounts module to settings, e.g.:
@@ -111,16 +109,24 @@ User accounts
 
 2. Add `'shoptools.contrib.accounts'` to `INSTALLED_APPS`
 
-3. Add `'shoptools.contrib.accounts.auth_backends.EmailBackend'` to `AUTHENTICATION_BACKENDS`
+3. Add `'shoptools.contrib.accounts.auth_backends.EmailBackend'` to `AUTHENTICATION_BACKENDS`, before `'django.contrib.auth.backends.ModelBackend'`:
+
+    ```python
+    AUTHENTICATION_BACKENDS = (
+      'shoptools.contrib.accounts.auth_backends.EmailBackend',
+      'django.contrib.auth.backends.ModelBackend'
+    )
+    ```
 
 4. Add urls to your root urlconf:
 
-  ```python
-  urlpatterns = [
-      ...
+    ```python
+    urlpatterns = [
+        ...
 
-      url(r'^accounts/', include('shoptools.contrib.accounts.urls')),
-  ]
+        url(r'^accounts/', include('shoptools.contrib.accounts.urls')),
+    ]
+    ```
 
 Vouchers
 ---

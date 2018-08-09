@@ -4,18 +4,15 @@ from django.core.exceptions import MultipleObjectsReturned
 
 class EmailBackend(object):
     def authenticate(self, request=None, username=None, password=None):
-        if '@' in username:
-            kwargs = {'email__iexact': username}
-        else:
-            kwargs = {'username': username}
         try:
-            user = User.objects.get(**kwargs)
+            user = User.objects.get(email__iexact=username)
+        except (User.DoesNotExist, MultipleObjectsReturned):
+            pass
+        else:
             if user.check_password(password):
                 return user
-        except User.DoesNotExist:
-            return None
-        except MultipleObjectsReturned:
-            return None
+
+        return None
 
     def get_user(self, user_id):
         try:

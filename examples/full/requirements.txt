@@ -1,3 +1,4 @@
 django-model-utils
 jinja2
 django-countries
+paypalrestsdk

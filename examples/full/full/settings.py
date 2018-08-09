@@ -18,7 +18,12 @@ INSTALLED_APPS = [
     'shoptools.checkout',
     'shoptools.cart',
     'shoptools.contrib.catalogue',
-    'shoptools.contrib.emails'
+    'shoptools.contrib.accounts',
+    'shoptools.contrib.emails',
+    'shoptools.contrib.paypal',
+    'shoptools.contrib.regions',
+    'shoptools.contrib.shipping',
+    'shoptools.contrib.vouchers'
 ]
 
 MIDDLEWARE = [
@@ -83,6 +88,14 @@ COUNTRIES_FIRST = ('NZ', 'AU')
 COUNTRIES_FIRST_SORT = ('NZ', 'AU')
 COUNTRIES_FIRST_BREAK = '--------'
 
-SHOPTOOLS_PAYMENT_MODULE = 'payment_stub'
-SHOPTOOLS_SHIPPING_MODULE = 'basic_shipping'
+SHOPTOOLS_ACCOUNTS_MODULE = 'shoptools.contrib.accounts'
 SHOPTOOLS_EMAIL_MODULE = 'shoptools.contrib.emails'
+SHOPTOOLS_PAYMENT_MODULE = 'shoptools.contrib.paypal'
+SHOPTOOLS_REGIONS_MODULE = 'shoptools.contrib.regions'
+SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.shipping'
+SHOPTOOLS_VOUCHERS_MODULE = 'shoptools.contrib.vouchers'
+
+try:
+    from .local import *  # NOQA
+except ImportError:
+    pass

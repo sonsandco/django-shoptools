@@ -1,0 +1,18 @@
+<!doctype html>
+<head>
+  <title>{% block title %}Example shop{% endblock %}</title>
+</head>
+<body class='{% block bodyclass %}{% endblock %}'>
+  <header>
+    <h1>Example Shop</h1>
+
+    <a href="{{ url('catalogue_index') }}">View products</a>
+    -
+    {% set cart = get_cart(request) %}
+    <a href="{{ url('checkout_cart') }}">{{ cart.count() }} products in cart</a>
+    <hr>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>

@@ -11,6 +11,8 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 
+from shoptools import settings as shoptools_settings
+
 from .models import Account
 from .forms import \
     EmailAuthenticationForm, AccountForm, UserForm, CreateUserForm
@@ -21,36 +23,63 @@ from .signals import \
 def login(request):
     ctx = {}
 
+    # Some apps (eg. shoptools.contrib.favourites) require the user to be
+    # authenticated to undertake certain actions. Typically those apps will
+    # redirect to the login page if an action is attempted whule not logged in.
+    # To avoid the user having to redo the action after login, we allow apps to
+    # additional POST data in session[LOGIN_ADDITIONAL_POST_DATA_KEY], and if
+    # present we process that data after login.
+    # The POST data is always retrieved from the session by this view; if it
+    # was a GET request the POST data is passed to the template so it will
+    # be submitted together with the login details. This somewhat convoluted
+    # approach is to ensure that if the user changes their mind (ie. navigates
+    # away instead of logging in) the action is not undertaken if they then log
+    # in at some later point.
+    additional_post_data = request.session.pop(
+        shoptools_settings.LOGIN_ADDITIONAL_POST_DATA_KEY, {})
+    if additional_post_data:
+        request.session.modified = True
+
     if request.method == 'POST':
         success = False
-        next_url = request.POST.get('next')
+        next_url = request.POST.get('next', '')
 
         auth_form = EmailAuthenticationForm(data=request.POST)
+
+        if not additional_post_data:
+            # Get additional data from POST
+            # request.POST.get('additional_data_app')
+            # request.POST.get('additional_data_action')
+            pass
 
         if auth_form.is_valid():
             user = auth_form.get_user()
             auth_login(request, user)
             success = True
 
-            if not request.is_ajax():
+            if additional_post_data:
+                # process it now
+                pass
+
+            if request.is_ajax():
+                data = {
+                    'success': success,
+                    'errors': auth_form.errors,
+                    'redirect_to': next_url
+                }
+                return HttpResponse(json.dumps(data),
+                                    content_type='application/json')
+            else:
                 return HttpResponseRedirect(
                     next_url or request.META.get('HTTP_REFERER', '/'))
     else:
-        next_url = request.GET.get('next')
-
+        next_url = request.GET.get('next', '')
         auth_form = EmailAuthenticationForm()
 
-    if request.is_ajax():
-        data = {
-            'success': success,
-            'errors': auth_form.errors,
-            'next': next
-        }
-        return HttpResponse(json.dumps(data),
-                            content_type='application/json')
-
     ctx.update({
-        'form': auth_form
+        'form': auth_form,
+        'next': next_url,
+        'additional_post_data': additional_post_data
     })
 
     return render(request, 'registration/login.html', ctx)
@@ -84,8 +113,9 @@ def details(request):
         if request.is_ajax():
             data = {
                 'success': False,
-                'errors': 'Please login.',
-                'next': reverse('login')
+                'errors': ['Please login.'],
+                'redirect_to': reverse('login'),
+                'next': reverse(details)
             }
             return HttpResponse(json.dumps(data),
                                 content_type='application/json')
@@ -107,7 +137,7 @@ def details(request):
                 data = {
                     'success': True,
                     'errors': [],
-                    'next': reverse(details)
+                    'redirect_to': reverse(details)
                 }
                 return HttpResponse(json.dumps(data),
                                     content_type='application/json')

@@ -128,6 +128,11 @@ Accounts
     ]
     ```
 
+    Note: The accounts module relies on django.contrib.auth.urls being present
+    in the the urlconf and therefore imports those. If you don't want this
+    behaviour then don't include shoptools.contrib.accounts.urls in your root
+    urlconf and instead include the patterns therein individually.
+
 Vouchers
 ---
 

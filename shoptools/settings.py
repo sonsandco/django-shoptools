@@ -11,15 +11,17 @@ FAVOURITES_MODULE = getattr(settings, 'SHOPTOOLS_FAVOURITES_MODULE', None)
 PAYMENT_MODULE = getattr(settings, 'SHOPTOOLS_PAYMENT_MODULE', None)
 EMAIL_MODULE = getattr(settings, 'SHOPTOOLS_EMAIL_MODULE', None)
 
-DEFAULT_SESSION_KEY = getattr(settings, 'CART_DEFAULT_SESSION_KEY', 'cart')
+DEFAULT_SESSION_KEY = getattr(settings, 'SHOPTOOLS_CART_DEFAULT_SESSION_KEY',
+                              'cart')
 
-FAVOURITES_SESSION_KEY = getattr(settings, 'FAVOURITES_SESSION_KEY',
-                                 'favourites_info')
-FAVOURITES_SESSION_POST_KEY = getattr(settings, 'FAVOURITES_SESSION_POST_KEY',
-                                      'favourites_post')
+LOGIN_ADDITIONAL_POST_DATA_KEY = \
+    getattr(settings, 'SHOPTOOLS_LOGIN_ADDITIONAL_POST_DATA_KEY',
+            'favourites_post')
 
-LOCATION_COOKIE_NAME = getattr(settings, 'LOCATION_COOKIE_NAME',
+LOCATION_COOKIE_NAME = getattr(settings, 'SHOPTOOLS_LOCATION_COOKIE_NAME',
                                'shoptools_location')
 
-DEFAULT_CURRENCY_CODE = getattr(settings, 'DEFAULT_CURRENCY_CODE', 'NZD')
-DEFAULT_CURRENCY_SYMBOL = getattr(settings, 'DEFAULT_CURRENCY_SYMBOL', '$')
+DEFAULT_CURRENCY_CODE = getattr(settings, 'SHOPTOOLS_DEFAULT_CURRENCY_CODE',
+                                'NZD')
+DEFAULT_CURRENCY_SYMBOL = getattr(settings,
+                                  'SHOPTOOLS_DEFAULT_CURRENCY_SYMBOL', '$')

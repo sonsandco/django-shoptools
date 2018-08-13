@@ -45,6 +45,7 @@ class Order(AbstractOrder):
     currency_symbol = models.CharField(
         max_length=1, editable=False,
         default=shoptools_settings.DEFAULT_CURRENCY_SYMBOL)
+
     created = models.DateTimeField(default=timezone.now)
     checkout_completed = models.DateTimeField(blank=True, null=True)
     status = models.PositiveSmallIntegerField(

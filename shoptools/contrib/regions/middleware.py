@@ -24,7 +24,7 @@ class RegionMiddleware(MiddlewareMixin):
                 info["region_id"] = region_id
                 updated = True
 
-        # If country or region have been updated, chnage the cookie for this
+        # If country or region have been updated, change the cookie for this
         # request only to ensure the change is reflected for this page load,
         # and save the updated info against the request so we can set the
         # cookie in process_response.

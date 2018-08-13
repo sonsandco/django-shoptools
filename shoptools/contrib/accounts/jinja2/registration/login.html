@@ -6,10 +6,9 @@
 {% block registration_content %}
 
 <form action="." method="post" class="registration-form">
+  {{ render_form(form) }}
   <input type="hidden" name="next"
          value="{{ request.GET.get('next') or request.POST.get('next') or '/' }}">
-
-  {{ render_form(form) }}
 
   <input type="submit" value="Log in">
 </form>

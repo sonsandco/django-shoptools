@@ -75,4 +75,5 @@ def get_html_snippet(request, cart=None, errors=[]):
         if context:
             ctx.update(context)
 
-    return render_to_string('cart/html_snippet.html', ctx, request=request)
+    return render_to_string('cart/snippets/html_snippet.html', ctx,
+                            request=request)

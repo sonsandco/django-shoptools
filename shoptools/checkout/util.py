@@ -42,4 +42,5 @@ def get_html_snippet(request, cart=None, errors=[]):
         if context:
             ctx.update(context)
 
-    return render_to_string('checkout/html_snippet.html', ctx, request=request)
+    return render_to_string('checkout/snippets/html_snippet.html', ctx,
+                            request=request)

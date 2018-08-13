@@ -17,19 +17,19 @@
   <div class='selection-forms'>
     {% if region_selection_form or shipping_option_selection_form %}
       {% if region_selection_form %}
-        {% from 'regions/snippets/macros.html' import region_change_form with context %}
+        {% from 'regions/snippets/forms.html' import region_change_form with context %}
         {{ region_change_form(region_selection_form) }}
       {% endif %}
 
       {% if shipping_option_selection_form %}
-        {% from 'shipping/snippets/macros.html' import shipping_change_form with context %}
+        {% from 'shipping/snippets/forms.html' import shipping_change_form with context %}
         {{ shipping_change_form(shipping_option_selection_form) }}
       {% endif %}
     {% endif %}
   </div>
 
   {% if vouchers_enabled %}
-    {% from 'vouchers/snippets/macros.html' import cart_voucher_form with context %}
+    {% from 'vouchers/snippets/forms.html' import cart_voucher_form with context %}
     {{ cart_voucher_form(cart) }}
   {% endif %}
 
@@ -58,7 +58,7 @@
       {% endif %}
     </div>
     {% if vouchers_enabled %}
-      {% from 'vouchers/snippets/macros.html' import cart_voucher_discounts %}
+      {% from 'vouchers/snippets/forms.html' import cart_voucher_discounts %}
       {{ cart_voucher_discounts(cart) }}
     {% endif %}
     <div class='total'>

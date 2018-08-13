@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Favourites{% endblock %}
+
+{% block content %}
+  <article class="shoptools-favourites-page shoptools-page">
+    <h2 class='favourites-heading'>
+      Favourites
+    </h2>
+    {% for favourites_list in favourites %}
+      <p>
+        <a href='{{ favourites_list.get_absolute_url() }}'>
+          {{ favourites_list }}
+        </a>
+      </p>
+    {% else %}
+      {% if request.user.is_authenticated %}
+        <p>
+          Looks like you don't have any favourites yet. You need to
+          <a href='{{ url("favourites_create") }}'>create a favourites list</a>
+          and then you'll be able to add items to it.
+        </p>
+      {% else %}
+        <p>
+          <a href='{{ url("login") }}{{ "?next=%s" % next if next else "" }}'>
+            Log in </a> or
+          <a href='{{ url("accounts_create") }}
+                   {{- "?next=%s" % next if next else "" }}'> create an account
+          </a> to get started.
+        </p>
+      {% endif %}
+    {% endfor %}
+  </article>
+{% endblock %}

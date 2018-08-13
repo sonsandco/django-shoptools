@@ -1,4 +1,5 @@
 from django.db import models
+from django.shortcuts import reverse
 
 from shoptools.abstractions.models import ICartItem
 
@@ -11,7 +12,13 @@ class Product(models.Model, ICartItem):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse('catalogue_detail', args=[self.id, ])
+
     # cart integration:
+
+    def cart_description(self):
+        return self.name
 
     def cart_line_total(self, line):
         """Returns the total price for quantity of this item as a float. """

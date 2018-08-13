@@ -5,16 +5,8 @@
   <ul>
     {% for product in products %}
       <li>
-        {{ product.name }} —
+        <a href='{{ product.get_absolute_url() }}'>{{ product.name }}</a> —
         ${{ product.price }}
-
-        <form method="post" action="{{ url('cart_add') }}">
-          {{ csrf_input }}
-          <input type="hidden" name="ctype" value="catalogue.product">
-          <input type="hidden" name="pk" value="{{ product.pk }}">
-          <input type="hidden" name="quantity" value="1">
-          <input type="submit" value="Add to cart">
-        </form>
       </li>
     {% endfor %}
   </ul>

@@ -1,0 +1,15 @@
+{% from 'checkout/snippets/form.html' import render_form with context %}
+
+{# Must be imported "with context" #}
+{% macro add_to_favourites_form(form, next='') %}
+  <form action='{{ url("favourites_add") }}' method='POST'
+        class='shipping-option-selection-form'>
+    <div class='form-inner'>
+      {{ render_form(form) }}
+      {% if next %}
+        <input name='next' value='{{ next }}' type='hidden' />
+      {% endif %}
+      <input type='submit' value='Add to Favourites'/>
+    </div>
+  </form>
+{% endmacro %}

@@ -1,0 +1,15 @@
+{% from 'favourites/snippets/lines.html' import favourites_lines with context %}
+
+{% set lines = favourites_list.get_lines() %}
+<div class='favourites-list'>
+  <p class='favourites-list-name'>
+    {{ favourites_list }}
+  </p>
+  <div class='favourites-errors'>
+    {% for error in favourites_errors %}
+      <p class='error'>{{ error }}</p>
+    {% endfor %}
+  </div>
+  {{ favourites_lines(favourites_list, quantity_url=url('favourites_quantity'),
+                      show_quantity=True, editable=editable) }}
+</div>

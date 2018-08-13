@@ -1,57 +1,36 @@
 from django.template.loader import render_to_string
 
-from shoptools.settings import FAVOURITES_SESSION_KEY
 
-
-def get_favourites(request):
-    from django.apps import apps
-
-    session_favourites = None
-    if apps.is_installed('shoptools.cart'):
-        # If the cart is installed we support session level favourites.
-        # Otherwise we only support favourites for logged in users.
-        from shoptools.cart.session import SessionCart
-        session_favourites = SessionCart(request, FAVOURITES_SESSION_KEY)
+def get_all_favourites(request):
+    favourites = []
 
     if request.user.is_authenticated:
         # Django doesn't like this to be imported at compile-time if the
         # app is not installed
         from .models import FavouritesList
-
-        # Default behaviour is to get the first (most recent) favourites list
-        # for the logged in user
-        favourites = FavouritesList.objects.filter(user=request.user).first()
-        if not favourites:
-            favourites = FavouritesList(user=request.user)
-
-        favourites.set_request(request)
-
-        # merge session favourites, if it exists
-        if session_favourites and session_favourites.count():
-            if not favourites.pk:
-                favourites.save()
-            session_favourites.save_to(favourites)
-            session_favourites.clear()
-
+        favourites = FavouritesList.objects.filter(user=request.user)
         return favourites
 
-    return session_favourites
+    return favourites
 
 
 def favourites_data(request):
     """Get region and country info from the session, as a dict for json
        serialization. """
-    data = None
+    data = []
 
-    favourites = get_favourites(request)
-    if favourites:
-        data = favourites.as_dict()
+    favourites_lists = get_all_favourites(request)
+    for favourites_list in favourites_lists:
+        data.append(favourites_list.as_dict())
 
     return data
 
 
-def get_html_snippet(favourites, errors=[]):
-    return render_to_string('favourites/html_snippet.html', {
-        'favourites': favourites,
-        'favourites_errors': errors
-    }, request=favourites.request)
+def get_html_snippet(request, favourites_list, errors=[]):
+    ctx = {
+        'favourites_list': favourites_list,
+        'favourites_errors': errors,
+        'editable': request.user == favourites_list.user
+    }
+    return render_to_string('favourites/snippets/html_snippet.html', ctx,
+                            request=request)

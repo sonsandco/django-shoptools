@@ -23,7 +23,8 @@ INSTALLED_APPS = [
     'shoptools.contrib.paypal',
     'shoptools.contrib.regions',
     'shoptools.contrib.shipping',
-    'shoptools.contrib.vouchers'
+    'shoptools.contrib.vouchers',
+    'shoptools.contrib.favourites'
 ]
 
 MIDDLEWARE = [
@@ -94,6 +95,7 @@ SHOPTOOLS_PAYMENT_MODULE = 'shoptools.contrib.paypal'
 SHOPTOOLS_REGIONS_MODULE = 'shoptools.contrib.regions'
 SHOPTOOLS_SHIPPING_MODULE = 'shoptools.contrib.shipping'
 SHOPTOOLS_VOUCHERS_MODULE = 'shoptools.contrib.vouchers'
+SHOPTOOLS_FAVOURITES_MODULE = 'shoptools.contrib.favourites'
 
 AUTHENTICATION_BACKENDS = (
     'shoptools.contrib.accounts.auth_backends.EmailBackend',

@@ -1,0 +1,83 @@
+{% macro favourites_lines(favourites_list, quantity_url=None,
+                          show_quantity=False, add_to_cart=False,
+                          editable=False) %}
+  {% set code, symbol = favourites_list.get_currency(request) %}
+  <div class='favourites-item-list'>
+    {% for line in favourites_list.get_lines() %}
+      {% set item = line.item %}
+      <div class='form-row'
+           {% if item %}id='{{ item.ctype.replace('.', '-') }}-{{ item.id }}'{% endif %}>
+        <div class='description cell'>
+          <p>
+            {% if item and item.get_absolute_url and item.get_absolute_url() %}
+              <a href='{{ item.get_absolute_url() }}'>
+            {% endif %}
+                {{ line.description|safe }}
+            {% if item and item.get_absolute_url and item.get_absolute_url() %}
+              </a>
+            {% endif %}
+          </p>
+        </div>
+        {%- if show_quantity -%}
+          <div class='quantity cell'>
+            {% if item and editable and quantity_url %}
+              <form action='{{ quantity_url }}' method='post'>
+                {{ csrf_input }}
+                {#- -#}
+                <label>Qty</label>
+                {#- -#}
+                <input type='number' name='quantity' value='{{ line.quantity }}'
+                       min='0' step='1'>
+                {#- -#}
+                <input type='hidden' name='favourites_list_pk'
+                       value='{{ favourites_list.id }}'>
+                {#- -#}
+                <input type='hidden' name='ctype'
+                       value='{{ item.item_ctype }}'>
+                {#- -#}
+                <input type='hidden' name='pk' value='{{ item.item_object_id }}'>
+                {#- -#}
+                <input type='submit' value='Update'>
+              </form>
+            {% else %}
+              <p><span>Qty:</span> {{ line.quantity }}</p>
+            {% endif %}
+          </div>
+        {%- endif -%}
+        <div class='line-total cell'>
+          {% if line.total or line.total == 0 %}
+            <p>
+              {{ symbol }}{{ '{:,.2f}'.format(line.total) }}
+            </p>
+          {% endif %}
+        </div>
+        {%- if item and editable and show_quantity and quantity_url -%}
+          <div class='remove cell'>
+            <form action='{{ quantity_url }}' method='post'>
+              {{ csrf_input }}
+              <input type='hidden' name='favourites_list_pk'
+                     value='{{ favourites_list.id }}'>
+              <input type='hidden' name='quantity' value='0'>
+              <input type='hidden' name='ctype'
+                     value='{{ item.item_ctype }}'>
+              <input type='hidden' name='pk' value='{{ item.item_object_id }}'>
+              <input type='submit' name='Update' value='Remove'>
+            </form>
+          </div>
+        {%- endif %}
+        {%- if item and item.purchaseable -%}
+          <div class='purchase cell'>
+            <form action='{{ url("cart_add") }}' method='post'>
+              {{ csrf_input }}
+              <input type='hidden' name='quantity' value='{{ line.quantity }}'>
+              <input type='hidden' name='ctype'
+                     value='{{ item.ctype }}'>
+              <input type='hidden' name='pk' value='{{ item.pk }}'>
+              <input type='submit' name='Submit' value='Purchase'>
+            </form>
+          </div>
+        {%- endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endmacro %}

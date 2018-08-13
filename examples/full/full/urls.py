@@ -11,5 +11,5 @@ urlpatterns = [
     url(r'^payment/', include('shoptools.contrib.paypal.urls')),
     url(r'^regions/', include('shoptools.contrib.regions.urls')),
     url(r'^shipping/', include('shoptools.contrib.shipping.urls')),
-
+    url(r'^favourites/', include('shoptools.contrib.favourites.urls')),
 ]

@@ -10,6 +10,9 @@ for action in views.all_actions:
                            'favourites_%s' % action))
 
 
-urlpatterns.append(url(r'^$', views.favourites, {}, 'favourites_favourites'))
-urlpatterns.append(url(r'^([\w\-]+)$', views.favourites, {},
-                       'favourites_favourites'))
+urlpatterns.append(url(r'^$', views.index, {},
+                       'favourites_index'))
+urlpatterns.append(url(r'^create$', views.create, {},
+                       'favourites_create'))
+urlpatterns.append(url(r'^([\w\-]+)$', views.detail, {},
+                       'favourites_detail'))

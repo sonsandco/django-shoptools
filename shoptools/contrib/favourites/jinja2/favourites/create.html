@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from 'checkout/snippets/form.html' import render_form with context %}
+
+{% block title %}Favourites{% endblock %}
+
+{% block content %}
+  <article class="shoptools-favourites-page shoptools-page">
+    <h2 class='favourites-heading'>
+      Create Favourites List
+    </h2>
+    <form action="{{ request.path_info }}" method="post"
+          class="favourites-form">
+
+      {{ render_form(favourites_form) }}
+      {% if next %}
+        <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
+
+      <input type="submit" name="confirm" value="Create Favourites List">
+    </form>
+  </article>
+{% endblock %}

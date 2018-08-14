@@ -72,7 +72,7 @@ def favourites_action(params=[]):
     return inner
 
 
-@favourites_action
+@favourites_action()
 def delete_favourites_list(favourites_list):
     favourites_list.delete()
     return (True, None)
@@ -82,13 +82,13 @@ def delete_favourites_list(favourites_list):
     ('ctype', str, True),
     ('pk', str, True),
 ))
-def toggle(favourites_list, ctype, pk, **opts):
+def toggle(favourites_list, ctype, pk, quantity=1, **options):
     instance = unpack_instance_key(favourites_list, ctype, pk)
 
-    if favourites_list.get_line(instance, options=opts):
-        return favourites_list.remove(instance, options=opts)
+    if favourites_list.get_line(instance, options=options):
+        return favourites_list.remove(instance, options=options)
     else:
-        return favourites_list.add(instance, 1, options=opts)
+        return favourites_list.add(instance, quantity, options=options)
 
 
 @favourites_action(params=(
@@ -97,10 +97,21 @@ def toggle(favourites_list, ctype, pk, **opts):
     ('quantity', int, True),
 ))
 def quantity(favourites_list, ctype, pk, quantity, **options):
-    """Update an item's quantity in the cart. """
+    """Update an item's quantity in the favourites_list. """
 
     instance = unpack_instance_key(favourites_list, ctype, pk)
     return favourites_list.update_quantity(instance, quantity, options=options)
+
+
+@favourites_action(params=(
+    ('ctype', str, True),
+    ('pk', str, True)
+))
+def remove(favourites_list, ctype, pk, **options):
+    """Remove a line from the favourites_list. """
+
+    instance = unpack_instance_key(favourites_list, ctype, pk)
+    return favourites_list.remove(instance, options=options)
 
 
 @favourites_action(params=(
@@ -109,7 +120,7 @@ def quantity(favourites_list, ctype, pk, quantity, **options):
     ('quantity', int, False),
 ))
 def add(favourites_list, ctype, pk, quantity=1, **options):
-    """Add an item to the cart. """
+    """Add an item to the favourites_list. """
 
     instance = unpack_instance_key(favourites_list, ctype, pk)
     return favourites_list.add(instance, quantity, options=options)
@@ -117,7 +128,7 @@ def add(favourites_list, ctype, pk, quantity=1, **options):
 
 @favourites_action()
 def clear(favourites_list):
-    """Remove everything from the cart. """
+    """Remove everything from the favourites_list. """
 
     favourites_list.clear()
     return (True, None)

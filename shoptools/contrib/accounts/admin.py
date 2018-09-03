@@ -49,7 +49,7 @@ class MyUserForm(UserAdmin.form):
 
     def clean_email(self):
         email = self.cleaned_data['email']
-        if email and User.objects.filter(email=email) \
+        if email and User.objects.filter(email__iexact=email) \
                          .exclude(pk=self.instance.pk).count():
             msg = "That email address is already in use"
             raise forms.ValidationError(msg)

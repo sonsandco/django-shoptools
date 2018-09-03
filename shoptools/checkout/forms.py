@@ -27,7 +27,8 @@ class AddressForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data['email']
-        if self.require_unique_email and User.objects.filter(email=email):
+        if self.require_unique_email and \
+           User.objects.filter(email__iexact=email):
             raise forms.ValidationError("That email is already in use")
         return email
 

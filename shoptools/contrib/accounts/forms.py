@@ -23,7 +23,8 @@ class UserForm(forms.ModelForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if User.objects.exclude(pk=self.instance.pk).filter(email=email):
+        if User.objects.exclude(pk=self.instance.pk) \
+                       .filter(email__iexact=email):
             raise forms.ValidationError('That email is already in use')
         return email
 

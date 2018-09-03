@@ -52,6 +52,9 @@ class FavouritesList(AbstractOrder):
 
     def as_dict(self):
         data = {
+            'pk': self.pk,
+            'name': self.name,
+            'url': self.get_absolute_url(),
             'count': self.count(),
             'lines': [line.as_dict() for line in self.get_lines()],
         }

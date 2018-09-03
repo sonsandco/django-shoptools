@@ -8,6 +8,7 @@ try:
 except ImportError:
     from django.core.urlresolvers import reverse
 from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
 
 from shoptools.settings import LOGIN_ADDITIONAL_POST_DATA_KEY
 
@@ -17,7 +18,7 @@ from .util import favourites_data
 from .forms import CreateFavouritesListForm
 
 
-def favourites_action_view(action):
+def favourites_action_view(action, allow_create=False):
     """
     Decorator supplies request and current favourites as arguments to the
     action function.
@@ -51,16 +52,34 @@ def favourites_action_view(action):
         if 'favourites_list_pk' in post_params:
             favourites_list_pk = post_params['favourites_list_pk']
             del post_params['favourites_list_pk']
+            try:
+                favourites_list_pk = \
+                    int(favourites_list_pk) if favourites_list_pk else None
+            except ValueError:
+                favourites_list_pk = None
         else:
             favourites_list_pk = None
 
+        requires_login = False
         try:
             favourites = FavouritesList.objects.get(pk=favourites_list_pk)
         except FavouritesList.DoesNotExist:
-            return HttpResponseBadRequest()
+            if allow_create and 'name' in post_params:
+                if request.user.is_authenticated:
+                    favourites = FavouritesList.objects.create(
+                        name=post_params['name'],
+                        user=request.user)
+                    favourites.set_request(request)
+                else:
+                    requires_login = True
+            else:
+                return HttpResponseBadRequest()
 
         # Only allow actions if the favourites list belongs to current user
         if favourites and not favourites.user == request.user:
+            requires_login = True
+
+        if requires_login:
             # Save post data to session so the relevant action will be
             # automatically completed when the user logs in.
             post_params['app'] = __package__
@@ -111,21 +130,48 @@ def favourites_action_view(action):
     return view_func
 
 
-all_actions = ('add', 'quantity', 'clear', 'toggle')
-for action in all_actions:
+create = favourites_action_view(lambda post_params, favourites: (True, []),
+                                allow_create=True)
+
+
+actions_allow_create = ('add', )
+for action in actions_allow_create:
+    locals()[action] = favourites_action_view(getattr(actions, action),
+                                              allow_create=True)
+
+
+actions_require_existing = ('quantity', 'clear', 'remove', 'toggle',
+                            'delete_favourites_list')
+for action in actions_require_existing:
     locals()[action] = favourites_action_view(getattr(actions, action))
 
 
-@never_cache
-def index(request):
-    if request.user.is_authenticated:
-        favourites = FavouritesList.objects.filter(user=request.user)
-    else:
-        favourites = []
+all_actions = actions_allow_create + actions_require_existing
 
+
+def index(request):
+    """
+    Index is intended to be used as an introduction to the favourites system
+    and explanation for the user of how it works. The default template is
+    therefore very sparse since content will depend on your use case.
+
+    The view is separated out from dashboard so that it can be cached.
+    """
     return render(request, 'favourites/index.html', {
+        'next': reverse('favourites_dashboard')
+    })
+
+
+@never_cache
+@login_required
+def dashboard(request):
+    favourites = FavouritesList.objects.filter(user=request.user)
+    favourites_form = CreateFavouritesListForm()
+
+    return render(request, 'favourites/dashboard.html', {
         'favourites': favourites,
-        'next': reverse('favourites_index')
+        'favourites_form': favourites_form,
+        'next': reverse('favourites_dashboard')
     })
 
 
@@ -137,41 +183,3 @@ def detail(request, secret):
         'favourites_list': favourites_list,
         'editable': request.user == favourites_list.user
     })
-
-
-@never_cache
-def create(request):
-    if request.POST:
-        favourites_form = CreateFavouritesListForm(request.POST)
-        next_url = request.POST.get('next', '')
-
-        if favourites_form.is_valid():
-            favourites_list = favourites_form.save(commit=False)
-            favourites_list.set_request(request)
-            favourites_list.user = request.user
-            favourites_list.save()
-
-            if request.is_ajax():
-                data = {
-                    'success': True,
-                    'errors': [],
-                    'favourites': favourites_data(request),
-                }
-
-                return HttpResponse(json.dumps(data),
-                                    content_type='application/json')
-
-            if not next_url:
-                next_url = request.META.get('HTTP_REFERER',
-                                            reverse('favourites_index'))
-            return HttpResponseRedirect(next_url)
-    else:
-        next_url = request.GET.get('next', reverse('favourites_index'))
-        favourites_form = CreateFavouritesListForm()
-
-    ctx = {
-        'favourites_form': favourites_form,
-        'next': next_url
-    }
-
-    return render(request, 'favourites/create.html', ctx)

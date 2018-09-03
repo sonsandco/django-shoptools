@@ -12,6 +12,7 @@ except ImportError:
     from django.core.urlresolvers import reverse
 
 from shoptools import settings as shoptools_settings
+from shoptools.core.views import get_data
 
 from .models import Account
 from .forms import \
@@ -62,11 +63,14 @@ def login(request):
                 pass
 
             if request.is_ajax():
-                data = {
+                # Return data for all active apps
+                data = get_data(request)
+                # plus status for this login action
+                data.update({
                     'success': success,
                     'errors': auth_form.errors,
                     'redirect_to': next_url
-                }
+                })
                 return HttpResponse(json.dumps(data),
                                     content_type='application/json')
             else:

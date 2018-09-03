@@ -17,8 +17,8 @@ class FavouritesLineInline(admin.TabularInline):
 
 
 class FavouritesListAdmin(admin.ModelAdmin):
-    list_display = ('user', 'created', 'items')
-    readonly_fields = ('user', 'created', 'name')
+    list_display = ('name', 'user', 'created', 'items')
+    readonly_fields = ('name', 'user', 'created', 'name')
     inlines = [FavouritesLineInline, ]
     save_on_top = True
 

@@ -13,6 +13,9 @@
               {{ line.description|safe }}
             {% if item %}</a>{% endif %}
           </p>
+          {%- for key, val in line.get_options().items() -%}
+            <p class="option">{{ key|title }}: {{ val|title }}</p>
+          {%- endfor -%}
         </div>
         {%- if show_quantity -%}
           <div class='quantity cell'>
@@ -29,7 +32,9 @@
                        value='{{ line.ctype }}'>
                 {#- -#}
                 <input type='hidden' name='pk' value='{{ item.pk }}'>
-                {#- -#}
+                {%- for key, val in line.get_options().items() -%}
+                    <input type='hidden' name='{{ key }}' value="{{ val }}" />
+                {%- endfor -%}
                 <input type='submit' value='Update'>
               </form>
             {% else %}

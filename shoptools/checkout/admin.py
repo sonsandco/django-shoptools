@@ -90,8 +90,11 @@ class OrderAdmin(admin.ModelAdmin):
         AddOrderLineInline
     ] + voucher_inlines + payment_inlines
     save_on_top = True
-    search_fields = ('name', 'email', 'id', 'phone', 'address', 'city',
-                     'state', 'postcode', )
+    search_fields = ('id', 'addresses__first_name', 'addresses__last_name',
+                     'addresses__email', 'addresses__phone',
+                     'addresses__address', 'addresses__city',
+                     'addresses__state', 'addresses__postcode',
+                     'addresses__suburb')
     actions = ('csv_export', 'resend_dispatch_email')
     readonly_fields = ('created', 'checkout_completed', '_shipping_cost', 'id',
                        'amount_paid', 'currency_code', )

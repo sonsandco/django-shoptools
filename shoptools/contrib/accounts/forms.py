@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import AuthenticationForm, UsernameField
+from django.contrib.auth.forms import AuthenticationForm, UsernameField, \
+    UserCreationForm, UserChangeForm
 
 from .models import Account
 
@@ -10,23 +11,30 @@ class EmailAuthenticationForm(AuthenticationForm):
                              widget=forms.TextInput(attrs={'autofocus': True}))
 
 
-class AccountForm(forms.ModelForm):
-    class Meta:
-        model = Account
-        exclude = ['user', ]
+class UniqueEmailFormMixin(object):
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        qs = User.objects.filter(email__iexact=email)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.count():
+            raise forms.ValidationError('That email address is already in use')
+        else:
+            return email
 
 
-class UserForm(forms.ModelForm):
+class UserAdminChangeForm(UniqueEmailFormMixin, UserChangeForm):
+    email = forms.EmailField(required=True)
+
+
+class UserAdminCreationForm(UniqueEmailFormMixin, UserCreationForm):
+    email = forms.EmailField(required=True)
+
+
+class UserForm(UniqueEmailFormMixin, forms.ModelForm):
     first_name = forms.CharField()
     last_name = forms.CharField()
     email = forms.EmailField()
-
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.exclude(pk=self.instance.pk) \
-                       .filter(email__iexact=email):
-            raise forms.ValidationError('That email is already in use')
-        return email
 
     class Meta:
         model = User
@@ -54,3 +62,9 @@ class CreateUserForm(UserForm):
         user.set_password(self.cleaned_data["password1"])
         user.save()
         return user
+
+
+class AccountForm(forms.ModelForm):
+    class Meta:
+        model = Account
+        exclude = ['user', ]

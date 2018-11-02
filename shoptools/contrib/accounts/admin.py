@@ -4,10 +4,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-from django import forms
 
 from .models import Account
 from .export import generate_csv
+from .forms import UserAdminChangeForm, UserAdminCreationForm
 
 
 class AccountAdmin(admin.ModelAdmin):
@@ -45,23 +45,22 @@ class AccountInline(admin.StackedInline):
     can_delete = False
 
 
-class MyUserForm(UserAdmin.form):
-
-    def clean_email(self):
-        email = self.cleaned_data['email']
-        if email and User.objects.filter(email__iexact=email) \
-                         .exclude(pk=self.instance.pk).count():
-            msg = "That email address is already in use"
-            raise forms.ValidationError(msg)
-        else:
-            return email
-
-
-class MyUserAdmin(UserAdmin):
-    form = MyUserForm
+class CustomUserAdmin(UserAdmin):
+    list_filter = ('is_staff', 'is_superuser', 'is_active', 'groups',
+                   'date_joined', 'last_login')
+    # Enforce unique email
+    form = UserAdminChangeForm
+    add_form = UserAdminCreationForm
+    # add the email field in to the initial add_user form
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2')
+        }),
+    )
     inlines = (AccountInline, )
 
 
 # Re-register UserAdmin
 admin.site.unregister(User)
-admin.site.register(User, MyUserAdmin)
+admin.site.register(User, CustomUserAdmin)

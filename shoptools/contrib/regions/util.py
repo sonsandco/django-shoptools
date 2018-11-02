@@ -42,7 +42,9 @@ def get_country_code(request):
 
     try:
         country = GeoIP2().country(get_ip(request))
-    except (AddressNotFoundError, socket.gaierror):
+    except (AddressNotFoundError, socket.gaierror, UnicodeError):
+        # Extra long IP addresses (ie. incorrect ones) can generate a
+        # UnicodeError within GeoIP in some versions of Python.
         return None
     return country['country_code']
 

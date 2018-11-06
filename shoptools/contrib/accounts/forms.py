@@ -32,10 +32,6 @@ class UserAdminCreationForm(UniqueEmailFormMixin, UserCreationForm):
 
 
 class UserForm(UniqueEmailFormMixin, forms.ModelForm):
-    first_name = forms.CharField()
-    last_name = forms.CharField()
-    email = forms.EmailField()
-
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']

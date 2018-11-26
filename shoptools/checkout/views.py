@@ -19,6 +19,7 @@ from shoptools.util import \
 from .forms import OrderForm, OrderMetaForm, CheckoutUserForm, AddressForm
 from .models import Order, Address
 from .signals import checkout_pre_payment
+from .emails import TEMPLATE_DIR
 
 
 CHECKOUT_SESSION_KEY = 'checkout-data'
@@ -358,7 +359,8 @@ def preview_emails(request, order):
     email_module = get_email_module()
     if email_module and hasattr(email_module, 'email_content'):
         for t in ('receipt', 'notification', 'dispatch'):
-            emails.append(email_module.email_content(t, order=order))
+            emails.append(email_module.email_content(t, TEMPLATE_DIR,
+                          order=order))
 
     return render(request, 'checkout/preview_emails.html', {
         'emails': emails,

@@ -5,3 +5,12 @@ Shipping: {{ order.currency_symbol }}{{ '{:,.2f}'.format(order.shipping_cost) }}
 {%- endif %}
 
 Total: {{ order.currency_symbol }}{{ '{:,.2f}'.format(order.total) }}
+
+{% if order.delivery_notes %}
+Delivery Notes
+{{ order.delivery_notes }}
+{% endif %}
+{% if order.gift_message %}
+Gift Message
+{{ order.gift_message }}
+{% endif %}

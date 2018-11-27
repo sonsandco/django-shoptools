@@ -93,6 +93,22 @@
           </p>
         </div>
       </div>
+      {% if order.delivery_notes or order.gift_message %}
+        <div class="notes">
+          {% if order.delivery_notes %}
+          <div class="delivery-notes">
+            <h5>Delivery Notes</h5>
+            {{ order.delivery_notes|linebreaks }}
+          </div>
+          {% endif %}
+          {% if order.gift_message %}
+          <div class="gift-message">
+            <h5>Gift Message</h5>
+            {{ order.gift_message|linebreaks }}
+          </div>
+          {% endif %}
+        </div>
+      {% endif %}
     </article>
   </body>
 </html>

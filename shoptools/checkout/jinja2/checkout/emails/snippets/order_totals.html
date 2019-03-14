@@ -28,11 +28,31 @@
 {% endif -%}
 <tr><td colspan='2'>&nbsp;</td></tr>
 <tr class="total">
-  <th style="text-align: right; padding-right: 15px;">Total</th>
+  <th style="text-align: right; padding-right: 15px; padding-bottom: 30px;">Total</th>
   {#- spaceless -#}
-  <th class="total-inner" style="text-align: left;">
+  <th class="total-inner" style="text-align: left; padding-bottom: 30px;">
     {{ order.currency_symbol }}<span class="cart-total">
       {{- '{:,.2f}'.format(order.total) -}}
     </span>
   </th>
 </tr>
+{% if order.delivery_notes or order.gift_message %}
+<tr class="notes" style="border-top: 1px solid #171717;">
+  {% if order.delivery_notes %}
+    <td class="delivery-notes"
+        {% if not order.gift_message %}colspan="2"{% endif %}
+        style="padding: 10px 0 20px;">
+      <p><strong>Delivery Notes</strong></p>
+      {{ order.delivery_notes|linebreaks }}
+    </td>
+  {% endif %}
+  {% if order.gift_message %}
+    <td class="gift-message"
+        {% if not order.delivery_notes %}colspan="2"{% endif %}
+        style="padding: 10px 0 20px;">
+      <p><strong>Gift Message</strong></p>
+      {{ order.gift_message|linebreaks }}
+    </td>
+  {% endif %}
+</tr>
+{% endif %}

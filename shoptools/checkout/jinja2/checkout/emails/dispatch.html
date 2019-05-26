@@ -7,4 +7,14 @@
     Your order has been shipped to:
   </p>
   {% include 'checkout/emails/snippets/billing_address.html' %}
+
+  <p style="margin-top: 45px; padding-top: 16px;
+            border-top: 1px solid #171717;">
+    Order summary:
+  </p>
+  <table style="width: 100%; cell-spacing: 0; border-collapse: collapse;
+                padding-top: 20px; padding-bottom: 20px;">
+    {% include 'checkout/emails/snippets/order_lines.html' %}
+    {% include 'checkout/emails/snippets/order_totals.html' %}
+  </table>
 {% endblock %}

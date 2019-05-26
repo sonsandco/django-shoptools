@@ -5,4 +5,9 @@ Order: {{ order.id }}
 Your order has been shipped to:
 {% include 'checkout/emails/snippets/shipping_address.txt' %}
 
+Order summary:
+{% include 'checkout/emails/snippets/order_lines.txt' %}
+
+{% include 'checkout/emails/snippets/order_totals.txt' %}
+
 {% include 'checkout/emails/snippets/footer.txt' %}

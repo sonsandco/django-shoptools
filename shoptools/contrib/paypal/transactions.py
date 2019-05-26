@@ -145,6 +145,14 @@ def make_payment(content_object, request=None, transaction_opts={},
             'currency': content_object.get_currency()[0],
         })
 
+    if content_object.total_discount:
+        params['transactions'][0]['item_list']['items'].append({
+            'name': 'Discount',
+            'quantity': 1,
+            'price': '-%.2f' % float(content_object.total_discount),
+            'currency': content_object.get_currency()[0],
+        })
+
     if request:
         if get_return_url:
             return_url = get_return_url(trans)

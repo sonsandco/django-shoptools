@@ -99,23 +99,6 @@ def calculate_discounts(obj, codes, include_shipping=True):
     #     discounts.append(Discount(voucher=voucher, amount=amount,
     #                      **defaults))
 
-    # apply fixed vouchers, smallest remaining amount first
-    fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
-    fixed.sort(key=lambda v: v.amount_remaining(exclude=defaults))
-
-    for voucher in fixed:
-        # exclude any vouchers that do not match the cart's currency
-        cart_currency_code, _ = obj.get_currency()
-        if voucher.currency_code != cart_currency_code:
-            continue
-
-        amount = min(total, voucher.amount,
-                     voucher.amount_remaining(exclude=defaults))
-        if amount == 0:
-            continue
-        total -= amount
-        discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
-
     # find and apply best percentage voucher
     percentage = [v for v in vouchers if isinstance(v, PercentageVoucher)]
     p_voucher = None
@@ -137,6 +120,23 @@ def calculate_discounts(obj, codes, include_shipping=True):
         total -= amount
         discounts.append(
             Discount(voucher=p_voucher, amount=amount, **defaults))
+
+    # apply fixed vouchers, smallest remaining amount first
+    fixed = [v for v in vouchers if isinstance(v, FixedVoucher)]
+    fixed.sort(key=lambda v: v.amount_remaining(exclude=defaults))
+
+    for voucher in fixed:
+        # exclude any vouchers that do not match the cart's currency
+        cart_currency_code, _ = obj.get_currency()
+        if voucher.currency_code != cart_currency_code:
+            continue
+
+        amount = min(total, voucher.amount,
+                     voucher.amount_remaining(exclude=defaults))
+        if amount == 0:
+            continue
+        total -= amount
+        discounts.append(Discount(voucher=voucher, amount=amount, **defaults))
 
     # identify bad codes and add to the list
     valid_codes = [d.voucher.code.upper() for d in discounts]

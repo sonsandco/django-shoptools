@@ -22,7 +22,7 @@ class FavouritesList(AbstractOrder):
     Each user can have multiple FavouritesLists, which therefore must be named.
     """
     created = models.DateTimeField(default=timezone.now)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE,
+    user = models.ForeignKey(shoptools_settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                              related_name='favourites_lists')
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
     name = models.CharField(max_length=191)

@@ -56,7 +56,7 @@ class Order(AbstractOrder):
     delivery_notes = models.TextField(blank=True, default='')
     gift_message = models.TextField(blank=True, default='')
 
-    user = models.ForeignKey('auth.User', null=True, blank=True,
+    user = models.ForeignKey(shoptools_settings.AUTH_USER_MODEL, null=True, blank=True,
                              on_delete=models.SET_NULL)
     _shipping_cost = models.DecimalField(
         max_digits=8, decimal_places=2, default=0, db_column='shipping_cost',

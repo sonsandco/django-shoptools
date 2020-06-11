@@ -17,7 +17,7 @@ class SavedCart(AbstractOrder, IShippable):
     """A db-saved cart class, which can be used interchangeably with Cart. """
 
     created = models.DateTimeField(default=timezone.now)
-    user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
+    user = models.OneToOneField(shoptools_settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     secret = models.UUIDField(editable=False, default=make_uuid, db_index=True)
 
     _shipping_option = models.PositiveSmallIntegerField(

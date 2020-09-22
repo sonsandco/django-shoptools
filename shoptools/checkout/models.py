@@ -100,11 +100,11 @@ class Order(AbstractOrder):
 
     @property
     def name(self):
-        return self.shipping_address.name
+        return self.billing_address.name
 
     @property
     def email(self):
-        return self.shipping_address.email
+        return self.billing_address.email
 
     # @property
     # def has_valid_shipping(self):
